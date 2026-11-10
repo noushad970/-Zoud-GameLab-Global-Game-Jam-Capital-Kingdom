@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 68c68892fc1146148af676534664017c, type: 3}
+  m_Name: Event_VehicleWarning
+  m_EditorClassIdentifier: Assembly-CSharp::EmpireBuilder.Events.GameEvent
+  eventId: event_vehicle_warning
+  title: Vehicle Engine Warning Light
+  description: A warning light illuminates on your taxi fleet. Do you pay for immediate preventive servicing or defer maintenance to save cash?
+  relevantAssetType: 0
+  choiceA:
+    choiceText: Service Engine ($80)
+    cashImpact: -80
+    conditionImpact: 15
+    outcomeDescription: Preventive maintenance completed. Breakdown risk averted.
+  choiceB:
+    choiceText: Keep Running ($0)
+    cashImpact: 0
+    conditionImpact: -25
+    outcomeDescription: Deferred maintenance caused additional mechanical wear.

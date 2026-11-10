@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 68c68892fc1146148af676534664017c, type: 3}
+  m_Name: Event_LandOffer
+  m_EditorClassIdentifier: Assembly-CSharp::EmpireBuilder.Events.GameEvent
+  eventId: event_land_offer
+  title: Commercial Buyer Buyout Offer
+  description: A commercial developer makes an unsolicited cash offer of $11,500 to acquire your land rights.
+  relevantAssetType: 1
+  choiceA:
+    choiceText: Accept Buyout (+$11,500)
+    cashImpact: 11500
+    conditionImpact: 0
+    outcomeDescription: Liquidated plot for profit.
+  choiceB:
+    choiceText: Hold Land ($0)
+    cashImpact: 0
+    conditionImpact: 0
+    outcomeDescription: Retained plot for long-term growth.
