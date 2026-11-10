@@ -77,11 +77,11 @@ namespace EmpireBuilder.World
         [SerializeField] private double totalMatchRevenue = 0.0;
 
         [Header("Selection Ghost Shader")]
-        [Tooltip("Ghost material (ghostMaterial.mat) applied as a duplicate transparent overlay")]
+        [Tooltip("Ghost material (ghostMaterial.mat) applied directly to building renderers when selected")]
         [SerializeField] private Material selectionShaderMaterial;
-        [Tooltip("Scale multiplier for the duplicate ghost overlay (1.002 to 1.005 recommended)")]
-        [SerializeField] private float ghostScaleMultiplier = 1.002f;
 
+        private Dictionary<MeshRenderer, Material[]> originalMaterials = new Dictionary<MeshRenderer, Material[]>();
+        private Dictionary<SkinnedMeshRenderer, Material[]> originalSkinnedMaterials = new Dictionary<SkinnedMeshRenderer, Material[]>();
         private GameObject ghostOverlayRoot;
         private bool isSelected = false;
         private bool rentAvailableToCollect = false;
@@ -153,6 +153,14 @@ namespace EmpireBuilder.World
             }
         }
 
+        private void OnDisable()
+        {
+            if (isSelected)
+            {
+                Deselect();
+            }
+        }
+
         private void OnDestroy()
         {
             if (isSelected)
@@ -173,38 +181,124 @@ namespace EmpireBuilder.World
         }
 
         /// <summary>
-        /// Automatically ensures a BoxCollider covers the building for touch raycasting.
+        /// Determines whether a child renderer belongs to the building's structural architecture
+        /// rather than a vehicle, pedestrian, street prop, road, or sidewalk.
+        /// </summary>
+        public bool IsStructuralBuildingRenderer(Renderer r)
+        {
+            if (r == null || !r.enabled || !r.gameObject.activeInHierarchy) return false;
+
+            string objName = r.gameObject.name;
+            if (objName.StartsWith("_Ghost") || objName.EndsWith("_Ghost") ||
+                objName.Contains("Marker") || objName.Contains("Particle"))
+            {
+                return false;
+            }
+
+            // Inspect all nodes from this renderer up to this PropertyBuilding
+            Transform curr = r.transform;
+            while (curr != null && curr != transform.parent)
+            {
+                string n = curr.name;
+
+                // Ignore vehicles
+                if (n.StartsWith("Car_") || n.StartsWith("Vehicle_") || n.StartsWith("Taxi") || n.StartsWith("Texi") ||
+                    n.StartsWith("Van") || n.StartsWith("Truck") || n.StartsWith("Train") || n.StartsWith("Rail") ||
+                    n.Contains("Car") || n.Contains("Taxi") || n.Contains("Texi"))
+                {
+                    return false;
+                }
+
+                // Ignore pedestrians and characters
+                if (n.StartsWith("AI Character") || n.StartsWith("Pedestrian") || n.StartsWith("Police") ||
+                    n.StartsWith("Human") || n.StartsWith("Person"))
+                {
+                    return false;
+                }
+
+                // Ignore ground, roads, sidewalks, tiles
+                if (n.StartsWith("road_") || n.StartsWith("Road") || n.StartsWith("Tile") || n.StartsWith("Set_B_") ||
+                    n.StartsWith("Sidewalk") || n.StartsWith("Pavement") || n.StartsWith("Terrain") || n.StartsWith("Ground") ||
+                    n.Contains("Sidewalk") || n.Contains("road_") || n.Contains("Road"))
+                {
+                    return false;
+                }
+
+                // Ignore props, streetlights, vegetation, particles
+                if (n.StartsWith("Bush_") || n.StartsWith("Palm_") || n.StartsWith("Tree_") || n.StartsWith("Trash_") ||
+                    n.StartsWith("Spotlight_") || n.StartsWith("traffic_light_") || n.StartsWith("Fountain") ||
+                    n.StartsWith("Bus_Stop") || n.StartsWith("Signboard") || n.StartsWith("Billboard") ||
+                    n.StartsWith("Smoke") || n.Contains("Spawn Point"))
+                {
+                    return false;
+                }
+
+                if (curr == transform) break;
+                curr = curr.parent;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Automatically ensures a BoxCollider covers the building accurately for touch raycasting.
+        /// Uses local bounding box computation to perfectly fit the building's geometry without distortion.
         /// </summary>
         public void EnsureCollider()
         {
             Collider col = GetComponent<Collider>();
             if (col == null)
             {
-                // Compute combined bounds from all MeshRenderers in children
-                MeshRenderer[] renderers = GetComponentsInChildren<MeshRenderer>(true);
-                renderers = System.Array.FindAll(renderers, r => r != null && !r.gameObject.name.EndsWith("_Ghost"));
-                if (renderers.Length > 0)
-                {
-                    Bounds combinedBounds = renderers[0].bounds;
-                    for (int i = 1; i < renderers.Length; i++)
-                    {
-                        combinedBounds.Encapsulate(renderers[i].bounds);
-                    }
+                Matrix4x4 rootInv = transform.worldToLocalMatrix;
+                Bounds localBounds = new Bounds();
+                bool hasBounds = false;
 
-                    BoxCollider box = gameObject.AddComponent<BoxCollider>();
-                    box.center = transform.InverseTransformPoint(combinedBounds.center);
-                    Vector3 lossy = transform.lossyScale;
-                    Vector3 size = combinedBounds.size;
-                    box.size = new Vector3(
-                        lossy.x != 0 ? Mathf.Abs(size.x / lossy.x) : size.x,
-                        lossy.y != 0 ? Mathf.Abs(size.y / lossy.y) : size.y,
-                        lossy.z != 0 ? Mathf.Abs(size.z / lossy.z) : size.z
-                    );
+                MeshRenderer[] renderers = GetComponentsInChildren<MeshRenderer>(true);
+                foreach (var mr in renderers)
+                {
+                    if (mr == null || !IsStructuralBuildingRenderer(mr)) continue;
+                    MeshFilter mf = mr.GetComponent<MeshFilter>();
+                    if (mf == null || mf.sharedMesh == null) continue;
+
+                    Matrix4x4 meshToRoot = rootInv * mr.transform.localToWorldMatrix;
+                    Bounds mb = mf.sharedMesh.bounds;
+                    Vector3 c = mb.center;
+                    Vector3 e = mb.extents;
+
+                    Vector3[] corners = new Vector3[8]
+                    {
+                        meshToRoot.MultiplyPoint3x4(new Vector3(c.x + e.x, c.y + e.y, c.z + e.z)),
+                        meshToRoot.MultiplyPoint3x4(new Vector3(c.x + e.x, c.y + e.y, c.z - e.z)),
+                        meshToRoot.MultiplyPoint3x4(new Vector3(c.x + e.x, c.y - e.y, c.z + e.z)),
+                        meshToRoot.MultiplyPoint3x4(new Vector3(c.x + e.x, c.y - e.y, c.z - e.z)),
+                        meshToRoot.MultiplyPoint3x4(new Vector3(c.x - e.x, c.y + e.y, c.z + e.z)),
+                        meshToRoot.MultiplyPoint3x4(new Vector3(c.x - e.x, c.y + e.y, c.z - e.z)),
+                        meshToRoot.MultiplyPoint3x4(new Vector3(c.x - e.x, c.y - e.y, c.z + e.z)),
+                        meshToRoot.MultiplyPoint3x4(new Vector3(c.x - e.x, c.y - e.y, c.z - e.z))
+                    };
+
+                    for (int k = 0; k < 8; k++)
+                    {
+                        if (!hasBounds)
+                        {
+                            localBounds = new Bounds(corners[k], Vector3.zero);
+                            hasBounds = true;
+                        }
+                        else
+                        {
+                            localBounds.Encapsulate(corners[k]);
+                        }
+                    }
+                }
+
+                BoxCollider box = gameObject.AddComponent<BoxCollider>();
+                if (hasBounds)
+                {
+                    box.center = localBounds.center;
+                    box.size = localBounds.size;
                 }
                 else
                 {
-                    // Fallback default box collider
-                    BoxCollider box = gameObject.AddComponent<BoxCollider>();
                     box.size = new Vector3(8f, 10f, 8f);
                     box.center = new Vector3(0, 5f, 0);
                 }
@@ -212,104 +306,8 @@ namespace EmpireBuilder.World
         }
 
         /// <summary>
-        /// Displays a duplicate transparent ghost overlay (ghostMaterial) over the existing building.
-        /// The original building meshes and textures remain active underneath, so the building appears brightened.
-        /// </summary>
-        private void ShowGhostOverlay(Material ghostMat)
-        {
-            if (ghostOverlayRoot != null)
-            {
-                ghostOverlayRoot.SetActive(true);
-                return;
-            }
-
-            // Create parent container for the duplicate ghost meshes
-            ghostOverlayRoot = new GameObject("_GhostSelectionOverlay");
-            ghostOverlayRoot.transform.SetParent(transform, false);
-            ghostOverlayRoot.transform.localPosition = Vector3.zero;
-            ghostOverlayRoot.transform.localRotation = Quaternion.identity;
-            ghostOverlayRoot.transform.localScale = Vector3.one;
-
-            MeshRenderer[] renderers = GetComponentsInChildren<MeshRenderer>(true);
-
-            foreach (var mr in renderers)
-            {
-                if (mr == null || !mr.enabled || !mr.gameObject.activeInHierarchy) continue;
-                if (mr.transform.IsChildOf(ghostOverlayRoot.transform)) continue;
-                if (mr.gameObject.name.EndsWith("_Ghost")) continue;
-
-                // Standard MeshFilter + MeshRenderer
-                MeshFilter mf = mr.GetComponent<MeshFilter>();
-                if (mf != null && mf.sharedMesh != null)
-                {
-                    GameObject ghostChild = new GameObject(mr.gameObject.name + "_Ghost");
-                    ghostChild.layer = mr.gameObject.layer;
-                    ghostChild.transform.SetPositionAndRotation(mr.transform.position, mr.transform.rotation);
-                    ghostChild.transform.localScale = mr.transform.lossyScale;
-                    ghostChild.transform.SetParent(ghostOverlayRoot.transform, true);
-                    ghostChild.transform.localScale *= ghostScaleMultiplier;
-
-                    MeshFilter ghostMf = ghostChild.AddComponent<MeshFilter>();
-                    ghostMf.sharedMesh = mf.sharedMesh;
-
-                    MeshRenderer ghostMr = ghostChild.AddComponent<MeshRenderer>();
-                    ghostMr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-                    ghostMr.receiveShadows = false;
-                    ghostMr.lightProbeUsage = UnityEngine.Rendering.LightProbeUsage.Off;
-                    ghostMr.reflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage.Off;
-
-                    int matCount = mr.sharedMaterials != null && mr.sharedMaterials.Length > 0 ? mr.sharedMaterials.Length : 1;
-                    Material[] ghostMats = new Material[matCount];
-                    for (int m = 0; m < matCount; m++)
-                    {
-                        ghostMats[m] = ghostMat;
-                    }
-                    ghostMr.sharedMaterials = ghostMats;
-                }
-
-                // SkinnedMeshRenderer support
-                SkinnedMeshRenderer smr = mr.GetComponent<SkinnedMeshRenderer>();
-                if (smr != null && smr.sharedMesh != null)
-                {
-                    GameObject ghostChild = new GameObject(smr.gameObject.name + "_Ghost");
-                    ghostChild.layer = smr.gameObject.layer;
-                    ghostChild.transform.SetPositionAndRotation(smr.transform.position, smr.transform.rotation);
-                    ghostChild.transform.localScale = smr.transform.lossyScale;
-                    ghostChild.transform.SetParent(ghostOverlayRoot.transform, true);
-                    ghostChild.transform.localScale *= ghostScaleMultiplier;
-
-                    SkinnedMeshRenderer ghostSmr = ghostChild.AddComponent<SkinnedMeshRenderer>();
-                    ghostSmr.sharedMesh = smr.sharedMesh;
-                    ghostSmr.bones = smr.bones;
-                    ghostSmr.rootBone = smr.rootBone;
-                    ghostSmr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-                    ghostSmr.receiveShadows = false;
-
-                    int matCount = smr.sharedMaterials != null && smr.sharedMaterials.Length > 0 ? smr.sharedMaterials.Length : 1;
-                    Material[] ghostMats = new Material[matCount];
-                    for (int m = 0; m < matCount; m++)
-                    {
-                        ghostMats[m] = ghostMat;
-                    }
-                    ghostSmr.sharedMaterials = ghostMats;
-                }
-            }
-        }
-
-        /// <summary>
-        /// Hides the transparent ghost overlay when the building is deselected.
-        /// </summary>
-        private void HideGhostOverlay()
-        {
-            if (ghostOverlayRoot != null)
-            {
-                ghostOverlayRoot.SetActive(false);
-            }
-        }
-
-        /// <summary>
-        /// Selects this building and displays a duplicate transparent ghost overlay (ghostMaterial).
-        /// Original building materials remain intact so the building looks brightened and highlighted.
+        /// Selects this building and applies the selection shader material ONLY to this building's structural meshes.
+        /// Preserves the original materials in a cache and restores them upon Deselect.
         /// </summary>
         public void Select(Material fallbackMaterial = null)
         {
@@ -328,7 +326,7 @@ namespace EmpireBuilder.World
 
             if (matToApply != null)
             {
-                ShowGhostOverlay(matToApply);
+                ApplySelectionShader(matToApply);
             }
 
             OnAnyBuildingSelected?.Invoke(this);
@@ -336,17 +334,102 @@ namespace EmpireBuilder.World
         }
 
         /// <summary>
-        /// Deselects this building and hides the transparent ghost overlay.
+        /// Deselects this building and immediately restores original materials.
         /// </summary>
         public void Deselect()
         {
             if (!isSelected) return;
             isSelected = false;
 
-            HideGhostOverlay();
+            RestoreOriginalMaterials();
 
             OnAnyBuildingDeselected?.Invoke(this);
             OnStateChanged?.Invoke(this);
+        }
+
+        /// <summary>
+        /// Swaps materials on this building's architectural renderers to the selection shader material.
+        /// Does NOT touch parked vehicles, pedestrians, roads, sidewalks, or external props.
+        /// </summary>
+        private void ApplySelectionShader(Material shaderMat)
+        {
+            RestoreOriginalMaterials();
+
+            // 1. MeshRenderers
+            MeshRenderer[] meshRenderers = GetComponentsInChildren<MeshRenderer>(true);
+            foreach (var mr in meshRenderers)
+            {
+                if (mr == null || !IsStructuralBuildingRenderer(mr)) continue;
+
+                Material[] currentShared = mr.sharedMaterials;
+                if (currentShared == null || currentShared.Length == 0) continue;
+
+                // Cache original materials
+                if (!originalMaterials.ContainsKey(mr))
+                {
+                    originalMaterials[mr] = currentShared;
+                }
+
+                // Apply selection shader material to all sub-material slots
+                Material[] selectionMats = new Material[currentShared.Length];
+                for (int i = 0; i < selectionMats.Length; i++)
+                {
+                    selectionMats[i] = shaderMat;
+                }
+                mr.sharedMaterials = selectionMats;
+            }
+
+            // 2. SkinnedMeshRenderers (if any)
+            SkinnedMeshRenderer[] skinnedRenderers = GetComponentsInChildren<SkinnedMeshRenderer>(true);
+            foreach (var smr in skinnedRenderers)
+            {
+                if (smr == null || !IsStructuralBuildingRenderer(smr)) continue;
+
+                Material[] currentShared = smr.sharedMaterials;
+                if (currentShared == null || currentShared.Length == 0) continue;
+
+                if (!originalSkinnedMaterials.ContainsKey(smr))
+                {
+                    originalSkinnedMaterials[smr] = currentShared;
+                }
+
+                Material[] selectionMats = new Material[currentShared.Length];
+                for (int i = 0; i < selectionMats.Length; i++)
+                {
+                    selectionMats[i] = shaderMat;
+                }
+                smr.sharedMaterials = selectionMats;
+            }
+        }
+
+        /// <summary>
+        /// Restores original materials to all previously highlighted renderers.
+        /// </summary>
+        private void RestoreOriginalMaterials()
+        {
+            foreach (var kvp in originalMaterials)
+            {
+                if (kvp.Key != null && kvp.Value != null)
+                {
+                    kvp.Key.sharedMaterials = kvp.Value;
+                }
+            }
+            originalMaterials.Clear();
+
+            foreach (var kvp in originalSkinnedMaterials)
+            {
+                if (kvp.Key != null && kvp.Value != null)
+                {
+                    kvp.Key.sharedMaterials = kvp.Value;
+                }
+            }
+            originalSkinnedMaterials.Clear();
+
+            if (ghostOverlayRoot != null)
+            {
+                Destroy(ghostOverlayRoot);
+                ghostOverlayRoot = null;
+            }
         }
 
         /// <summary>

@@ -95,12 +95,54 @@ namespace EmpireBuilder.World
 
         #region City Buildings Auto-Discovery & Initialization
         /// <summary>
+        /// Checks whether a GameObject name represents a sector root container or utility hierarchy
+        /// that must NEVER be treated as a building or receive PropertyBuilding.
+        /// </summary>
+        public static bool IsSectorOrContainer(string name)
+        {
+            if (string.IsNullOrEmpty(name)) return false;
+            string n = name.Trim().ToLowerInvariant();
+            return n == "buildings" ||
+                   n == "hotel zone" ||
+                   n.StartsWith("demonstration") ||
+                   n.StartsWith("roadnetwork") ||
+                   n.StartsWith("ai waypoints") ||
+                   n == "terrain" ||
+                   n == "environment" ||
+                   n == "gameplay" ||
+                   n.Contains("canvas") ||
+                   n.Contains("camera") ||
+                   n.Contains("light") ||
+                   n.Contains("volume") ||
+                   n.Contains("manager") ||
+                   n.Contains("eventsystem");
+        }
+
+        /// <summary>
         /// Scans all game objects in the city and attaches/configures PropertyBuilding
         /// and BoxColliders so that every house, apartment, restaurant, stadium, and taxi station
         /// is fully touchable and interactive.
         /// </summary>
         public void InitializeCityBuildings()
         {
+            // First, strip any accidental PropertyBuilding or BoxCollider from sector roots
+            string[] sectorNames = new string[]
+            {
+                "Buildings", "Hotel Zone", "Demonstration", "Demonstration (1)",
+                "Demonstration (2)", "Demonstration (3)", "RoadNetwork", "AI Waypoints for character", "Terrain"
+            };
+            foreach (var sName in sectorNames)
+            {
+                GameObject sObj = GameObject.Find(sName);
+                if (sObj != null)
+                {
+                    PropertyBuilding pb = sObj.GetComponent<PropertyBuilding>();
+                    if (pb != null) Destroy(pb);
+                    BoxCollider bc = sObj.GetComponent<BoxCollider>();
+                    if (bc != null) Destroy(bc);
+                }
+            }
+
             Transform[] allTransforms = UnityEngine.Object.FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             int registeredCount = 0;
 
@@ -108,7 +150,7 @@ namespace EmpireBuilder.World
             {
                 if (t == null) continue;
 
-                // Check if this object represents a recognized building
+                // Check if this object represents a recognized individual building
                 if (IsBuildingObject(t, out string friendlyName, out PropertyType pType, out double price, out double dailyRent, out double taxiFee, out double taxiFare, out string desc))
                 {
                     // Ensure PropertyBuilding component
@@ -134,11 +176,16 @@ namespace EmpireBuilder.World
                 }
             }
 
-            // Also guarantee all pre-existing PropertyBuildings have active colliders
+            // Also guarantee all pre-existing valid PropertyBuildings have active colliders
             PropertyBuilding[] existingPbs = UnityEngine.Object.FindObjectsByType<PropertyBuilding>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             foreach (var pb in existingPbs)
             {
                 if (pb == null) continue;
+                if (IsSectorOrContainer(pb.gameObject.name))
+                {
+                    Destroy(pb);
+                    continue;
+                }
                 pb.EnsureCollider();
                 if (defaultSelectionMaterial != null && pb.SelectionShaderMaterial == null)
                 {
@@ -146,7 +193,7 @@ namespace EmpireBuilder.World
                 }
             }
 
-            Debug.Log($"[BuildingInteractionManager] Initialized {registeredCount} interactive buildings across the city (Total PropertyBuildings: {existingPbs.Length}).");
+            Debug.Log($"[BuildingInteractionManager] Initialized {registeredCount} interactive buildings across the city.");
         }
 
         public static bool IsBuildingObject(Transform t, out string friendlyName, out PropertyType pType, out double price, out double dailyRent, out double taxiFee, out double taxiFare, out string desc)
@@ -159,34 +206,53 @@ namespace EmpireBuilder.World
             taxiFare = 450;
             desc = "A prominent real estate asset in Capital Kingdom.";
 
-            // Ignore vehicles, roads, rails, trees, props, UI
-            string n = t.name;
-            string parentName = t.parent != null ? t.parent.name : "";
+            if (t == null) return false;
 
-            if (n.StartsWith("road_") || n.StartsWith("Tile") || n.StartsWith("Set_B_") || n.StartsWith("Bush_") ||
-                n.StartsWith("Palm_") || n.StartsWith("Tree_") || n.StartsWith("Trash_") || n.StartsWith("Spotlight_") ||
-                n.StartsWith("traffic_light_") || n.StartsWith("Car_") || n.StartsWith("Vehicle_") || n.StartsWith("Train") ||
-                n.StartsWith("Waypoint") || n.StartsWith("RoadNetwork") || n.StartsWith("Rail") || n.Contains("Canvas") ||
-                n.Contains("Camera") || n.Contains("Light") || n.Contains("Volume"))
+            string n = t.name;
+
+            // 1. Immediately reject sector folders, containers, UI canvas, and non-building scene roots
+            if (IsSectorOrContainer(n)) return false;
+            if (t.GetComponentInParent<Canvas>() != null) return false;
+
+            // 2. Reject UI elements, roads, tiles, vehicles, characters, vegetation, props, particles
+            if (n.Contains("Section") || n.Contains("Modal") || n.Contains("Button") ||
+                n.Contains("Text") || n.Contains("Panel") || n.Contains("Header") ||
+                n.Contains("Stats") || n.Contains("Title") || n.Contains("Card") ||
+                n.Contains("Toast") || n.Contains("Image") || n.Contains("Placeholder"))
             {
                 return false;
             }
 
-            // Only inspect roots or direct children of sectors/landmarks
-            bool isEligibleHierarchy = t.parent == null ||
-                parentName.Contains("Hotel Zone") ||
-                parentName.Contains("Demonstration") ||
-                parentName.Contains("Station") ||
-                parentName.Contains("Buildings") ||
-                parentName.Contains("Building") ||
-                t.GetComponent<PropertyBuilding>() != null;
-
-            if (!isEligibleHierarchy) return false;
-
-            // 1. Taxi Station
-            if (n.Contains("Texi Station") || n.Contains("Taxi Station") || n.Equals("Texi Station"))
+            if (n.StartsWith("road_") || n.StartsWith("Road") || n.StartsWith("Tile") || n.StartsWith("Set_B_") ||
+                n.StartsWith("Bush_") || n.StartsWith("Palm_") || n.StartsWith("Tree_") || n.StartsWith("Trash_") ||
+                n.StartsWith("Spotlight_") || n.StartsWith("traffic_light_") || n.StartsWith("Car_") ||
+                n.StartsWith("Vehicle_") || n.StartsWith("Train") || n.StartsWith("Rail") || n.StartsWith("Straight rail") ||
+                n.StartsWith("Bus_Stop") || n.StartsWith("Signboard") || n.StartsWith("Billboard") ||
+                n.StartsWith("Fountain") || n.StartsWith("Van") || n.StartsWith("Taxi") || n.StartsWith("AI Character") ||
+                n.StartsWith("Smoke") || n.StartsWith("Waypoint") || n.Contains("Marker") || n.Contains("Particle") ||
+                n.Contains("Car") || n.Contains("Vehicle") || n.Contains("Train") || n.Contains("Rail") || n.Contains("Spawn Point"))
             {
-                friendlyName = "City Taxi Central Station";
+                return false;
+            }
+
+            // 3. Do not register sub-nodes if an ancestor is already a registered or recognizable building
+            Transform p = t.parent;
+            while (p != null)
+            {
+                if (IsSectorOrContainer(p.name)) break;
+                if (p.GetComponent<PropertyBuilding>() != null || IsKnownBuildingName(p.name))
+                {
+                    return false;
+                }
+                p = p.parent;
+            }
+
+            // 4. Match specific known building types
+            // 4.1 Taxi Station
+            if (n.Contains("Texi Station") || n.Contains("Taxi Station"))
+            {
+                int num = n.Contains("(1)") ? 2 : 1;
+                friendlyName = $"City Taxi Central Station #{num}";
                 pType = PropertyType.TaxiStation;
                 price = 35000;
                 dailyRent = 1200;
@@ -196,8 +262,8 @@ namespace EmpireBuilder.World
                 return true;
             }
 
-            // 2. Stadium
-            if (n.Contains("Stadium") || n.Contains("Building_Stadium"))
+            // 4.2 Stadium
+            if (n.Contains("Stadium"))
             {
                 friendlyName = "Grand Olympic Stadium";
                 pType = PropertyType.Stadium;
@@ -207,7 +273,7 @@ namespace EmpireBuilder.World
                 return true;
             }
 
-            // 3. Police Station
+            // 4.3 Police Station
             if (n.Contains("Police Station") || n.Contains("Police_Station"))
             {
                 friendlyName = "Metropolitan Police HQ";
@@ -218,7 +284,7 @@ namespace EmpireBuilder.World
                 return true;
             }
 
-            // 4. Hospital
+            // 4.4 Hospital
             if (n.Contains("Hospital"))
             {
                 friendlyName = "Capital General Hospital";
@@ -229,10 +295,13 @@ namespace EmpireBuilder.World
                 return true;
             }
 
-            // 5. Restaurant / Cafe
+            // 4.5 Restaurant / Cafe
             if (n.Contains("Cafe") || n.Contains("Restaurant"))
             {
-                friendlyName = n.Contains("2") ? "Sunset Bistro & Lounge" : "Downtown Espresso Cafe";
+                if (n.Contains("1")) friendlyName = "Downtown Espresso Cafe";
+                else if (n.Contains("2")) friendlyName = "Sunset Bistro & Lounge";
+                else friendlyName = "Metropolitan Coffee & Dining";
+
                 pType = PropertyType.Restaurant;
                 price = 22000;
                 dailyRent = 780;
@@ -240,7 +309,7 @@ namespace EmpireBuilder.World
                 return true;
             }
 
-            // 6. Market / Shop
+            // 4.6 Market / Shop
             if (n.Contains("Market") || n.Contains("Shop") || n.Contains("Store"))
             {
                 friendlyName = "Fresh Town Supermarket";
@@ -251,10 +320,11 @@ namespace EmpireBuilder.World
                 return true;
             }
 
-            // 7. Gas Station
+            // 4.7 Gas Station
             if (n.Contains("Gas Station") || n.Contains("Building_Gas Station"))
             {
-                friendlyName = "Express Service & Fuel Station";
+                int num = n.Contains("(1)") ? 2 : 1;
+                friendlyName = $"Express Service & Fuel Station #{num}";
                 pType = PropertyType.Commercial;
                 price = 28000;
                 dailyRent = 950;
@@ -262,7 +332,7 @@ namespace EmpireBuilder.World
                 return true;
             }
 
-            // 8. School
+            // 4.8 School
             if (n.Contains("School"))
             {
                 friendlyName = "Capital City Academy";
@@ -273,7 +343,7 @@ namespace EmpireBuilder.World
                 return true;
             }
 
-            // 9. Factory
+            // 4.9 Factory
             if (n.Contains("Factory") || n.Contains("Building_Factory"))
             {
                 friendlyName = "Capital Industrial Factory";
@@ -284,8 +354,8 @@ namespace EmpireBuilder.World
                 return true;
             }
 
-            // 10. Workshop
-            if (n.Contains("Workshop"))
+            // 4.10 Standalone Workshop (not inside Texi Station)
+            if (n.Contains("Workshop") && (t.parent == null || !t.parent.name.Contains("Station")))
             {
                 friendlyName = "Precision Machine Workshop";
                 pType = PropertyType.Industrial;
@@ -295,7 +365,7 @@ namespace EmpireBuilder.World
                 return true;
             }
 
-            // 11. Apartments & High Rises
+            // 4.11 Apartments & High Rises
             if (n.Contains("Eco_Building_Terrace"))
             {
                 friendlyName = "Eco Terrace Sky Suites";
@@ -333,8 +403,8 @@ namespace EmpireBuilder.World
                 return true;
             }
 
-            // 12. Houses
-            if (n.Contains("House") || n.Contains("Suburban") || n.Contains("Villa") || n.Contains("Cottage"))
+            // 4.12 Houses
+            if (n.Contains("Rental House") || n.Contains("House") || n.Contains("Suburban") || n.Contains("Villa") || n.Contains("Cottage"))
             {
                 friendlyName = "Suburban Family Residence";
                 pType = PropertyType.House;
@@ -344,8 +414,8 @@ namespace EmpireBuilder.World
                 return true;
             }
 
-            // 13. Blocks & Demo Blocks (Tiny Toony City)
-            if (n.Contains("Demo_Block") || n.Contains("Block") || n.Contains("Bocks"))
+            // 4.13 Blocks & Demo Blocks (Tiny Toony City)
+            if (n.Contains("Demo_Block"))
             {
                 int siblingIdx = t.GetSiblingIndex() + 1;
                 friendlyName = $"Metropolitan Block #{siblingIdx} Apartments";
@@ -356,43 +426,16 @@ namespace EmpireBuilder.World
                 return true;
             }
 
-            // 14. Hotel Zone Buildings
-            if (n.Contains("Hotel") || parentName.Contains("Hotel Zone"))
-            {
-                int siblingIdx = t.GetSiblingIndex() + 1;
-                friendlyName = $"Grand Royal Hotel & Suites #{siblingIdx}";
-                pType = PropertyType.Commercial;
-                price = 65000;
-                dailyRent = 2200;
-                desc = "Luxurious metropolitan hotel complex featuring executive suites and residential flats for rent.";
-                return true;
-            }
-
-            // 15. Demonstration District Buildings
-            if (parentName.Contains("Demonstration") || n.Contains("Demonstration"))
-            {
-                int siblingIdx = t.GetSiblingIndex() + 1;
-                friendlyName = $"Capital Plaza District #{siblingIdx}";
-                pType = PropertyType.Apartment;
-                price = 32000;
-                dailyRent = 1100;
-                desc = "Modern commercial and residential district with multiple apartments and units for rent.";
-                return true;
-            }
-
-            // 16. General Buildings in Sector
-            if (n.Contains("Building") || parentName.Contains("Buildings"))
-            {
-                int siblingIdx = t.GetSiblingIndex() + 1;
-                friendlyName = $"Capital City Building #{siblingIdx}";
-                pType = PropertyType.Apartment;
-                price = 28000;
-                dailyRent = 950;
-                desc = "Prime city real estate property featuring buyable flats and reliable daily rental income.";
-                return true;
-            }
-
             return false;
+        }
+
+        private static bool IsKnownBuildingName(string name)
+        {
+            if (string.IsNullOrEmpty(name)) return false;
+            return name.Contains("Station") || name.Contains("Stadium") || name.Contains("Hospital") ||
+                   name.Contains("Cafe") || name.Contains("Restaurant") || name.Contains("Market") ||
+                   name.Contains("Shop") || name.Contains("School") || name.Contains("Factory") ||
+                   name.Contains("Eco_Building") || name.Contains("House") || name.Contains("Demo_Block");
         }
         #endregion
 
@@ -485,23 +528,33 @@ namespace EmpireBuilder.World
             if (Physics.Raycast(ray, out RaycastHit hit, maxRayDistance, raycastMask))
             {
                 PropertyBuilding hitBuilding = hit.collider.GetComponentInParent<PropertyBuilding>();
+
+                // If hitBuilding was found on a sector container, ignore it
+                if (hitBuilding != null && IsSectorOrContainer(hitBuilding.gameObject.name))
+                {
+                    hitBuilding = null;
+                }
+
                 if (hitBuilding == null)
                 {
                     Transform curr = hit.collider.transform;
                     while (curr != null)
                     {
+                        if (IsSectorOrContainer(curr.name)) break;
+
                         if (IsBuildingObject(curr, out string fName, out PropertyType pType, out double pr, out double rent, out double tFee, out double tFare, out string d))
                         {
                             hitBuilding = curr.GetComponent<PropertyBuilding>() ?? curr.gameObject.AddComponent<PropertyBuilding>();
                             hitBuilding.SetConfig(fName, pType, pr, rent, d);
                             if (pType == PropertyType.TaxiStation) hitBuilding.SetTaxiConfig(tFee, tFare);
                             if (defaultSelectionMaterial != null && hitBuilding.SelectionShaderMaterial == null) hitBuilding.SetSelectionMaterial(defaultSelectionMaterial);
+                            hitBuilding.EnsureCollider();
                             break;
                         }
                         curr = curr.parent;
                     }
                 }
-                if (hitBuilding != null)
+                if (hitBuilding != null && !IsSectorOrContainer(hitBuilding.gameObject.name))
                 {
                     SelectBuilding(hitBuilding);
                     return;

@@ -1219,6 +1219,24 @@ namespace EmpireBuilder.Editor
             EditorUtility.SetDirty(bimObj);
 
             // 5. Statically Attach and Configure PropertyBuilding to Every Building in the Scene
+            string[] sectorNames = new string[]
+            {
+                "Buildings", "Hotel Zone", "Demonstration", "Demonstration (1)",
+                "Demonstration (2)", "Demonstration (3)", "RoadNetwork", "AI Waypoints for character", "Terrain"
+            };
+            foreach (var sName in sectorNames)
+            {
+                GameObject sObj = GameObject.Find(sName);
+                if (sObj != null)
+                {
+                    var pb = sObj.GetComponent<PropertyBuilding>();
+                    if (pb != null) UnityEngine.Object.DestroyImmediate(pb);
+                    var bc = sObj.GetComponent<BoxCollider>();
+                    if (bc != null) UnityEngine.Object.DestroyImmediate(bc);
+                    EditorUtility.SetDirty(sObj);
+                }
+            }
+
             int buildingsConfigured = 0;
             var allTransforms = UnityEngine.Object.FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             foreach (var t in allTransforms)
