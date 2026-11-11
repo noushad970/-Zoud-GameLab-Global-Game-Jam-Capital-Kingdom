@@ -434,15 +434,22 @@ namespace EmpireBuilder.World
 
         /// <summary>
         /// Player purchases this building. Deducts cash and grants ownership.
+        /// If player already owns some flats in this building, the price is discounted accordingly.
         /// </summary>
         public bool BuyProperty()
         {
             if (isOwned) return false;
 
-            double currentCash = GetPlayerCash();
-            if (currentCash < purchasePrice)
+            double actualPrice = purchasePrice;
+            if (hasFlats && flatsOwned > 0 && flatsOwned < totalFlats)
             {
-                Debug.LogWarning($"[PropertyBuilding] Cannot afford {propertyName}. Cost: ${purchasePrice:N0}, Cash: ${currentCash:N0}");
+                actualPrice = System.Math.Max(0, purchasePrice - (flatsOwned * flatPurchasePrice));
+            }
+
+            double currentCash = GetPlayerCash();
+            if (currentCash < actualPrice)
+            {
+                Debug.LogWarning($"[PropertyBuilding] Cannot afford {propertyName}. Cost: ${actualPrice:N0}, Cash: ${currentCash:N0}");
                 return false;
             }
 
@@ -451,7 +458,7 @@ namespace EmpireBuilder.World
             if (GameManager.Instance != null && GameManager.Instance.Economy != null)
             {
                 bool success = GameManager.Instance.Economy.ApplyTransaction(
-                    -purchasePrice,
+                    -actualPrice,
                     TransactionCategory.Purchase,
                     $"Purchased {propertyName}",
                     currentDay
@@ -460,14 +467,18 @@ namespace EmpireBuilder.World
             }
             else
             {
-                DeductPlayerCashFallback(purchasePrice);
+                DeductPlayerCashFallback(actualPrice);
             }
 
             isOwned = true;
+            if (hasFlats)
+            {
+                flatsOwned = totalFlats; // Owning the building owns all flats
+            }
             rentAvailableToCollect = true;
             SaveState();
 
-            Debug.Log($"[PropertyBuilding] Player bought {propertyName} for ${purchasePrice:N0}!");
+            Debug.Log($"[PropertyBuilding] Player bought {propertyName} for ${actualPrice:N0}!");
             OnStateChanged?.Invoke(this);
             return true;
         }
@@ -488,7 +499,7 @@ namespace EmpireBuilder.World
             double currentCash = GetPlayerCash();
             if (currentCash < flatPurchasePrice)
             {
-                message = $"Insufficient funds! You need ${flatPurchasePrice:N0} to buy Flat #{flatsOwned + 1}.";
+                message = $"Insufficient funds! You need ${flatPurchasePrice:N0} to buy Flat #{flatsOwned + 1}. Current cash: ${currentCash:N0}";
                 return false;
             }
 
@@ -501,7 +512,11 @@ namespace EmpireBuilder.World
                     $"Purchased Flat #{flatsOwned + 1} in {propertyName}",
                     currentDay
                 );
-                if (!success) return false;
+                if (!success)
+                {
+                    message = $"Transaction failed for Flat #{flatsOwned + 1}.";
+                    return false;
+                }
             }
             else
             {
@@ -514,7 +529,6 @@ namespace EmpireBuilder.World
                 isOwned = true;
             }
 
-            rentAvailableToCollect = true;
             SaveState();
             message = $"Purchased Flat #{flatsOwned} (of {totalFlats}) in {propertyName} for ${flatPurchasePrice:N0}!";
             Debug.Log($"[PropertyBuilding] {message}");
@@ -524,7 +538,7 @@ namespace EmpireBuilder.World
 
         /// <summary>
         /// Leases / gives rent for an owned flat to a tenant.
-        /// Once leased, the tenant pays daily flat rent!
+        /// Once leased, tenant pays initial move-in rent immediately, and daily rent thereafter!
         /// </summary>
         public bool GiveRentForFlat(out string message)
         {
@@ -542,8 +556,27 @@ namespace EmpireBuilder.World
             }
 
             flatsRentedOut++;
+
+            // Tenant moves in and pays initial rent deposit immediately!
+            double moveInPayment = flatDailyRent;
+            int currentDay = GetCurrentDay();
+            if (GameManager.Instance != null && GameManager.Instance.Economy != null)
+            {
+                GameManager.Instance.Economy.ApplyTransaction(
+                    moveInPayment,
+                    TransactionCategory.Revenue,
+                    $"Tenant move-in rent for Flat #{flatsRentedOut} in {propertyName}",
+                    currentDay
+                );
+            }
+            else
+            {
+                AddPlayerCashFallback(moveInPayment);
+            }
+
+            rentAvailableToCollect = true;
             SaveState();
-            message = $"Flat #{flatsRentedOut} leased to a tenant! Generates +${flatDailyRent:N0}/day rent.";
+            message = $"Flat #{flatsRentedOut} leased to a tenant! Received +${moveInPayment:N0} move-in rent (+${flatDailyRent:N0}/day).";
             Debug.Log($"[PropertyBuilding] {message}");
             OnStateChanged?.Invoke(this);
             return true;

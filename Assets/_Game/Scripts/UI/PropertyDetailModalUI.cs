@@ -110,6 +110,119 @@ namespace EmpireBuilder.UI
 
         private void Start()
         {
+            AttachButtonListeners();
+
+            if (toastRoot != null)
+            {
+                toastRoot.SetActive(false);
+            }
+
+            // Initially closed until a building is tapped
+            if (panelRoot != null)
+            {
+                panelRoot.SetActive(false);
+            }
+        }
+
+        private void OnDestroy()
+        {
+            if (currentBuilding != null)
+            {
+                currentBuilding.OnStateChanged -= HandleBuildingStateChanged;
+            }
+        }
+
+        private void EnsureBindings()
+        {
+            if (panelRoot == null && transform.childCount > 0)
+            {
+                panelRoot = transform.GetChild(0).gameObject;
+            }
+
+            Transform card = transform.Find("ModalCard");
+            if (card == null && panelRoot != null)
+            {
+                card = panelRoot.transform.Find("ModalCard") ?? panelRoot.transform;
+            }
+
+            if (flatSectionRoot == null && card != null)
+            {
+                var t = card.Find("FlatSection");
+                if (t != null) flatSectionRoot = t.gameObject;
+            }
+            if (flatSectionRoot != null)
+            {
+                if (flatsCountText == null)
+                    flatsCountText = flatSectionRoot.transform.Find("FlatsCount")?.GetComponent<TextMeshProUGUI>();
+                if (flatIncomeText == null)
+                    flatIncomeText = flatSectionRoot.transform.Find("FlatIncome")?.GetComponent<TextMeshProUGUI>();
+                if (buyFlatButton == null)
+                    buyFlatButton = flatSectionRoot.transform.Find("BuyFlatButton")?.GetComponent<Button>();
+                if (buyFlatButtonText == null && buyFlatButton != null)
+                    buyFlatButtonText = buyFlatButton.transform.Find("Text")?.GetComponent<TextMeshProUGUI>();
+                if (giveRentButton == null)
+                    giveRentButton = flatSectionRoot.transform.Find("GiveRentButton")?.GetComponent<Button>();
+                if (giveRentButtonText == null && giveRentButton != null)
+                    giveRentButtonText = giveRentButton.transform.Find("Text")?.GetComponent<TextMeshProUGUI>();
+            }
+
+            if (restaurantSectionRoot == null && card != null)
+            {
+                var t = card.Find("RestaurantSection");
+                if (t != null) restaurantSectionRoot = t.gameObject;
+            }
+            if (restaurantSectionRoot != null)
+            {
+                if (diningStatusText == null)
+                    diningStatusText = restaurantSectionRoot.transform.Find("DiningStatus")?.GetComponent<TextMeshProUGUI>();
+                if (drinkButton == null)
+                    drinkButton = restaurantSectionRoot.transform.Find("DrinkButton")?.GetComponent<Button>();
+                if (drinkButtonText == null && drinkButton != null)
+                    drinkButtonText = drinkButton.transform.Find("Text")?.GetComponent<TextMeshProUGUI>();
+                if (eatButton == null)
+                    eatButton = restaurantSectionRoot.transform.Find("EatButton")?.GetComponent<Button>();
+                if (eatButtonText == null && eatButton != null)
+                    eatButtonText = eatButton.transform.Find("Text")?.GetComponent<TextMeshProUGUI>();
+            }
+
+            if (stadiumSectionRoot == null && card != null)
+            {
+                var t = card.Find("StadiumSection");
+                if (t != null) stadiumSectionRoot = t.gameObject;
+            }
+            if (stadiumSectionRoot != null)
+            {
+                if (stadiumStatsText == null)
+                    stadiumStatsText = stadiumSectionRoot.transform.Find("StadiumStats")?.GetComponent<TextMeshProUGUI>();
+                if (requestMatchButton == null)
+                    requestMatchButton = stadiumSectionRoot.transform.Find("RequestMatchButton")?.GetComponent<Button>();
+                if (requestMatchButtonText == null && requestMatchButton != null)
+                    requestMatchButtonText = requestMatchButton.transform.Find("Text")?.GetComponent<TextMeshProUGUI>();
+            }
+
+            if (collectRentButton == null && card != null)
+            {
+                collectRentButton = card.Find("CollectRentButton")?.GetComponent<Button>();
+                if (collectRentButton != null && collectRentButtonText == null)
+                {
+                    collectRentButtonText = collectRentButton.transform.Find("Text")?.GetComponent<TextMeshProUGUI>();
+                }
+            }
+
+            if (buyPropertyButton == null && card != null)
+            {
+                buyPropertyButton = card.Find("BuyPropertyButton")?.GetComponent<Button>();
+                if (buyPropertyButton != null && buyButtonText == null)
+                {
+                    buyButtonText = buyPropertyButton.transform.Find("Text")?.GetComponent<TextMeshProUGUI>();
+                }
+            }
+        }
+
+        private void AttachButtonListeners()
+        {
+            EnsureBindings();
+
             if (closeButton != null)
             {
                 closeButton.onClick.RemoveAllListeners();
@@ -160,33 +273,6 @@ namespace EmpireBuilder.UI
                 requestMatchButton.onClick.RemoveAllListeners();
                 requestMatchButton.onClick.AddListener(OnRequestMatchClicked);
             }
-
-            if (toastRoot != null)
-            {
-                toastRoot.SetActive(false);
-            }
-
-            // Initially closed until a building is tapped
-            if (panelRoot != null)
-            {
-                panelRoot.SetActive(false);
-            }
-        }
-
-        private void OnDestroy()
-        {
-            if (currentBuilding != null)
-            {
-                currentBuilding.OnStateChanged -= HandleBuildingStateChanged;
-            }
-        }
-
-        private void EnsureBindings()
-        {
-            if (panelRoot == null && transform.childCount > 0)
-            {
-                panelRoot = transform.GetChild(0).gameObject;
-            }
         }
 
         public void Open(PropertyBuilding building)
@@ -204,6 +290,8 @@ namespace EmpireBuilder.UI
 
             currentBuilding = building;
             currentBuilding.OnStateChanged += HandleBuildingStateChanged;
+
+            AttachButtonListeners();
 
             if (panelRoot != null)
             {
@@ -267,17 +355,37 @@ namespace EmpireBuilder.UI
                 categoryBadgeBg.color = GetCategoryColor(currentBuilding.PropertyType);
             }
 
-            // 3. Status Badge (Owned vs For Sale)
+            // 3. Status Badge (Owned vs For Sale vs Flats Owned)
             if (statusBadgeText != null)
             {
-                statusBadgeText.text = currentBuilding.IsOwned ? "OWNED BY YOU" : "AVAILABLE FOR SALE";
+                if (currentBuilding.IsOwned)
+                {
+                    statusBadgeText.text = "OWNED BY YOU";
+                }
+                else if (currentBuilding.FlatsOwned > 0)
+                {
+                    statusBadgeText.text = $"YOU OWN {currentBuilding.FlatsOwned}/{currentBuilding.TotalFlats} FLATS";
+                }
+                else
+                {
+                    statusBadgeText.text = "AVAILABLE FOR SALE";
+                }
             }
 
             if (statusBadgeBg != null)
             {
-                statusBadgeBg.color = currentBuilding.IsOwned
-                    ? new Color(0.18f, 0.75f, 0.44f, 1f) // Emerald Green
-                    : new Color(0.96f, 0.65f, 0.15f, 1f); // Warm Gold
+                if (currentBuilding.IsOwned)
+                {
+                    statusBadgeBg.color = new Color(0.18f, 0.75f, 0.44f, 1f); // Emerald Green
+                }
+                else if (currentBuilding.FlatsOwned > 0)
+                {
+                    statusBadgeBg.color = new Color(0.2f, 0.62f, 0.95f, 1f); // Sky Blue
+                }
+                else
+                {
+                    statusBadgeBg.color = new Color(0.96f, 0.65f, 0.15f, 1f); // Warm Gold
+                }
             }
 
             // 4. Financial Stats
@@ -293,7 +401,12 @@ namespace EmpireBuilder.UI
 
             // 5. Buy Property Button State
             double currentCash = GetPlayerCash();
-            bool canAfford = currentCash >= currentBuilding.PurchasePrice;
+            double effectiveBuildingPrice = currentBuilding.PurchasePrice;
+            if (currentBuilding.HasFlats && currentBuilding.FlatsOwned > 0 && !currentBuilding.IsOwned)
+            {
+                effectiveBuildingPrice = System.Math.Max(0, currentBuilding.PurchasePrice - (currentBuilding.FlatsOwned * currentBuilding.FlatPurchasePrice));
+            }
+            bool canAfford = currentCash >= effectiveBuildingPrice;
 
             if (buyPropertyButton != null)
             {
@@ -308,9 +421,10 @@ namespace EmpireBuilder.UI
                     buyPropertyButton.interactable = canAfford;
                     if (buyButtonText != null)
                     {
-                        buyButtonText.text = canAfford
-                            ? $"BUY PROPERTY (${currentBuilding.PurchasePrice:N0})"
-                            : $"INSUFFICIENT FUNDS (${currentBuilding.PurchasePrice:N0})";
+                        string label = currentBuilding.FlatsOwned > 0
+                            ? $"BUY REST OF BUILDING (${effectiveBuildingPrice:N0})"
+                            : $"BUY PROPERTY (${effectiveBuildingPrice:N0})";
+                        buyButtonText.text = canAfford ? label : $"INSUFFICIENT FUNDS (${effectiveBuildingPrice:N0})";
                     }
                     if (buyButtonBg != null)
                     {
@@ -324,16 +438,21 @@ namespace EmpireBuilder.UI
             // 6. Collect Rent Button
             if (collectRentButton != null)
             {
-                bool showCollect = currentBuilding.IsOwned;
+                double buildingRent = currentBuilding.IsOwned ? currentBuilding.DailyRentIncome : 0;
+                double flatRent = currentBuilding.TotalDailyFlatRentIncome;
+                double totalDue = buildingRent + flatRent;
+
+                bool showCollect = currentBuilding.IsOwned || currentBuilding.FlatsRentedOut > 0;
                 collectRentButton.gameObject.SetActive(showCollect);
                 if (showCollect)
                 {
-                    collectRentButton.interactable = currentBuilding.RentAvailableToCollect;
+                    bool canCollect = currentBuilding.RentAvailableToCollect && totalDue > 0;
+                    collectRentButton.interactable = canCollect;
                     if (collectRentButtonText != null)
                     {
-                        collectRentButtonText.text = currentBuilding.RentAvailableToCollect
-                            ? $"COLLECT RENT (+${currentBuilding.DailyRentIncome:N0})"
-                            : "RENT COLLECTED TODAY";
+                        collectRentButtonText.text = canCollect
+                            ? $"COLLECT RENT (+${totalDue:N0})"
+                            : (totalDue > 0 ? "RENT COLLECTED TODAY" : "NO RENT DUE");
                     }
                 }
             }
@@ -516,6 +635,7 @@ namespace EmpireBuilder.UI
             if (currentBuilding.GiveRentForFlat(out string msg))
             {
                 ShowToast(msg);
+                GamePlayHeaderUI.Instance?.UpdateMoneyDisplay();
                 RefreshUI();
             }
             else
