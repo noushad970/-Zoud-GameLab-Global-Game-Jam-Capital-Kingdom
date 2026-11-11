@@ -4,6 +4,7 @@ using EmpireBuilder.Economy;
 using EmpireBuilder.Maintenance;
 using EmpireBuilder.SaveLoad;
 using EmpireBuilder.Simulation;
+using EmpireBuilder.UI;
 using UnityEngine;
 
 namespace EmpireBuilder.Core
@@ -57,12 +58,38 @@ namespace EmpireBuilder.Core
             // Start new game by default if not loaded
             if (PlayerPrefs.GetInt("LoadOnStart", 0) == 1 && SaveService.HasSaveFile())
             {
-                PlayerPrefs.SetInt("LoadOnStart", 0);
                 LoadExistingGame();
             }
             else
             {
                 StartNewGame();
+            }
+        }
+
+        private void OnEnable()
+        {
+            UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoaded;
+        }
+
+        private void OnDisable()
+        {
+            UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
+        }
+
+        private void OnSceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
+        {
+            if (scene.name == "GamePlay")
+            {
+                EnsureServices();
+                if (PlayerPrefs.GetInt("LoadOnStart", 0) == 1 && SaveService.HasSaveFile())
+                {
+                    LoadExistingGame();
+                }
+                else if (PlayerPrefs.GetInt("LoadOnStart", 0) == 0)
+                {
+                    StartNewGame();
+                }
+                GamePlayHeaderUI.Instance?.UpdateMoneyDisplay();
             }
         }
 

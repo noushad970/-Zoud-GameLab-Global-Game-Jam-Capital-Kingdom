@@ -146,8 +146,17 @@ namespace EmpireBuilder.Traffic
         [Tooltip("Lateral shift speed when clearing traffic.")]
         [SerializeField] private float clearanceShiftSpeed = 5.2f;
 
+        [Header("3D Engine Audio")]
+        [SerializeField] private AudioSource engineAudioSource;
+        [SerializeField] private AudioClip engineAudioClip = null;
+        [Range(0f, 1f)]
+        [SerializeField] private float engineBaseVolume = 0.88f;
+        [SerializeField] private float minPitch = 0.82f;
+        [SerializeField] private float maxPitch = 1.35f;
+
         [SerializeField] private bool isReversing = false;
         [SerializeField] private float blockedByCarTimer = 0f;
+        private float playerWaitTimer = 0f;
         private float currentUnjamThreshold = 1.8f;
         private float reverseTimer = 0f;
         private float reverseSteerDirection = 1f;
@@ -199,6 +208,7 @@ namespace EmpireBuilder.Traffic
         private void Start()
         {
             targetSpeed = cruisingSpeed;
+            SetupEngineAudio();
         }
 
         private void Update()
@@ -208,7 +218,65 @@ namespace EmpireBuilder.Traffic
             UpdateSpeed();
             UpdateSteeringAndMovement();
             UpdateWheels();
+            UpdateEngineAudio();
             UpdateWatchdog();
+        }
+
+        private void SetupEngineAudio()
+        {
+            if (engineAudioSource == null) engineAudioSource = GetComponent<AudioSource>();
+            if (engineAudioSource == null) engineAudioSource = gameObject.AddComponent<AudioSource>();
+
+            engineAudioSource.spatialBlend = 1.0f; // Full 3D World Spatialized
+            engineAudioSource.minDistance = 6.0f;
+            engineAudioSource.maxDistance = 110.0f;
+            engineAudioSource.rolloffMode = AudioRolloffMode.Logarithmic;
+            engineAudioSource.loop = true;
+            engineAudioSource.playOnAwake = false;
+
+            if (engineAudioClip == null && EmpireBuilder.Audio.GameSoundManager.Instance != null)
+            {
+                engineAudioClip = EmpireBuilder.Audio.GameSoundManager.Instance.VehicleAccelerationSoundEffect ??
+                                  EmpireBuilder.Audio.GameSoundManager.Instance.VehicleSoundEffect;
+            }
+
+            if (engineAudioClip != null)
+            {
+                engineAudioSource.clip = engineAudioClip;
+                engineAudioSource.volume = engineBaseVolume;
+                if (!engineAudioSource.isPlaying) engineAudioSource.Play();
+            }
+        }
+
+        private void UpdateEngineAudio()
+        {
+            if (engineAudioSource == null) return;
+
+            if (engineAudioClip == null && EmpireBuilder.Audio.GameSoundManager.Instance != null)
+            {
+                engineAudioClip = EmpireBuilder.Audio.GameSoundManager.Instance.VehicleAccelerationSoundEffect ??
+                                  EmpireBuilder.Audio.GameSoundManager.Instance.VehicleSoundEffect;
+            }
+
+            if (engineAudioClip != null && engineAudioSource.clip != engineAudioClip)
+            {
+                engineAudioSource.clip = engineAudioClip;
+                if (!engineAudioSource.isPlaying) engineAudioSource.Play();
+            }
+
+            if (engineAudioSource.isPlaying)
+            {
+                float speedRatio = Mathf.Clamp01(Mathf.Abs(currentSpeed) / Mathf.Max(1.0f, cruisingSpeed));
+                bool isAccelerating = (currentState == AICarState.Accelerating || (currentSpeed < targetSpeed && targetSpeed > 0.5f));
+
+                // Boost volume and pitch dynamically on acceleration so user clearly hears the engine rev
+                float targetVol = isAccelerating ? engineBaseVolume : Mathf.Lerp(engineBaseVolume * 0.65f, engineBaseVolume, speedRatio);
+                float targetPitch = Mathf.Lerp(minPitch, maxPitch, speedRatio);
+                if (isAccelerating) targetPitch += 0.08f;
+
+                engineAudioSource.volume = Mathf.MoveTowards(engineAudioSource.volume, targetVol, 1.2f * Time.deltaTime);
+                engineAudioSource.pitch = Mathf.MoveTowards(engineAudioSource.pitch, targetPitch, 0.8f * Time.deltaTime);
+            }
         }
 
         private void OnDisable()
@@ -306,6 +374,12 @@ namespace EmpireBuilder.Traffic
 
                 if (isPlayer)
                 {
+                    // Only yield if player is actually inside the driving lane path width
+                    Vector3 toHit = (hit.point - transform.position);
+                    toHit.y = 0f;
+                    float lateralDist = Mathf.Abs(Vector3.Dot(toHit, transform.right));
+                    if (lateralDist > 1.35f) continue; // On sidewalk/curb, NOT in driving lane!
+
                     float dist = hit.distance;
                     if (dist < closestPlayerDist)
                     {
@@ -332,7 +406,6 @@ namespace EmpireBuilder.Traffic
             // Close proximity check at bumper for standing/crossing player
             if (detectedPlayer == null)
             {
-               // Collider[] closeCols = Physics.OverlapSphere(origin, sensorRadius + 0.4f, detectionLayerMask, QueryTriggerInteraction.Ignore);
                 Collider[] closeCols = Physics.OverlapSphere(origin, sensorRadius + 0.4f, detectionLayerMask, QueryTriggerInteraction.Collide);
                 for (int c = 0; c < closeCols.Length; c++)
                 {
@@ -340,6 +413,11 @@ namespace EmpireBuilder.Traffic
                     if (col == null || col.transform == transform || col.transform.IsChildOf(transform)) continue;
                     if (col.CompareTag("Player") || (playerLayer != -1 && col.gameObject.layer == playerLayer) || col.GetComponentInParent<AIPedestrianController>() != null)
                     {
+                        Vector3 toCol = (col.transform.position - transform.position);
+                        toCol.y = 0f;
+                        float lat = Mathf.Abs(Vector3.Dot(toCol, transform.right));
+                        if (lat > 1.35f) continue; // Outside car path
+
                         detectedPlayer = col.gameObject;
                         closestPlayerDist = Vector3.Distance(origin, col.transform.position);
                         break;
@@ -350,20 +428,37 @@ namespace EmpireBuilder.Traffic
             playerAhead = (closestPlayerDist <= playerDetectionDistance) ? detectedPlayer : null;
             distanceToPlayerAhead = closestPlayerDist;
 
-            // If player is in front of the vehicle, stop immediately until the player moves from the side
+            // If player is in front of the vehicle, yield with patience timer
             if (playerAhead != null)
             {
-                isStoppedForPlayer = true;
-                targetSpeed = 0f;
-                isBraking = true;
-                currentState = AICarState.Stopped;
-                blockedByCarTimer = 0f; // Do NOT reverse or execute unjam maneuver while yielding to player
-                targetEvasionOffset = 0f;
-                carAhead = null;
-                return;
+                playerWaitTimer += Time.deltaTime;
+                if (playerWaitTimer > 3.5f)
+                {
+                    // If blocked by player for > 3.5 seconds, gently creep past
+                    if (EmpireBuilder.Audio.GameSoundManager.Instance != null && playerWaitTimer > 4.0f)
+                    {
+                        EmpireBuilder.Audio.GameSoundManager.Instance.PlayVehicleHorn(transform.position);
+                    }
+                    targetSpeed = 1.8f;
+                    isBraking = false;
+                    currentState = AICarState.Cruising;
+                    isStoppedForPlayer = false;
+                }
+                else
+                {
+                    isStoppedForPlayer = true;
+                    targetSpeed = 0f;
+                    isBraking = true;
+                    currentState = AICarState.Stopped;
+                    blockedByCarTimer = 0f;
+                    targetEvasionOffset = 0f;
+                    carAhead = null;
+                    return;
+                }
             }
             else
             {
+                playerWaitTimer = 0f;
                 isStoppedForPlayer = false;
             }
 
@@ -650,7 +745,6 @@ namespace EmpireBuilder.Traffic
             toAdjusted.y = 0f;
             float distance = toAdjusted.magnitude;
 
-            if (distance > 0.05f)
             if (distance > 0.05f && !isStoppedForPlayer)
             {
                 Quaternion targetRotation = Quaternion.LookRotation(toAdjusted.normalized, Vector3.up);
@@ -666,10 +760,20 @@ namespace EmpireBuilder.Traffic
                 transform.position = clampedPos;
             }
 
-            // Waypoint arrival check against base lane waypoint
+            // Waypoint arrival check against base lane waypoint and adjusted target
             float distToBaseWaypoint = toBaseTarget.magnitude;
-            if (distToBaseWaypoint <= waypointArrivalDistance)
+            float distToAdjustedTarget = toAdjusted.magnitude;
+
+            // Check if car reached waypoint, reached adjusted target, or passed the waypoint plane
+            bool hasPassedWaypoint = Vector3.Dot(toBaseTarget, transform.forward) < 0f && distToBaseWaypoint < 4.2f;
+            bool arrivedAtAdjusted = distToAdjustedTarget <= waypointArrivalDistance;
+            bool arrivedAtBase = distToBaseWaypoint <= Mathf.Max(waypointArrivalDistance, Mathf.Abs(currentEvasionOffset) + 0.6f);
+
+            if (arrivedAtAdjusted || arrivedAtBase || hasPassedWaypoint)
             {
+                // Smoothly pull evasion offset back towards lane center when reaching a waypoint
+                currentEvasionOffset = Mathf.MoveTowards(currentEvasionOffset, 0f, 1.8f);
+                targetEvasionOffset = 0f;
                 AdvanceWaypoint();
             }
         }
@@ -730,18 +834,89 @@ namespace EmpireBuilder.Traffic
         private void UpdateWatchdog()
         {
             // If car has been motionless for too long, execute unjam maneuver to clear gridlock
-            if (Mathf.Abs(currentSpeed) < 0.2f && !isReversing)
+            if (Mathf.Abs(currentSpeed) < 0.25f && !isReversing)
             {
                 stuckTimer += Time.deltaTime;
-                if (stuckTimer > 5.0f)
+                if (stuckTimer > 3.0f && stuckTimer < 6.5f)
                 {
                     ExecuteTrafficClearanceManeuver();
+                }
+                else if (stuckTimer >= 6.5f)
+                {
+                    // Full recovery: snap back cleanly to nearest road waypoint in lane
+                    RecoverToNearestLaneWaypoint();
                     stuckTimer = 0f;
                 }
             }
             else
             {
-                stuckTimer = 0f;
+                stuckTimer = Mathf.Max(0f, stuckTimer - Time.deltaTime);
+            }
+        }
+
+        private void RecoverToNearestLaneWaypoint()
+        {
+            TrafficWaypointNode recoveryNode = null;
+            if (assignedRoadWaypoints != null && assignedRoadWaypoints.Count > 0)
+            {
+                float minDist = float.MaxValue;
+                foreach (var wp in assignedRoadWaypoints)
+                {
+                    if (wp == null) continue;
+                    float d = Vector3.Distance(transform.position, wp.Position);
+                    if (d < minDist)
+                    {
+                        minDist = d;
+                        recoveryNode = wp;
+                    }
+                }
+            }
+
+            if (recoveryNode == null && CityTrafficManager.Instance != null && CityTrafficManager.Instance.AllWaypoints != null)
+            {
+                float minDist = float.MaxValue;
+                foreach (var wp in CityTrafficManager.Instance.AllWaypoints)
+                {
+                    if (wp == null) continue;
+                    float d = Vector3.Distance(transform.position, wp.Position);
+                    if (d < minDist)
+                    {
+                        minDist = d;
+                        recoveryNode = wp;
+                    }
+                }
+            }
+
+            if (recoveryNode != null)
+            {
+                Vector3 targetPos = recoveryNode.Position;
+                targetPos.y = streetLevelY;
+                transform.position = targetPos;
+
+                TrafficWaypointNode nextNode = recoveryNode.GetRandomNextNode();
+                if (nextNode != null)
+                {
+                    Vector3 fwd = (nextNode.Position - targetPos);
+                    fwd.y = 0f;
+                    if (fwd.sqrMagnitude > 0.01f)
+                    {
+                        transform.rotation = Quaternion.LookRotation(fwd.normalized, Vector3.up);
+                    }
+                    currentWaypoint = nextNode;
+                }
+                else
+                {
+                    currentWaypoint = recoveryNode;
+                }
+
+                currentEvasionOffset = 0f;
+                targetEvasionOffset = 0f;
+                currentSpeed = cruisingSpeed * 0.5f;
+                isReversing = false;
+                carAhead = null;
+                playerAhead = null;
+                isBraking = false;
+                currentState = AICarState.Cruising;
             }
         }
         #endregion

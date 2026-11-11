@@ -38,7 +38,6 @@ namespace EmpireBuilder.UI
             if (resumeButton != null)
             {
                 resumeButton.onClick.AddListener(OnResumeClicked);
-                resumeButton.interactable = SaveService.HasSaveFile();
             }
 
             if (optionButton != null) optionButton.onClick.AddListener(OnOptionClicked);
@@ -56,6 +55,22 @@ namespace EmpireBuilder.UI
             {
                 volumeSlider.value = AudioListener.volume;
                 volumeSlider.onValueChanged.AddListener(val => AudioListener.volume = val);
+            }
+
+            RefreshMenuState();
+        }
+
+        private void OnEnable()
+        {
+            RefreshMenuState();
+        }
+
+        public void RefreshMenuState()
+        {
+            bool hasSave = SaveService.HasSaveFile();
+            if (resumeButton != null)
+            {
+                resumeButton.interactable = hasSave;
             }
 
             UpdateMoneyHeader();
@@ -80,13 +95,16 @@ namespace EmpireBuilder.UI
 
         private void OnStartGameClicked()
         {
+            // Fresh new game
             PlayerPrefs.SetInt("LoadOnStart", 0);
+            WebGLSaveManager.ClearSaveData();
             PlayerPrefs.Save();
             SceneManager.LoadScene(gamePlaySceneName);
         }
 
         private void OnResumeClicked()
         {
+            // Resume existing game
             PlayerPrefs.SetInt("LoadOnStart", 1);
             PlayerPrefs.Save();
             SceneManager.LoadScene(gamePlaySceneName);

@@ -177,11 +177,14 @@ namespace EmpireBuilder.World
         // Taxi Fleet Getters
         public int MaxRentableTaxis => maxRentableTaxis;
         public int CurrentlyRentedTaxis => currentlyRentedTaxis;
+        public int LastTaxiRentDay => lastTaxiRentDay;
         public IReadOnlyList<EmpireBuilder.Traffic.ActiveRentedTaxi> DeployedTaxis => deployedTaxis;
 
         // Stadium Match Getters
         public int MatchesHosted => matchesHosted;
         public double TotalMatchRevenue => totalMatchRevenue;
+
+        public double CalculateAvailableRent() => (isOwned ? dailyRentIncome : 0) + (flatsRentedOut * flatDailyRent);
 
         private void Awake()
         {
@@ -218,24 +221,55 @@ namespace EmpireBuilder.World
         }
 
         /// <summary>
-        /// Guarantees that the animated overhead 3D world-space indicator is present and positioned.
+        /// Guarantees that the animated overhead 3D world-space indicator is present.
+        /// Preserves any manual position set in the scene hierarchy.
         /// </summary>
         public void EnsureWorldIndicator()
         {
+            bool isNew = false;
             if (worldIndicator == null)
             {
-                worldIndicator = GetComponentInChildren<BuildingWorldIndicator>();
+                worldIndicator = GetComponentInChildren<BuildingWorldIndicator>(true);
+            }
+            if (worldIndicator == null)
+            {
+                Transform child = transform.Find("BuildingWorldIndicator");
+                if (child != null) worldIndicator = child.GetComponent<BuildingWorldIndicator>();
             }
             if (worldIndicator == null)
             {
                 GameObject indObj = new GameObject("BuildingWorldIndicator");
                 indObj.transform.SetParent(transform, false);
                 worldIndicator = indObj.AddComponent<BuildingWorldIndicator>();
+                isNew = true;
             }
 
-            Vector3 roofPos = GetRoofPosition();
-            worldIndicator.Setup(this, roofPos);
+            if (isNew)
+            {
+                Vector3 roofPos = GetRoofPosition();
+                worldIndicator.Setup(this, roofPos);
+            }
+            else
+            {
+                // Preserves custom position set by user in scene hierarchy!
+                worldIndicator.Setup(this);
+            }
         }
+
+#if UNITY_EDITOR
+        [ContextMenu("Build Static Indicator Under This Building")]
+        public void BuildStaticIndicatorInEditor()
+        {
+            EnsureWorldIndicator();
+            if (worldIndicator != null)
+            {
+                worldIndicator.EnsureUIHierarchy();
+                worldIndicator.RefreshVisuals();
+                UnityEditor.EditorUtility.SetDirty(worldIndicator.gameObject);
+                UnityEditor.EditorUtility.SetDirty(gameObject);
+            }
+        }
+#endif
 
         /// <summary>
         /// Calculates the local position directly above the rooftop of this building.
@@ -467,57 +501,76 @@ namespace EmpireBuilder.World
         }
 
         /// <summary>
-        /// Swaps materials on this building's architectural renderers to the selection shader material.
-        /// Does NOT touch parked vehicles, pedestrians, roads, sidewalks, or external props.
+        /// Creates an extra shader overlay layer on this building rather than replacing its original materials.
+        /// The original building textures and colors remain fully visible beneath the glowing shader overlay layer.
         /// </summary>
         private void ApplySelectionShader(Material shaderMat)
         {
+            // Clean up any existing overlay
+            if (ghostOverlayRoot != null)
+            {
+                Destroy(ghostOverlayRoot);
+                ghostOverlayRoot = null;
+            }
+
             RestoreOriginalMaterials();
 
-            // 1. MeshRenderers
+            if (shaderMat == null) return;
+
+            // Create an overlay root GameObject directly under this building
+            ghostOverlayRoot = new GameObject("_SelectionShader_ExtraLayer");
+            ghostOverlayRoot.transform.SetParent(transform, true);
+            ghostOverlayRoot.transform.position = transform.position;
+            ghostOverlayRoot.transform.rotation = transform.rotation;
+            ghostOverlayRoot.transform.localScale = Vector3.one;
+
+            // Clone each structural MeshRenderer as an extra shader overlay layer
             MeshRenderer[] meshRenderers = GetComponentsInChildren<MeshRenderer>(true);
             foreach (var mr in meshRenderers)
             {
                 if (mr == null || !IsStructuralBuildingRenderer(mr)) continue;
+                if (ghostOverlayRoot != null && mr.transform.IsChildOf(ghostOverlayRoot.transform)) continue;
 
-                Material[] currentShared = mr.sharedMaterials;
-                if (currentShared == null || currentShared.Length == 0) continue;
+                MeshFilter mf = mr.GetComponent<MeshFilter>();
+                if (mf == null || mf.sharedMesh == null) continue;
 
-                // Cache original materials
-                if (!originalMaterials.ContainsKey(mr))
-                {
-                    originalMaterials[mr] = currentShared;
-                }
+                GameObject overlayChild = new GameObject(mr.gameObject.name + "_ShaderLayer");
+                overlayChild.transform.SetParent(ghostOverlayRoot.transform, false);
+                overlayChild.transform.position = mr.transform.position;
+                overlayChild.transform.rotation = mr.transform.rotation;
+                // Match world scale with a slight 0.25% expansion to prevent Z-fighting and produce a glowing aura
+                overlayChild.transform.localScale = Vector3.Scale(mr.transform.lossyScale, new Vector3(1.0025f, 1.0025f, 1.0025f));
 
-                // Apply selection shader material to all sub-material slots
-                Material[] selectionMats = new Material[currentShared.Length];
-                for (int i = 0; i < selectionMats.Length; i++)
-                {
-                    selectionMats[i] = shaderMat;
-                }
-                mr.sharedMaterials = selectionMats;
+                MeshFilter overlayMf = overlayChild.AddComponent<MeshFilter>();
+                overlayMf.sharedMesh = mf.sharedMesh;
+
+                MeshRenderer overlayMr = overlayChild.AddComponent<MeshRenderer>();
+                overlayMr.sharedMaterial = shaderMat;
+                overlayMr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                overlayMr.receiveShadows = false;
             }
 
-            // 2. SkinnedMeshRenderers (if any)
+            // Clone each structural SkinnedMeshRenderer (if any)
             SkinnedMeshRenderer[] skinnedRenderers = GetComponentsInChildren<SkinnedMeshRenderer>(true);
             foreach (var smr in skinnedRenderers)
             {
                 if (smr == null || !IsStructuralBuildingRenderer(smr)) continue;
+                if (ghostOverlayRoot != null && smr.transform.IsChildOf(ghostOverlayRoot.transform)) continue;
+                if (smr.sharedMesh == null) continue;
 
-                Material[] currentShared = smr.sharedMaterials;
-                if (currentShared == null || currentShared.Length == 0) continue;
+                GameObject overlayChild = new GameObject(smr.gameObject.name + "_ShaderLayer");
+                overlayChild.transform.SetParent(ghostOverlayRoot.transform, false);
+                overlayChild.transform.position = smr.transform.position;
+                overlayChild.transform.rotation = smr.transform.rotation;
+                overlayChild.transform.localScale = Vector3.Scale(smr.transform.lossyScale, new Vector3(1.0025f, 1.0025f, 1.0025f));
 
-                if (!originalSkinnedMaterials.ContainsKey(smr))
-                {
-                    originalSkinnedMaterials[smr] = currentShared;
-                }
+                MeshFilter overlayMf = overlayChild.AddComponent<MeshFilter>();
+                overlayMf.sharedMesh = smr.sharedMesh;
 
-                Material[] selectionMats = new Material[currentShared.Length];
-                for (int i = 0; i < selectionMats.Length; i++)
-                {
-                    selectionMats[i] = shaderMat;
-                }
-                smr.sharedMaterials = selectionMats;
+                MeshRenderer overlayMr = overlayChild.AddComponent<MeshRenderer>();
+                overlayMr.sharedMaterial = shaderMat;
+                overlayMr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                overlayMr.receiveShadows = false;
             }
         }
 
@@ -1483,6 +1536,32 @@ namespace EmpireBuilder.World
             {
                 totalOilRevenueCollected = PlayerPrefs.GetFloat($"{key}_OilTotal");
             }
+        }
+
+        public void ApplySavedState(EmpireBuilder.SaveLoad.PropertySaveEntry entry)
+        {
+            if (entry == null) return;
+
+            isOwned = entry.isOwned;
+            flatsOwned = entry.flatsOwned;
+            flatsRentedOut = entry.flatsRentedOut;
+            hasPendingMaintenance = entry.hasPendingMaintenance;
+            pendingMaintenanceCost = entry.pendingMaintenanceCost;
+            maintenanceReason = entry.maintenanceReason;
+            totalMaintenanceRepairs = entry.totalMaintenanceRepairs;
+            totalMaintenanceCostPaid = entry.totalMaintenanceCostPaid;
+            pendingProductionEarnings = entry.pendingProductionEarnings;
+            productionBatchesCompleted = entry.productionBatchesCompleted;
+            totalProductionRevenueCollected = entry.totalProductionRevenueCollected;
+            pendingOilRevenue = entry.pendingOilRevenue;
+            totalOilRevenueCollected = entry.totalOilRevenueCollected;
+            matchesHosted = entry.matchesHosted;
+            totalMatchRevenue = entry.totalMatchRevenue;
+            isTaxiRentedToday = entry.isTaxiRentedToday;
+            currentlyRentedTaxis = entry.currentlyRentedTaxis;
+            lastTaxiRentDay = entry.lastTaxiRentDay;
+
+            SaveState();
         }
     }
 }

@@ -246,6 +246,20 @@ namespace EmpireBuilder.World
             pos.z = Mathf.Clamp(pos.z, zLimits.x, zLimits.y);
             transform.position = pos;
         }
+
+        /// <summary>
+        /// Centers camera on a target world position (e.g. when clicking a city notice).
+        /// </summary>
+        public void FocusOnPosition(Vector3 targetWorldPos)
+        {
+            Vector3 offset = -transform.forward * 40f;
+            Vector3 newPos = targetWorldPos + offset;
+            newPos.x = Mathf.Clamp(newPos.x, xLimits.x, xLimits.y);
+            newPos.y = Mathf.Clamp(newPos.y, minZoomY, maxZoomY);
+            newPos.z = Mathf.Clamp(newPos.z, zLimits.x, zLimits.y);
+            transform.position = newPos;
+            currentVelocity = Vector3.zero;
+        }
         #endregion
     }
 }

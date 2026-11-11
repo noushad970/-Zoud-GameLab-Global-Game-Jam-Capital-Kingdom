@@ -22,7 +22,7 @@ namespace EmpireBuilder.Core
         [SerializeField] private float currentHealth = 100f;
 
         [Tooltip("Health points lost per real-time second from hunger/energy depletion")]
-        [SerializeField] private float decayRatePerSecond = 0.4f;
+        [SerializeField] private float decayRatePerSecond = 0.5f;
 
         [Tooltip("Enable continuous health decay over time")]
         [SerializeField] private bool decayActive = true;
@@ -52,6 +52,7 @@ namespace EmpireBuilder.Core
         // Runtime state
         private float warningCooldownTimer = 0f;
         private bool wasInLowHealthState = false;
+        private float lastReportedHealth = -1f;
 
         public float MaxHealth => maxHealth;
         public float CurrentHealth => currentHealth;
@@ -71,7 +72,15 @@ namespace EmpireBuilder.Core
             }
 
             Instance = this;
+
+            // Load saved health if available
+            if (PlayerPrefs.HasKey("SavedPlayerHealth"))
+            {
+                currentHealth = PlayerPrefs.GetFloat("SavedPlayerHealth", maxHealth);
+            }
+
             currentHealth = Mathf.Clamp(currentHealth, 0f, maxHealth);
+            lastReportedHealth = currentHealth;
         }
 
         private void Start()
@@ -85,11 +94,12 @@ namespace EmpireBuilder.Core
         {
             if (decayActive && currentHealth > 0f)
             {
-                float previousHealth = currentHealth;
                 currentHealth = Mathf.Max(0f, currentHealth - decayRatePerSecond * Time.deltaTime);
 
-                if (Mathf.Abs(previousHealth - currentHealth) > 0.05f)
+                // Notify listeners when health changes noticeably or hits zero
+                if (Mathf.Abs(lastReportedHealth - currentHealth) >= 0.08f || currentHealth <= 0f)
                 {
+                    lastReportedHealth = currentHealth;
                     OnHealthChanged?.Invoke(currentHealth, maxHealth);
                 }
             }
@@ -251,6 +261,22 @@ namespace EmpireBuilder.Core
         public void SetDecayActive(bool active)
         {
             decayActive = active;
+        }
+
+        public void SaveHealth()
+        {
+            PlayerPrefs.SetFloat("SavedPlayerHealth", currentHealth);
+            PlayerPrefs.Save();
+        }
+
+        private void OnApplicationPause(bool pauseStatus)
+        {
+            if (pauseStatus) SaveHealth();
+        }
+
+        private void OnApplicationQuit()
+        {
+            SaveHealth();
         }
     }
 }

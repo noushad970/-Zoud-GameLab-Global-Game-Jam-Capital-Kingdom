@@ -106,7 +106,8 @@ namespace EmpireBuilder.Traffic
         }
 
         /// <summary>
-        /// Loads the dedicated pedestrian waypoints created under 'AI Waypoints for character'.
+        /// Loads the dedicated pedestrian waypoints created under 'AI Waypoints for character',
+        /// and auto-links them into a connected sidewalk network.
         /// </summary>
         public void LoadCharacterWaypoints()
         {
@@ -174,7 +175,56 @@ namespace EmpireBuilder.Traffic
                 }
             }
 
+            // Ensure waypoint nodes are connected into a continuous navigable graph
+            AutoLinkWaypointNetwork();
+
             Debug.Log($"[CityPedestrianManager] Loaded {characterWaypoints.Count} dedicated character waypoints ({characterWaypointNodes.Count} PedestrianWaypointNodes).");
+        }
+
+        /// <summary>
+        /// Automatically links all pedestrian waypoint nodes into a connected graph.
+        /// Connects each node to its 2 to 3 nearest neighbor nodes within realistic sidewalk distance.
+        /// </summary>
+        public void AutoLinkWaypointNetwork()
+        {
+            if (characterWaypointNodes == null || characterWaypointNodes.Count < 2) return;
+
+            for (int i = 0; i < characterWaypointNodes.Count; i++)
+            {
+                var nodeA = characterWaypointNodes[i];
+                if (nodeA == null) continue;
+
+                // If nextNodes is already manually configured, keep it
+                if (nodeA.nextNodes != null && nodeA.nextNodes.Count > 0)
+                {
+                    // Clean nulls
+                    nodeA.nextNodes.RemoveAll(n => n == null);
+                    if (nodeA.nextNodes.Count > 0) continue;
+                }
+
+                // Find 2-3 closest neighbors within 60 meters
+                List<KeyValuePair<PedestrianWaypointNode, float>> neighbors = new List<KeyValuePair<PedestrianWaypointNode, float>>();
+                for (int j = 0; j < characterWaypointNodes.Count; j++)
+                {
+                    if (i == j) continue;
+                    var nodeB = characterWaypointNodes[j];
+                    if (nodeB == null) continue;
+
+                    float dist = Vector3.Distance(nodeA.Position, nodeB.Position);
+                    if (dist < 60f)
+                    {
+                        neighbors.Add(new KeyValuePair<PedestrianWaypointNode, float>(nodeB, dist));
+                    }
+                }
+
+                neighbors.Sort((a, b) => a.Value.CompareTo(b.Value));
+                int linkCount = Mathf.Min(3, neighbors.Count);
+                for (int k = 0; k < linkCount; k++)
+                {
+                    nodeA.AddNextNode(neighbors[k].Key);
+                    neighbors[k].Key.AddNextNode(nodeA); // Bidirectional
+                }
+            }
         }
 
         /// <summary>
@@ -192,9 +242,10 @@ namespace EmpireBuilder.Traffic
             GameObject oldSpawns = GameObject.Find("Active_City_Pedestrians");
             if (oldSpawns != null) Destroy(oldSpawns);
 
-            // 3. Collect the dedicated characters
+            // 3. Collect ALL AI characters in the scene
             List<AIPedestrianController> targetCharacters = new List<AIPedestrianController>();
 
+            // Collect any explicitly assigned dedicated characters
             if (dedicatedCharacters != null && dedicatedCharacters.Count > 0)
             {
                 foreach (var c in dedicatedCharacters)
@@ -206,45 +257,29 @@ namespace EmpireBuilder.Traffic
                 }
             }
 
-            // Discover the 9 user characters by name if list is not fully populated
-            if (targetCharacters.Count < 9)
+            // Find all existing AIPedestrianControllers in the scene
+            AIPedestrianController[] existingControllers = Object.FindObjectsByType<AIPedestrianController>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            foreach (var c in existingControllers)
             {
-                string[] maleNames = new string[]
+                if (c != null && !targetCharacters.Contains(c))
                 {
-                    "AI Character Male",
-                    "AI Character Male (1)",
-                    "AI Character Male (2)",
-                    "AI Character Male (3)",
-                    "AI Character Male (4)"
-                };
-
-                string[] femaleNames = new string[]
-                {
-                    "AI Character Female",
-                    "AI Character Female (1)",
-                    "AI Character Female (2)",
-                    "AI Character Female (3)"
-                };
-
-                foreach (var n in maleNames)
-                {
-                    GameObject obj = GameObject.Find(n);
-                    if (obj != null)
-                    {
-                        var ctrl = obj.GetComponent<AIPedestrianController>();
-                        if (ctrl == null) ctrl = obj.AddComponent<AIPedestrianController>();
-                        if (!targetCharacters.Contains(ctrl)) targetCharacters.Add(ctrl);
-                    }
+                    targetCharacters.Add(c);
                 }
+            }
 
-                foreach (var n in femaleNames)
+            // Also discover all GameObject roots/children starting with "AI Character"
+            var allSceneObjects = Object.FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            foreach (var t in allSceneObjects)
+            {
+                if (t == null) continue;
+                string n = t.name;
+                if (n.StartsWith("AI Character") && (n.Contains("Male") || n.Contains("Female")))
                 {
-                    GameObject obj = GameObject.Find(n);
-                    if (obj != null)
+                    var ctrl = t.GetComponent<AIPedestrianController>();
+                    if (ctrl == null) ctrl = t.gameObject.AddComponent<AIPedestrianController>();
+                    if (!targetCharacters.Contains(ctrl))
                     {
-                        var ctrl = obj.GetComponent<AIPedestrianController>();
-                        if (ctrl == null) ctrl = obj.AddComponent<AIPedestrianController>();
-                        if (!targetCharacters.Contains(ctrl)) targetCharacters.Add(ctrl);
+                        targetCharacters.Add(ctrl);
                     }
                 }
             }
@@ -253,16 +288,12 @@ namespace EmpireBuilder.Traffic
             dedicatedCharacters.Clear();
             dedicatedCharacters.AddRange(targetCharacters);
 
-            // 4. Remove AIPedestrianController from any OTHER character in the scene
-            AIPedestrianController[] allControllers = Object.FindObjectsByType<AIPedestrianController>(FindObjectsInactive.Include, FindObjectsSortMode.None);
-            foreach (var c in allControllers)
+            // 4. Ensure all discovered AI characters are active and enabled
+            for (int i = 0; i < targetCharacters.Count; i++)
             {
-                if (c != null && !targetCharacters.Contains(c))
-                {
-                    // This is an unwanted extra AI character - disable & remove AI component
-                    c.enabled = false;
-                    Destroy(c);
-                }
+                var citizen = targetCharacters[i];
+                if (citizen == null) continue;
+                citizen.enabled = true;
             }
 
             // 5. Initialize each of the dedicated characters
@@ -401,6 +432,44 @@ namespace EmpireBuilder.Traffic
             return closest;
         }
 
+        public PedestrianWaypointNode FindNextAvailableWaypointNode(PedestrianWaypointNode current, PedestrianWaypointNode previous)
+        {
+            if (characterWaypointNodes == null || characterWaypointNodes.Count == 0)
+            {
+                LoadCharacterWaypoints();
+            }
+
+            if (characterWaypointNodes == null || characterWaypointNodes.Count == 0) return null;
+
+            // 1. If current node has branches, pick from them
+            if (current != null && current.nextNodes != null && current.nextNodes.Count > 0)
+            {
+                var next = current.GetRandomNextNode(previous);
+                if (next != null) return next;
+            }
+
+            // 2. Search for closest forward/neighboring waypoint
+            Vector3 pos = current != null ? current.Position : Vector3.zero;
+            PedestrianWaypointNode closest = null;
+            float minDist = float.MaxValue;
+
+            for (int i = 0; i < characterWaypointNodes.Count; i++)
+            {
+                var node = characterWaypointNodes[i];
+                if (node == null || node == current) continue;
+                if (node == previous && characterWaypointNodes.Count > 2) continue;
+
+                float d = Vector3.Distance(pos, node.Position);
+                if (d < minDist && d > 1.2f)
+                {
+                    minDist = d;
+                    closest = node;
+                }
+            }
+
+            return closest ?? previous ?? current;
+        }
+
         public Transform FindClosestCharacterWaypoint(Vector3 pos)
         {
             Transform closest = null;
@@ -429,14 +498,15 @@ namespace EmpireBuilder.Traffic
             List<Transform> candidates = new List<Transform>();
             Vector3 currentPos = current.position;
 
-            // Pick neighboring waypoints within a reasonable street distance (25m to 210m)
+            // Pick neighboring waypoints within a realistic street distance (2.5m to 55m)
             for (int i = 0; i < characterWaypoints.Count; i++)
             {
                 var wp = characterWaypoints[i];
-                if (wp == null || wp == current || wp == previous) continue;
+                if (wp == null || wp == current) continue;
+                if (wp == previous && characterWaypoints.Count > 2) continue;
 
                 float dist = Vector3.Distance(currentPos, wp.position);
-                if (dist >= 25f && dist <= 210f)
+                if (dist >= 2.5f && dist <= 55f)
                 {
                     candidates.Add(wp);
                 }
@@ -447,17 +517,22 @@ namespace EmpireBuilder.Traffic
                 return candidates[Random.Range(0, candidates.Count)];
             }
 
-            // Fallback: any other waypoint that is not current
+            // Fallback: nearest other waypoint that is not current
+            Transform nearest = null;
+            float minD = float.MaxValue;
             for (int i = 0; i < characterWaypoints.Count; i++)
             {
                 var wp = characterWaypoints[i];
-                if (wp != null && wp != current)
+                if (wp == null || wp == current) continue;
+                float d = Vector3.Distance(currentPos, wp.position);
+                if (d < minD && d > 0.8f)
                 {
-                    candidates.Add(wp);
+                    minD = d;
+                    nearest = wp;
                 }
             }
 
-            return candidates.Count > 0 ? candidates[Random.Range(0, candidates.Count)] : current;
+            return nearest ?? previous ?? current;
         }
 
         /// <summary>

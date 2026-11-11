@@ -28,15 +28,24 @@ namespace EmpireBuilder.SaveLoad
 
         public static bool HasSaveFile()
         {
-            return File.Exists(SaveFilePath);
+            return WebGLSaveManager.HasSaveData() || File.Exists(SaveFilePath);
         }
 
         public static void DeleteSave()
         {
-            if (File.Exists(SaveFilePath))
+            WebGLSaveManager.ClearSaveData();
+
+            try
             {
-                File.Delete(SaveFilePath);
-                Debug.Log("[SaveService] Save file deleted.");
+                if (File.Exists(SaveFilePath))
+                {
+                    File.Delete(SaveFilePath);
+                    Debug.Log("[SaveService] Save file deleted.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[SaveService] Exception deleting save file: {ex.Message}");
             }
         }
 
@@ -55,8 +64,25 @@ namespace EmpireBuilder.SaveLoad
                 if (txs != null) data.transactions.AddRange(txs);
 
                 string json = JsonUtility.ToJson(data, true);
-                File.WriteAllText(SaveFilePath, json);
-                Debug.Log($"[SaveService] Game successfully saved to {SaveFilePath}");
+
+                // Save to PlayerPrefs for WebGL persistence
+                PlayerPrefs.SetString("EmpireBuilder_SaveService_Json", json);
+                PlayerPrefs.SetFloat("SavedPlayerCash", (float)cash);
+                PlayerPrefs.SetInt("CurrentDay", currentDay);
+                PlayerPrefs.Save();
+
+                // Trigger WebGL full city save
+                WebGLSaveManager.Instance?.SaveGame();
+
+#if !UNITY_WEBGL
+                try
+                {
+                    File.WriteAllText(SaveFilePath, json);
+                }
+                catch { }
+#endif
+
+                Debug.Log($"[SaveService] Game successfully saved (Day {currentDay}, Cash ${cash:N0})");
                 return true;
             }
             catch (Exception ex)
@@ -76,10 +102,39 @@ namespace EmpireBuilder.SaveLoad
 
             try
             {
-                string json = File.ReadAllText(SaveFilePath);
-                var data = JsonUtility.FromJson<SaveData>(json);
-                Debug.Log($"[SaveService] Game loaded successfully (Day {data.currentDay}, Cash ${data.cash:N0})");
-                return data;
+                string json = "";
+                if (PlayerPrefs.HasKey("EmpireBuilder_SaveService_Json"))
+                {
+                    json = PlayerPrefs.GetString("EmpireBuilder_SaveService_Json");
+                }
+
+#if !UNITY_WEBGL
+                if (string.IsNullOrEmpty(json) && File.Exists(SaveFilePath))
+                {
+                    json = File.ReadAllText(SaveFilePath);
+                }
+#endif
+
+                if (string.IsNullOrEmpty(json))
+                {
+                    // Synthesize from WebGLSaveData if available
+                    var webData = WebGLSaveManager.PeekSaveData();
+                    if (webData != null)
+                    {
+                        var data = new SaveData
+                        {
+                            currentDay = webData.currentDay,
+                            cash = webData.cash,
+                            savedTimestamp = webData.timestamp
+                        };
+                        return data;
+                    }
+                    return null;
+                }
+
+                var loadedData = JsonUtility.FromJson<SaveData>(json);
+                Debug.Log($"[SaveService] Game loaded successfully (Day {loadedData.currentDay}, Cash ${loadedData.cash:N0})");
+                return loadedData;
             }
             catch (Exception ex)
             {

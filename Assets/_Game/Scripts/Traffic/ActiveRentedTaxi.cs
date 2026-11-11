@@ -182,16 +182,19 @@ namespace EmpireBuilder.Traffic
             isActiveOnRoad = true;
             isReturningToStation = false;
 
-            if (EmpireBuilder.Audio.GameSoundManager.Instance != null && EmpireBuilder.Audio.GameSoundManager.Instance.VehicleSoundEffect != null)
+            if (EmpireBuilder.Audio.GameSoundManager.Instance != null &&
+                (EmpireBuilder.Audio.GameSoundManager.Instance.VehicleSoundEffect != null || EmpireBuilder.Audio.GameSoundManager.Instance.VehicleAccelerationSoundEffect != null))
             {
                 AudioSource taxiAudio = GetComponent<AudioSource>();
                 if (taxiAudio == null) taxiAudio = gameObject.AddComponent<AudioSource>();
-                taxiAudio.clip = EmpireBuilder.Audio.GameSoundManager.Instance.VehicleSoundEffect;
+                taxiAudio.clip = EmpireBuilder.Audio.GameSoundManager.Instance.VehicleAccelerationSoundEffect ??
+                                 EmpireBuilder.Audio.GameSoundManager.Instance.VehicleSoundEffect;
                 taxiAudio.loop = true;
                 taxiAudio.spatialBlend = 1.0f;
-                taxiAudio.minDistance = 6f;
-                taxiAudio.maxDistance = 50f;
-                taxiAudio.volume = 0.5f;
+                taxiAudio.minDistance = 8f;
+                taxiAudio.maxDistance = 110f;
+                taxiAudio.rolloffMode = AudioRolloffMode.Logarithmic;
+                taxiAudio.volume = 0.95f; // Clearly audible engine acceleration sound
                 taxiAudio.Play();
             }
 

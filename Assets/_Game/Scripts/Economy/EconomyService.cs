@@ -33,6 +33,12 @@ namespace EmpireBuilder.Economy
             RecalculateNetWorth(new List<OwnedAsset>());
         }
 
+        public void SetCash(double amount)
+        {
+            currentCash = Math.Max(0, amount);
+            OnCashChanged?.Invoke(currentCash);
+        }
+
         public void LoadState(double cash, List<Transaction> history, List<OwnedAsset> ownedAssets)
         {
             currentCash = cash;

@@ -93,6 +93,9 @@ namespace EmpireBuilder.Traffic
         private AIPedestrianController socialPartner = null;
         private CharacterController characterController;
         private CapsuleCollider capsuleCollider;
+        private Vector3 lastStuckCheckPosition;
+        private float stuckCheckTimer = 0f;
+        private int stuckCounter = 0;
 
         public PedestrianGender Gender => gender;
         public PedestrianState CurrentState => currentState;
@@ -356,6 +359,38 @@ namespace EmpireBuilder.Traffic
                 }
             }
 
+            // Stuck detection & recovery watchdog
+            stuckCheckTimer += Time.deltaTime;
+            if (stuckCheckTimer >= 2.0f)
+            {
+                stuckCheckTimer = 0f;
+                float distMoved = Vector3.Distance(transform.position, lastStuckCheckPosition);
+                lastStuckCheckPosition = transform.position;
+
+                if (distMoved < 0.25f && currentState == PedestrianState.Walking)
+                {
+                    stuckCounter++;
+                    if (stuckCounter >= 2) // Stuck for > 4 seconds
+                    {
+                        stuckCounter = 0;
+                        if (CityPedestrianManager.Instance != null)
+                        {
+                            var nextNode = CityPedestrianManager.Instance.FindNextAvailableWaypointNode(currentWaypointNode, previousWaypointNode);
+                            if (nextNode != null)
+                            {
+                                previousWaypointNode = currentWaypointNode;
+                                currentWaypointNode = nextNode;
+                                currentTargetPosition = nextNode.Position;
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    stuckCounter = 0;
+                }
+            }
+
             // --- Waypoint Node Navigation ---
             if (currentWaypointNode != null)
             {
@@ -364,7 +399,9 @@ namespace EmpireBuilder.Traffic
                 toNodeTarget.y = 0f;
                 float nodeDist = toNodeTarget.magnitude;
 
-                if (nodeDist <= arrivalThreshold)
+                bool passedWaypoint = Vector3.Dot(toNodeTarget, transform.forward) < 0f && nodeDist < 1.4f;
+
+                if (nodeDist <= arrivalThreshold || passedWaypoint)
                 {
                     // Waypoint pause/idle check
                     if (currentWaypointNode.pauseDuration > 0f)
@@ -374,6 +411,11 @@ namespace EmpireBuilder.Traffic
 
                     // Pick next connected waypoint node
                     PedestrianWaypointNode next = currentWaypointNode.GetRandomNextNode(previousWaypointNode);
+                    if (next == null && CityPedestrianManager.Instance != null)
+                    {
+                        next = CityPedestrianManager.Instance.FindNextAvailableWaypointNode(currentWaypointNode, previousWaypointNode);
+                    }
+
                     if (next != null)
                     {
                         previousWaypointNode = currentWaypointNode;
@@ -386,7 +428,7 @@ namespace EmpireBuilder.Traffic
                     }
                     else if (previousWaypointNode != null)
                     {
-                        // Dead end: reverse route back to previous node
+                        // Reverse route back to previous node
                         var swap = currentWaypointNode;
                         currentWaypointNode = previousWaypointNode;
                         previousWaypointNode = swap;
@@ -575,10 +617,13 @@ namespace EmpireBuilder.Traffic
                 if (hit.collider.GetComponentInParent<AICarController>() != null)
                 {
                     currentState = PedestrianState.YieldingToCar;
-                    stateTimer = 1.8f;
+                    stateTimer = 1.2f;
                     UpdateAnimation(false);
                     return Vector3.zero;
                 }
+
+                bool isDynamicObstacle = hit.collider.CompareTag("Player") ||
+                                         hit.collider.GetComponentInParent<AIPedestrianController>() != null;
 
                 // Steer left or right to bypass
                 if (!rightBlocked)
@@ -589,11 +634,16 @@ namespace EmpireBuilder.Traffic
                 {
                     steering -= right * 1.6f;
                 }
+                else if (isDynamicObstacle)
+                {
+                    // Dynamic obstacle blocked -> switch to brief idle to let them pass
+                    EnterIdleState(Random.Range(1.0f, 2.0f));
+                    return Vector3.zero;
+                }
                 else
                 {
-                    // Both blocked -> switch to brief idle to let obstacle pass
-                    EnterIdleState(Random.Range(1.5f, 3.0f));
-                    return Vector3.zero;
+                    // Static obstacle -> slide along tangent
+                    steering += right * 1.2f;
                 }
             }
             else

@@ -48,6 +48,12 @@ namespace EmpireBuilder.Audio
         [Tooltip("Vehicle sound effect (taxi engine drive loop or vehicle movement)")]
         [SerializeField] private AudioClip vehicleSoundEffect = null;
 
+        [Tooltip("Vehicle engine acceleration sound effect (acceleration throttle / motor rev)")]
+        [SerializeField] private AudioClip vehicleAccelerationSoundEffect = null;
+
+        [Tooltip("Train sound effect (3D railway locomotion, tracks clatter, train engine loop)")]
+        [SerializeField] private AudioClip trainSoundEffect = null;
+
         [Tooltip("Vehicle horn sound effect (taxi honking, traffic alert)")]
         [SerializeField] private AudioClip vehicleHornSoundEffect = null;
 
@@ -131,6 +137,8 @@ namespace EmpireBuilder.Audio
         public AudioClip BuySoundEffect { get => buySoundEffect; set => buySoundEffect = value; }
         public AudioClip CollectSoundEffect { get => collectSoundEffect; set => collectSoundEffect = value; }
         public AudioClip VehicleSoundEffect { get => vehicleSoundEffect; set => vehicleSoundEffect = value; }
+        public AudioClip VehicleAccelerationSoundEffect { get => vehicleAccelerationSoundEffect; set => vehicleAccelerationSoundEffect = value; }
+        public AudioClip TrainSoundEffect { get => trainSoundEffect; set => trainSoundEffect = value; }
         public AudioClip VehicleHornSoundEffect { get => vehicleHornSoundEffect; set => vehicleHornSoundEffect = value; }
         public AudioClip TaxiSpawnSoundEffect { get => taxiSpawnSoundEffect; set => taxiSpawnSoundEffect = value; }
         public AudioClip StadiumMatchCheerSoundEffect { get => stadiumMatchCheerSoundEffect; set => stadiumMatchCheerSoundEffect = value; }
@@ -503,9 +511,17 @@ namespace EmpireBuilder.Audio
 
         public void PlayVehicleSound(Vector3? worldPos = null)
         {
-            if (vehicleSoundEffect == null) return;
+            AudioClip clip = vehicleAccelerationSoundEffect != null ? vehicleAccelerationSoundEffect : vehicleSoundEffect;
+            if (clip == null) return;
             Vector3 pos = worldPos ?? GetDefaultListenerPosition();
-            PlaySoundAtPosition(vehicleSoundEffect, pos, sfxVolume * 0.9f);
+            PlaySoundAtPosition(clip, pos, sfxVolume * 1.0f);
+        }
+
+        public void PlayTrainSound(Vector3? worldPos = null, float volumeMult = 1.0f)
+        {
+            if (trainSoundEffect == null) return;
+            Vector3 pos = worldPos ?? GetDefaultListenerPosition();
+            PlaySoundAtPosition(trainSoundEffect, pos, sfxVolume * Mathf.Clamp01(volumeMult));
         }
 
         public void PlayVehicleHorn(Vector3? worldPos = null)
@@ -540,6 +556,16 @@ namespace EmpireBuilder.Audio
             if (stadiumMatchRequestAlertSoundEffect == null) return;
             Vector3 pos = worldPos ?? GetDefaultListenerPosition();
             PlaySoundAtPosition(stadiumMatchRequestAlertSoundEffect, pos, sfxVolume);
+        }
+
+        public void PlayNotification(Vector3? worldPos = null)
+        {
+            PlayStadiumMatchRequestAlert(worldPos);
+        }
+
+        public void PlaySuccess(Vector3? worldPos = null)
+        {
+            PlayCollect(worldPos);
         }
 
         public void PlayEat(Vector3? worldPos = null)

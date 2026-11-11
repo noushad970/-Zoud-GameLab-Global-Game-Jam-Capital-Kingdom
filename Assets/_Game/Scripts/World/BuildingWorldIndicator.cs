@@ -14,11 +14,16 @@ namespace EmpireBuilder.World
     /// - Energetic bouncing/pulse animation whenever collectibles are available.
     /// - Clickable world collider so clicking the badge directly selects the building.
     /// </summary>
+    [ExecuteAlways]
     [DisallowMultipleComponent]
     public class BuildingWorldIndicator : MonoBehaviour
     {
         [Header("Target Building Reference")]
         [SerializeField] private PropertyBuilding targetBuilding;
+
+        [Header("Static Scene Modification")]
+        [Tooltip("When true, the indicator will strictly preserve the exact position you set in the scene hierarchy rather than snapping to default rooftop")]
+        [SerializeField] private bool useManualPosition = true;
 
         [Header("UI Element References")]
         [SerializeField] private Canvas worldCanvas;
@@ -98,15 +103,40 @@ namespace EmpireBuilder.World
             // 1. Billboard to camera
             if (billboardToCamera)
             {
-                if (cachedCamera == null) cachedCamera = Camera.main;
-                if (cachedCamera != null)
+                if (Application.isPlaying)
                 {
-                    Transform camT = cachedCamera.transform;
-                    transform.rotation = Quaternion.LookRotation(camT.forward, camT.up);
+                    if (cachedCamera == null) cachedCamera = Camera.main;
+                    if (cachedCamera != null)
+                    {
+                        Transform camT = cachedCamera.transform;
+                        transform.rotation = Quaternion.LookRotation(camT.forward, camT.up);
+                    }
                 }
+#if UNITY_EDITOR
+                else
+                {
+                    var sv = UnityEditor.SceneView.lastActiveSceneView;
+                    if (sv != null && sv.camera != null)
+                    {
+                        Transform camT = sv.camera.transform;
+                        transform.rotation = Quaternion.LookRotation(camT.forward, camT.up);
+                    }
+                }
+#endif
             }
 
-            // 2. Animated Floating Bob & Scale Pulse
+            // In Edit Mode, keep the badge stationary and at base scale so the user can easily select and move it
+            if (!Application.isPlaying)
+            {
+                if (badgeTransform != null)
+                {
+                    badgeTransform.localPosition = Vector3.zero;
+                    badgeTransform.localScale = badgeBaseScale;
+                }
+                return;
+            }
+
+            // 2. Animated Floating Bob & Scale Pulse (Play Mode only)
             if (badgeTransform != null && badgeTransform.gameObject.activeSelf)
             {
                 float bobOffset = animateFloatingBob ? Mathf.Sin(Time.time * bobSpeed + seedOffset) * bobHeight : 0f;
@@ -559,16 +589,41 @@ namespace EmpireBuilder.World
 
         /// <summary>
         /// External setup hook called by PropertyBuilding or Editor Setup Tool.
+        /// If useManualPosition is true and localPosition has been customized, preserves the manual position.
         /// </summary>
         public void Setup(PropertyBuilding building, Vector3 localRoofPos = default)
         {
             targetBuilding = building;
             if (localRoofPos != default)
             {
-                transform.localPosition = localRoofPos;
+                if (!useManualPosition || transform.localPosition == Vector3.zero)
+                {
+                    transform.localPosition = localRoofPos;
+                }
             }
             EnsureUIHierarchy();
             RefreshVisuals();
         }
+
+#if UNITY_EDITOR
+        [ContextMenu("Build Static Indicator Hierarchy")]
+        public void RebuildHierarchyInEditor()
+        {
+            EnsureUIHierarchy();
+            RefreshVisuals();
+            UnityEditor.EditorUtility.SetDirty(gameObject);
+        }
+
+        [ContextMenu("Snap To Building Rooftop")]
+        public void SnapToRooftop()
+        {
+            if (targetBuilding == null) targetBuilding = GetComponentInParent<PropertyBuilding>();
+            if (targetBuilding != null)
+            {
+                transform.localPosition = targetBuilding.GetRoofPosition();
+                UnityEditor.EditorUtility.SetDirty(gameObject);
+            }
+        }
+#endif
     }
 }

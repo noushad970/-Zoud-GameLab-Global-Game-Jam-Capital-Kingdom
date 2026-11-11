@@ -87,10 +87,19 @@ namespace EmpireBuilder.UI
 
         private void Update()
         {
-            // If manager wasn't ready at Start, retry connecting
-            if (PlayerHealthManager.Instance != null && maxHealth <= 0.001f)
+            // Continuously track PlayerHealthManager state in real-time
+            if (PlayerHealthManager.Instance != null)
             {
-                HookHealthManager();
+                targetHealth = PlayerHealthManager.Instance.CurrentHealth;
+                maxHealth = Mathf.Max(1f, PlayerHealthManager.Instance.MaxHealth);
+                targetFill = PlayerHealthManager.Instance.HealthNormalized;
+                isLowHealth = PlayerHealthManager.Instance.IsLowHealth;
+                isCriticalHealth = PlayerHealthManager.Instance.IsCriticalHealth;
+
+                if (warningBadge != null && warningBadge.activeSelf != isLowHealth)
+                {
+                    warningBadge.SetActive(isLowHealth);
+                }
             }
 
             AnimateHealthBar();

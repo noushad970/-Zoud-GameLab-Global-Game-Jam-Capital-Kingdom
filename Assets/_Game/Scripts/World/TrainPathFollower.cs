@@ -30,6 +30,15 @@ namespace EmpireBuilder.World
         [SerializeField] private bool rotateOnReverse = false;
         [SerializeField] private float turnAroundSpeed = 120f; // degrees per sec
 
+        [Header("3D Train Audio Settings")]
+        [Tooltip("Direct audio clip for train locomotion / engine sound (optional, falls back to GameSoundManager.TrainSoundEffect)")]
+        [SerializeField] private AudioClip trainAudioClip = null;
+        [SerializeField] private AudioSource trainAudioSource;
+        [Range(0f, 1f)]
+        [SerializeField] private float trainMovingVolume = 0.95f;
+        [Range(0f, 1f)]
+        [SerializeField] private float trainStationIdleVolume = 0.20f;
+
         private enum TrainState
         {
             MovingToEnd,
@@ -76,6 +85,56 @@ namespace EmpireBuilder.World
         private void Awake()
         {
             initialRotation = transform.rotation;
+            SetupAudio();
+        }
+
+        private void SetupAudio()
+        {
+            if (trainAudioSource == null) trainAudioSource = GetComponent<AudioSource>();
+            if (trainAudioSource == null) trainAudioSource = gameObject.AddComponent<AudioSource>();
+
+            trainAudioSource.spatialBlend = 1.0f; // Full 3D World Spatialized
+            trainAudioSource.minDistance = 14.0f;
+            trainAudioSource.maxDistance = 180.0f;
+            trainAudioSource.rolloffMode = AudioRolloffMode.Logarithmic;
+            trainAudioSource.loop = true;
+            trainAudioSource.playOnAwake = false;
+
+            if (trainAudioClip == null && EmpireBuilder.Audio.GameSoundManager.Instance != null)
+            {
+                trainAudioClip = EmpireBuilder.Audio.GameSoundManager.Instance.TrainSoundEffect;
+            }
+
+            if (trainAudioClip != null)
+            {
+                trainAudioSource.clip = trainAudioClip;
+                trainAudioSource.volume = trainMovingVolume;
+                if (!trainAudioSource.isPlaying) trainAudioSource.Play();
+            }
+        }
+
+        private void Update()
+        {
+            // Sync audio source state if clip is added at runtime via Inspector
+            if (trainAudioSource != null)
+            {
+                if (trainAudioClip == null && EmpireBuilder.Audio.GameSoundManager.Instance != null)
+                {
+                    trainAudioClip = EmpireBuilder.Audio.GameSoundManager.Instance.TrainSoundEffect;
+                }
+
+                if (trainAudioClip != null && trainAudioSource.clip != trainAudioClip)
+                {
+                    trainAudioSource.clip = trainAudioClip;
+                    if (!trainAudioSource.isPlaying) trainAudioSource.Play();
+                }
+
+                bool isMoving = (currentState == TrainState.MovingToEnd || currentState == TrainState.MovingToStart);
+                float targetVol = isMoving ? trainMovingVolume : trainStationIdleVolume;
+                float targetPitch = isMoving ? 1.0f : 0.82f;
+                trainAudioSource.volume = Mathf.MoveTowards(trainAudioSource.volume, targetVol, 0.8f * Time.deltaTime);
+                trainAudioSource.pitch = Mathf.MoveTowards(trainAudioSource.pitch, targetPitch, 0.5f * Time.deltaTime);
+            }
         }
 
         private void Start()

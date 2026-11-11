@@ -1661,6 +1661,220 @@ namespace EmpireBuilder.Editor
 
             Debug.Log("[EmpireBuilderSetupTool] 3D Sound System (SoundManager) successfully setup statically in GamePlay scene with all 3D emitters and empty audio slots!");
         }
+
+        [MenuItem("Tools/Empire Builder/8. Setup Notice Bar, Tutorial & WebGL Save", false, 8)]
+        public static void SetupNoticeBarTutorialAndWebGLSave()
+        {
+            var scene = EditorSceneManager.OpenScene(GamePlayScenePath, OpenSceneMode.Single);
+
+            // 1. WebGLSaveManager at Scene Root
+            var saveMgrObj = GameObject.Find("WebGLSaveManager");
+            if (saveMgrObj == null)
+            {
+                saveMgrObj = new GameObject("WebGLSaveManager");
+            }
+            if (saveMgrObj.GetComponent<EmpireBuilder.SaveLoad.WebGLSaveManager>() == null)
+            {
+                saveMgrObj.AddComponent<EmpireBuilder.SaveLoad.WebGLSaveManager>();
+            }
+            EditorUtility.SetDirty(saveMgrObj);
+
+            // 2. Locate GamePlayCanvas
+            var canvasObj = GameObject.Find("GamePlayCanvas");
+            if (canvasObj == null)
+            {
+                Debug.LogError("[EmpireBuilderSetupTool] GamePlayCanvas not found in GamePlay scene!");
+                return;
+            }
+
+            var panelSprite = AssetDatabase.LoadAssetAtPath<Sprite>(SpritePanelBg);
+            var roundedSprite = AssetDatabase.LoadAssetAtPath<Sprite>(SpriteRoundedRect);
+            var btnDark = AssetDatabase.LoadAssetAtPath<Sprite>(SpriteBtnDark);
+            var btnGreen = AssetDatabase.LoadAssetAtPath<Sprite>(SpriteBtnGreen);
+            var btnBlue = AssetDatabase.LoadAssetAtPath<Sprite>(SpriteBtnBlue);
+            var fontAsset = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(FontLilita);
+
+            // 3. Add Guide/Tutorial Button to TopHeader
+            var topHeader = canvasObj.transform.Find("TopHeader");
+            if (topHeader != null)
+            {
+                var existingGuideBtn = topHeader.Find("GuideButton");
+                if (existingGuideBtn == null)
+                {
+                    var guideBtnObj = CreateCartoonButton("GuideButton", topHeader, "GUIDE 💡", new Vector2(-260, 0), new Vector2(130, 52), btnBlue, fontAsset);
+                    var gBtn = guideBtnObj.GetComponent<Button>();
+                    UnityEditor.Events.UnityEventTools.AddVoidPersistentListener(gBtn.onClick, () =>
+                    {
+                        EmpireBuilder.UI.GameTutorialManager.Instance?.ShowTutorial(0);
+                    });
+                }
+            }
+
+            // 4. Setup CityNoticeBar in Top-Right
+            var existingNoticeBar = canvasObj.transform.Find("CityNoticeBar");
+            if (existingNoticeBar != null)
+            {
+                Object.DestroyImmediate(existingNoticeBar.gameObject);
+            }
+
+            var noticeBarObj = new GameObject("CityNoticeBar", typeof(RectTransform));
+            noticeBarObj.transform.SetParent(canvasObj.transform, false);
+            var nbRt = noticeBarObj.GetComponent<RectTransform>();
+            nbRt.anchorMin = new Vector2(1, 1);
+            nbRt.anchorMax = new Vector2(1, 1);
+            nbRt.pivot = new Vector2(1, 1);
+            nbRt.anchoredPosition = new Vector2(-20, -100);
+            nbRt.sizeDelta = new Vector2(360, 380);
+
+            // Header banner
+            var nbHeader = new GameObject("NoticeHeader", typeof(RectTransform), typeof(Image));
+            nbHeader.transform.SetParent(noticeBarObj.transform, false);
+            var hRt = nbHeader.GetComponent<RectTransform>();
+            hRt.anchorMin = new Vector2(0, 1);
+            hRt.anchorMax = new Vector2(1, 1);
+            hRt.pivot = new Vector2(0.5f, 1);
+            hRt.anchoredPosition = Vector2.zero;
+            hRt.sizeDelta = new Vector2(0, 32);
+            var hImg = nbHeader.GetComponent<Image>();
+            if (roundedSprite != null) { hImg.sprite = roundedSprite; hImg.type = Image.Type.Sliced; }
+            hImg.color = new Color(0.10f, 0.14f, 0.20f, 0.95f);
+
+            // Pulsating dot
+            var dotObj = new GameObject("StatusDot", typeof(RectTransform), typeof(Image));
+            dotObj.transform.SetParent(nbHeader.transform, false);
+            var dRt = dotObj.GetComponent<RectTransform>();
+            dRt.anchorMin = new Vector2(0, 0.5f);
+            dRt.anchorMax = new Vector2(0, 0.5f);
+            dRt.pivot = new Vector2(0, 0.5f);
+            dRt.anchoredPosition = new Vector2(10, 0);
+            dRt.sizeDelta = new Vector2(10, 10);
+            var dotImg = dotObj.GetComponent<Image>();
+            if (roundedSprite != null) { dotImg.sprite = roundedSprite; dotImg.type = Image.Type.Sliced; }
+            dotImg.color = Color.green;
+
+            // Title
+            var nbTitle = CreateTMPText("NoticeTitle", nbHeader.transform, "CITY OCCURRENCES", new Vector2(26, 0), new Vector2(200, 24), 13, fontAsset, TextAlignmentOptions.Left);
+            nbTitle.color = new Color(0.9f, 0.95f, 1f);
+            nbTitle.fontStyle = FontStyles.Bold;
+
+            // Count
+            var nbCount = CreateTMPText("NoticeCount", nbHeader.transform, "0 ALERTS", new Vector2(-12, 0), new Vector2(100, 24), 11, fontAsset, TextAlignmentOptions.Right);
+            nbCount.color = new Color(0.95f, 0.80f, 0.25f);
+            nbCount.fontStyle = FontStyles.Bold;
+
+            // Container for dynamic cards
+            var nbContainerObj = new GameObject("NoticeContainer", typeof(RectTransform), typeof(VerticalLayoutGroup));
+            nbContainerObj.transform.SetParent(noticeBarObj.transform, false);
+            var cRt = nbContainerObj.GetComponent<RectTransform>();
+            cRt.anchorMin = new Vector2(0, 0);
+            cRt.anchorMax = new Vector2(1, 1);
+            cRt.pivot = new Vector2(0.5f, 1);
+            cRt.anchoredPosition = new Vector2(0, -36);
+            cRt.sizeDelta = new Vector2(0, -36);
+
+            var vlg = nbContainerObj.GetComponent<VerticalLayoutGroup>();
+            vlg.spacing = 6;
+            vlg.childControlWidth = true;
+            vlg.childControlHeight = false;
+            vlg.childForceExpandWidth = true;
+            vlg.childForceExpandHeight = false;
+
+            var noticeCtrl = noticeBarObj.AddComponent<EmpireBuilder.UI.CityNoticeBarUI>();
+            var serNotice = new SerializedObject(noticeCtrl);
+            serNotice.FindProperty("noticeContainer").objectReferenceValue = cRt;
+            serNotice.FindProperty("noticeCountText").objectReferenceValue = nbCount;
+            serNotice.FindProperty("statusDotImage").objectReferenceValue = dotImg;
+            serNotice.ApplyModifiedProperties();
+
+            // 5. Setup GameTutorialModal
+            var existingTut = canvasObj.transform.Find("GameTutorialModal");
+            if (existingTut != null)
+            {
+                Object.DestroyImmediate(existingTut.gameObject);
+            }
+
+            var tutModalRoot = CreateUIElement("GameTutorialModal", canvasObj.transform, Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
+
+            // Overlay
+            var tutOverlay = CreateUIElement("DimmedOverlay", tutModalRoot.transform, Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
+            var ovImg = tutOverlay.AddComponent<Image>();
+            ovImg.color = new Color(0f, 0f, 0f, 0.70f);
+
+            // Card
+            var tutCard = CreateUIElement("TutorialCard", tutModalRoot.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(620, 480), Vector2.zero);
+            var cardImg = tutCard.AddComponent<Image>();
+            if (panelSprite != null) { cardImg.sprite = panelSprite; cardImg.type = Image.Type.Sliced; }
+            cardImg.color = new Color(0.11f, 0.15f, 0.22f, 0.98f);
+
+            // Close X
+            var closeXBtnObj = CreateCartoonButton("CloseXButton", tutCard.transform, "✕", new Vector2(280, 210), new Vector2(36, 36), btnDark, fontAsset);
+
+            // Icon Badge
+            var badgeObj = CreateUIElement("IconBadge", tutCard.transform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), new Vector2(54, 54), new Vector2(24, -20));
+            var bImg = badgeObj.AddComponent<Image>();
+            if (roundedSprite != null) { bImg.sprite = roundedSprite; bImg.type = Image.Type.Sliced; }
+            bImg.color = new Color(0.18f, 0.52f, 0.95f);
+
+            var emojiText = CreateTMPText("Emoji", badgeObj.transform, "👑", Vector2.zero, Vector2.zero, 28, fontAsset, TextAlignmentOptions.Center);
+            SetStretch(emojiText.rectTransform);
+
+            // Step counter
+            var stepCountText = CreateTMPText("StepCount", tutCard.transform, "STEP 1 OF 7", new Vector2(90, -22), new Vector2(350, 22), 12, fontAsset, TextAlignmentOptions.Left);
+            stepCountText.color = new Color(0.95f, 0.80f, 0.25f);
+            stepCountText.fontStyle = FontStyles.Bold;
+
+            // Title
+            var tutTitleText = CreateTMPText("TitleText", tutCard.transform, "WELCOME TO CAPITAL KINGDOM", new Vector2(90, -46), new Vector2(460, 32), 19, fontAsset, TextAlignmentOptions.Left);
+            tutTitleText.fontStyle = FontStyles.Bold;
+            tutTitleText.color = Color.white;
+
+            // Divider
+            var divObj = CreateUIElement("Divider", tutCard.transform, new Vector2(0, 1), new Vector2(1, 1), new Vector2(0.5f, 1), new Vector2(-48, 2), new Vector2(0, -84));
+            var divImg = divObj.AddComponent<Image>();
+            divImg.color = new Color(1f, 1f, 1f, 0.12f);
+
+            // Description Body
+            var bodyBox = CreateUIElement("BodyBox", tutCard.transform, new Vector2(0, 0), new Vector2(1, 1), new Vector2(0.5f, 0.5f), new Vector2(-54, -170), new Vector2(0, -10));
+            var tutBodyText = CreateTMPText("BodyText", bodyBox.transform, "Tutorial description text goes here...", Vector2.zero, Vector2.zero, 16, fontAsset, TextAlignmentOptions.TopLeft);
+            tutBodyText.textWrappingMode = TextWrappingModes.Normal;
+            tutBodyText.lineSpacing = 14;
+            tutBodyText.color = new Color(0.92f, 0.94f, 0.97f);
+            SetStretch(tutBodyText.rectTransform);
+
+            // Bottom Navigation Bar
+            var bottomBar = CreateUIElement("BottomBar", tutCard.transform, new Vector2(0, 0), new Vector2(1, 0), new Vector2(0.5f, 0), new Vector2(-48, 56), new Vector2(0, 16));
+            var backBtnObj = CreateCartoonButton("BackButton", bottomBar.transform, "◀ BACK", new Vector2(-190, 0), new Vector2(130, 48), btnDark, fontAsset);
+            var skipBtnObj = CreateCartoonButton("SkipButton", bottomBar.transform, "SKIP GUIDE", new Vector2(-30, 0), new Vector2(140, 44), btnDark, fontAsset);
+            var nextBtnObj = CreateCartoonButton("NextButton", bottomBar.transform, "NEXT ➔", new Vector2(175, 0), new Vector2(170, 50), btnGreen, fontAsset);
+
+            var nextTmp = nextBtnObj.GetComponentInChildren<TextMeshProUGUI>();
+
+            // Setup GameTutorialManager component
+            var tutMgr = tutModalRoot.AddComponent<EmpireBuilder.UI.GameTutorialManager>();
+            var serTut = new SerializedObject(tutMgr);
+            serTut.FindProperty("tutorialModalRoot").objectReferenceValue = tutModalRoot;
+            serTut.FindProperty("cardTransform").objectReferenceValue = tutCard.GetComponent<RectTransform>();
+            serTut.FindProperty("stepCountText").objectReferenceValue = stepCountText;
+            serTut.FindProperty("titleText").objectReferenceValue = tutTitleText;
+            serTut.FindProperty("bodyText").objectReferenceValue = tutBodyText;
+            serTut.FindProperty("iconEmojiText").objectReferenceValue = emojiText;
+            serTut.FindProperty("iconBadgeImage").objectReferenceValue = bImg;
+            serTut.FindProperty("nextButton").objectReferenceValue = nextBtnObj.GetComponent<Button>();
+            serTut.FindProperty("nextButtonText").objectReferenceValue = nextTmp;
+            serTut.FindProperty("backButton").objectReferenceValue = backBtnObj.GetComponent<Button>();
+            serTut.FindProperty("skipButton").objectReferenceValue = skipBtnObj.GetComponent<Button>();
+            serTut.FindProperty("closeXButton").objectReferenceValue = closeXBtnObj.GetComponent<Button>();
+            serTut.ApplyModifiedProperties();
+
+            tutModalRoot.SetActive(false);
+
+            EditorUtility.SetDirty(canvasObj);
+            EditorSceneManager.MarkSceneDirty(scene);
+            EditorSceneManager.SaveScene(scene);
+            AssetDatabase.SaveAssets();
+
+            Debug.Log("[EmpireBuilderSetupTool] Successfully setup CityNoticeBar, GameTutorialModal, GuideButton, and WebGLSaveManager in GamePlay scene!");
+        }
     }
 }
 #endif
