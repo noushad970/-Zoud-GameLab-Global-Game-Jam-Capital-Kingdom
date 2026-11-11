@@ -218,6 +218,8 @@ namespace EmpireBuilder.Core
 
             OnWarningTriggered?.Invoke(message, isCritical);
 
+            EmpireBuilder.Audio.GameSoundManager.Instance?.PlayLowHealthWarning();
+
             // Display floating toast if UI is available
             if (PropertyDetailModalUI.Instance != null)
             {

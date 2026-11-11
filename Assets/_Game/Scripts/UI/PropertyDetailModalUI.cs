@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using EmpireBuilder.Audio;
 using EmpireBuilder.Core;
 using EmpireBuilder.Economy;
 using EmpireBuilder.World;
@@ -298,11 +299,15 @@ namespace EmpireBuilder.UI
                 panelRoot.SetActive(true);
             }
 
+            GameSoundManager.Instance?.PlayClick(building.transform.position);
+
             RefreshUI();
         }
 
         public void Close()
         {
+            GameSoundManager.Instance?.PlayClick();
+
             if (currentBuilding != null)
             {
                 currentBuilding.OnStateChanged -= HandleBuildingStateChanged;
@@ -622,12 +627,14 @@ namespace EmpireBuilder.UI
             if (currentBuilding == null) return;
             if (currentBuilding.BuyFlat(out string msg))
             {
+                GameSoundManager.Instance?.PlayBuy(currentBuilding.transform.position);
                 ShowToast(msg);
                 GamePlayHeaderUI.Instance?.UpdateMoneyDisplay();
                 RefreshUI();
             }
             else
             {
+                GameSoundManager.Instance?.PlayError();
                 ShowToast(msg);
             }
         }
@@ -637,12 +644,14 @@ namespace EmpireBuilder.UI
             if (currentBuilding == null) return;
             if (currentBuilding.GiveRentForFlat(out string msg))
             {
+                GameSoundManager.Instance?.PlayTenantMoveIn(currentBuilding.transform.position);
                 ShowToast(msg);
                 GamePlayHeaderUI.Instance?.UpdateMoneyDisplay();
                 RefreshUI();
             }
             else
             {
+                GameSoundManager.Instance?.PlayError();
                 ShowToast(msg);
             }
         }
@@ -652,12 +661,14 @@ namespace EmpireBuilder.UI
             if (currentBuilding == null) return;
             if (currentBuilding.DrinkBeverage(out string msg))
             {
+                GameSoundManager.Instance?.PlayDrink(currentBuilding.transform.position);
                 ShowToast(msg);
                 GamePlayHeaderUI.Instance?.UpdateMoneyDisplay();
                 RefreshUI();
             }
             else
             {
+                GameSoundManager.Instance?.PlayError();
                 ShowToast(msg);
             }
         }
@@ -667,12 +678,14 @@ namespace EmpireBuilder.UI
             if (currentBuilding == null) return;
             if (currentBuilding.EatFood(out string msg))
             {
+                GameSoundManager.Instance?.PlayEat(currentBuilding.transform.position);
                 ShowToast(msg);
                 GamePlayHeaderUI.Instance?.UpdateMoneyDisplay();
                 RefreshUI();
             }
             else
             {
+                GameSoundManager.Instance?.PlayError();
                 ShowToast(msg);
             }
         }
@@ -680,6 +693,7 @@ namespace EmpireBuilder.UI
         private void OnRequestMatchClicked()
         {
             if (currentBuilding == null) return;
+            GameSoundManager.Instance?.PlayClick(currentBuilding.transform.position);
             currentBuilding.TriggerExhibitionMatchRequest();
         }
 
@@ -690,12 +704,14 @@ namespace EmpireBuilder.UI
             bool success = currentBuilding.BuyProperty();
             if (success)
             {
+                GameSoundManager.Instance?.PlayBuy(currentBuilding.transform.position);
                 ShowToast($"Congratulations! You purchased {currentBuilding.PropertyName}!");
                 GamePlayHeaderUI.Instance?.UpdateMoneyDisplay();
                 RefreshUI();
             }
             else
             {
+                GameSoundManager.Instance?.PlayError();
                 ShowToast("Cannot afford to purchase this property!");
             }
         }
@@ -708,8 +724,13 @@ namespace EmpireBuilder.UI
             ShowToast(feedback);
             if (success)
             {
+                GameSoundManager.Instance?.PlayTaxiSpawn(currentBuilding.transform.position);
                 GamePlayHeaderUI.Instance?.UpdateMoneyDisplay();
                 RefreshUI();
+            }
+            else
+            {
+                GameSoundManager.Instance?.PlayError();
             }
         }
 
@@ -719,6 +740,7 @@ namespace EmpireBuilder.UI
 
             if (currentBuilding.CollectRent(out double amount))
             {
+                GameSoundManager.Instance?.PlayCollect(currentBuilding.transform.position);
                 ShowToast($"Collected +${amount:N0} in property rent income!");
                 GamePlayHeaderUI.Instance?.UpdateMoneyDisplay();
                 RefreshUI();

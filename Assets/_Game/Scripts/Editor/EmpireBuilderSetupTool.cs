@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using EmpireBuilder.Assets;
+using EmpireBuilder.Audio;
 using EmpireBuilder.Core;
 using EmpireBuilder.Economy;
 using EmpireBuilder.Events;
@@ -1278,7 +1279,10 @@ namespace EmpireBuilder.Editor
             // 8. Setup Static Building Animated World Indicators
             SetupBuildingWorldIndicatorsInScene();
 
-            // 9. Save Scene & Assets
+            // 9. Setup Static 3D Sound System in GamePlay Scene
+            SetupSoundSystemInScene();
+
+            // 10. Save Scene & Assets
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene);
             AssetDatabase.SaveAssets();
@@ -1487,6 +1491,36 @@ namespace EmpireBuilder.Editor
             AssetDatabase.SaveAssets();
 
             Debug.Log($"[EmpireBuilderSetupTool] Configured animated world indicators for {indicatorsConfigured} buildings in GamePlay scene.");
+        }
+
+        [MenuItem("Tools/Empire Builder/7. Setup 3D Sound System in GamePlay Scene", false, 7)]
+        public static void SetupSoundSystemInScene()
+        {
+            var scene = EditorSceneManager.OpenScene(GamePlayScenePath, OpenSceneMode.Single);
+
+            // 1. Ensure SoundManager GameObject exists at Scene Root
+            var soundMgrObj = GameObject.Find("SoundManager");
+            if (soundMgrObj == null)
+            {
+                soundMgrObj = new GameObject("SoundManager");
+            }
+            soundMgrObj.transform.position = Vector3.zero;
+
+            var soundMgr = soundMgrObj.GetComponent<GameSoundManager>();
+            if (soundMgr == null)
+            {
+                soundMgr = soundMgrObj.AddComponent<GameSoundManager>();
+            }
+
+            soundMgr.EnsureAudioHierarchy();
+            soundMgr.AutoLocateWorldEmitters();
+
+            EditorUtility.SetDirty(soundMgrObj);
+            EditorSceneManager.MarkSceneDirty(scene);
+            EditorSceneManager.SaveScene(scene);
+            AssetDatabase.SaveAssets();
+
+            Debug.Log("[EmpireBuilderSetupTool] 3D Sound System (SoundManager) successfully setup statically in GamePlay scene with all 3D emitters and empty audio slots!");
         }
     }
 }

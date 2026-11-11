@@ -182,6 +182,19 @@ namespace EmpireBuilder.Traffic
             isActiveOnRoad = true;
             isReturningToStation = false;
 
+            if (EmpireBuilder.Audio.GameSoundManager.Instance != null && EmpireBuilder.Audio.GameSoundManager.Instance.VehicleSoundEffect != null)
+            {
+                AudioSource taxiAudio = GetComponent<AudioSource>();
+                if (taxiAudio == null) taxiAudio = gameObject.AddComponent<AudioSource>();
+                taxiAudio.clip = EmpireBuilder.Audio.GameSoundManager.Instance.VehicleSoundEffect;
+                taxiAudio.loop = true;
+                taxiAudio.spatialBlend = 1.0f;
+                taxiAudio.minDistance = 6f;
+                taxiAudio.maxDistance = 50f;
+                taxiAudio.volume = 0.5f;
+                taxiAudio.Play();
+            }
+
             if (fareCoroutine != null) StopCoroutine(fareCoroutine);
             fareCoroutine = StartCoroutine(FareEarningLoop());
 
@@ -321,6 +334,8 @@ namespace EmpireBuilder.Traffic
 
                 // Display celebratory toast
                 PropertyDetailModalUI.Instance?.ShowToast($"🚖 Rented Taxi #{taxiNumber} picked up passenger! Fare: +${fare:N0}");
+
+                EmpireBuilder.Audio.GameSoundManager.Instance?.PlayCollect(transform.position);
             }
         }
 
@@ -374,6 +389,8 @@ namespace EmpireBuilder.Traffic
             PropertyDetailModalUI.Instance?.ShowToast(
                 $"🚖 Taxi #{taxiNumber} returned to station! Total Shift Fares: +${totalFaresEarned:N0} ({tripsCompleted} trips)"
             );
+
+            EmpireBuilder.Audio.GameSoundManager.Instance?.PlayVehicleHorn(transform.position);
 
             Debug.Log($"[ActiveRentedTaxi] Taxi #{taxiNumber} returned to station. Despawning spawned vehicle.");
 

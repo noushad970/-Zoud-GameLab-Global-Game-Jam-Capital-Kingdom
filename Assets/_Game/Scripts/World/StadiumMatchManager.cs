@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using EmpireBuilder.Audio;
 using EmpireBuilder.Core;
 using EmpireBuilder.Economy;
 using EmpireBuilder.Simulation;
@@ -157,6 +158,8 @@ namespace EmpireBuilder.World
             OnMatchRequestStateChanged?.Invoke(true);
             if (stadiumProperty != null) stadiumProperty.NotifyStateChanged();
 
+            GameSoundManager.Instance?.PlayStadiumMatchRequestAlert(stadiumProperty != null ? stadiumProperty.transform.position : (Vector3?)null);
+
             if (StadiumMatchRequestModalUI.Instance != null)
             {
                 StadiumMatchRequestModalUI.Instance.OpenRequest(
@@ -181,8 +184,14 @@ namespace EmpireBuilder.World
             OnMatchRequestStateChanged?.Invoke(false);
             if (stadiumProperty != null) stadiumProperty.NotifyStateChanged();
 
+            GameSoundManager.Instance?.PlayClick();
+
             totalMatchesHosted++;
             totalMatchRevenueEarned += rentOffer;
+
+            Vector3? stadiumPos = stadiumProperty != null ? stadiumProperty.transform.position : (Vector3?)null;
+            GameSoundManager.Instance?.PlayStadiumMatchCheer(stadiumPos);
+            GameSoundManager.Instance?.PlayCollect(stadiumPos);
 
             int currentDay = 1;
             if (GameManager.Instance != null && GameManager.Instance.Simulation != null)
@@ -229,6 +238,8 @@ namespace EmpireBuilder.World
             currentPendingRentOffer = 0.0;
             OnMatchRequestStateChanged?.Invoke(false);
             if (stadiumProperty != null) stadiumProperty.NotifyStateChanged();
+
+            GameSoundManager.Instance?.PlayClick();
 
             PropertyDetailModalUI.Instance?.ShowToast("⚽ Match rent request declined.");
             Debug.Log("[StadiumMatchManager] Player declined match rent request.");
