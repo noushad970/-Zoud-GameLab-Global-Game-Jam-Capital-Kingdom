@@ -3,7 +3,18 @@
 --- !u!78 &1
 TagManager:
   serializedVersion: 3
-  tags: []
+  tags:
+  - Rental Building
+  - Restaurent
+  - Cafe
+  - Texi Station
+  - Stadium
+  - Factory
+  - Small Rental Building
+  - Oil Station
+  - Hospital
+  - School
+  - Police Station
   layers:
   - Default
   - TransparentFX

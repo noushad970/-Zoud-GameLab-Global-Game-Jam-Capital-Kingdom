@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using EmpireBuilder.Audio;
 using EmpireBuilder.Core;
 using EmpireBuilder.Economy;
 using EmpireBuilder.Simulation;
@@ -9,15 +10,23 @@ namespace EmpireBuilder.World
 {
     public enum PropertyType
     {
-        House,
-        Apartment,
+        RentalBuilding,
+        SmallRentalBuilding,
         Restaurant,
-        Stadium,
+        Cafe,
         TaxiStation,
-        Commercial,
+        Stadium,
+        Factory,
+        OilStation,
         Hospital,
-        Market,
-        Industrial
+        School,
+        PoliceStation,
+        // Legacy aliases for backward compatibility with serialized scenes
+        House = SmallRentalBuilding,
+        Apartment = RentalBuilding,
+        Commercial = OilStation,
+        Market = Restaurant,
+        Industrial = Factory
     }
 
     /// <summary>
@@ -31,7 +40,7 @@ namespace EmpireBuilder.World
     {
         [Header("Building Information")]
         [SerializeField] private string propertyName = "City Property";
-        [SerializeField] private PropertyType propertyType = PropertyType.Apartment;
+        [SerializeField] private PropertyType propertyType = PropertyType.RentalBuilding;
         [TextArea(2, 4)]
         [SerializeField] private string description = "A valuable real estate asset in Capital Kingdom.";
 
@@ -43,11 +52,30 @@ namespace EmpireBuilder.World
         [Header("Flat / Unit Economics")]
         [Tooltip("Whether this building supports individual flat/unit buying and renting")]
         [SerializeField] private bool hasFlats = true;
-        [SerializeField] private int totalFlats = 8;
+        [SerializeField] private int totalFlats = 25;
         [SerializeField] private int flatsOwned = 0;
         [SerializeField] private int flatsRentedOut = 0;
-        [SerializeField] private double flatPurchasePrice = 5500.0;
-        [SerializeField] private double flatDailyRent = 280.0;
+        [SerializeField] private double flatPurchasePrice = 4500.0;
+        [SerializeField] private double flatDailyRent = 240.0;
+
+        [Header("Building Maintenance")]
+        [SerializeField] private bool hasPendingMaintenance = false;
+        [SerializeField] private double pendingMaintenanceCost = 0.0;
+        [SerializeField] private string maintenanceReason = "";
+        [SerializeField] private int totalMaintenanceRepairs = 0;
+        [SerializeField] private double totalMaintenanceCostPaid = 0.0;
+
+        [Header("Factory Industrial Production")]
+        [SerializeField] private double pendingProductionEarnings = 0.0;
+        [SerializeField] private int productionBatchesCompleted = 0;
+        [SerializeField] private double totalProductionRevenueCollected = 0.0;
+
+        [Header("Oil & Petroleum Station")]
+        [SerializeField] private double pendingOilRevenue = 0.0;
+        [SerializeField] private double totalOilRevenueCollected = 0.0;
+
+        [Header("Hospital Healthcare")]
+        [SerializeField] private double hospitalTreatmentFee = 150.0;
 
         [Header("Cafe & Restaurant Dining")]
         [SerializeField] private double drinkPrice = 8.0;
@@ -110,15 +138,35 @@ namespace EmpireBuilder.World
         public bool RentAvailableToCollect => rentAvailableToCollect;
         public Material SelectionShaderMaterial => selectionShaderMaterial;
         public BuildingWorldIndicator WorldIndicator => worldIndicator;
+        public bool IsCivic => propertyType == PropertyType.School || propertyType == PropertyType.PoliceStation;
 
-        // Flats Getters
-        public bool HasFlats => hasFlats && (propertyType != PropertyType.TaxiStation && propertyType != PropertyType.Stadium);
+        // Flats Getters (ONLY Rental Building and Small Rental Building)
+        public bool HasFlats => hasFlats && (propertyType == PropertyType.RentalBuilding || propertyType == PropertyType.SmallRentalBuilding);
         public int TotalFlats => totalFlats;
         public int FlatsOwned => flatsOwned;
         public int FlatsRentedOut => flatsRentedOut;
         public double FlatPurchasePrice => flatPurchasePrice;
         public double FlatDailyRent => flatDailyRent;
         public double TotalDailyFlatRentIncome => flatsRentedOut * flatDailyRent;
+
+        // Maintenance Getters
+        public bool HasPendingMaintenance => hasPendingMaintenance;
+        public double PendingMaintenanceCost => pendingMaintenanceCost;
+        public string MaintenanceReason => maintenanceReason;
+        public int TotalMaintenanceRepairs => totalMaintenanceRepairs;
+        public double TotalMaintenanceCostPaid => totalMaintenanceCostPaid;
+
+        // Factory Industrial Getters
+        public double PendingProductionEarnings => pendingProductionEarnings;
+        public int ProductionBatchesCompleted => productionBatchesCompleted;
+        public double TotalProductionRevenueCollected => totalProductionRevenueCollected;
+
+        // Oil Station Getters
+        public double PendingOilRevenue => pendingOilRevenue;
+        public double TotalOilRevenueCollected => totalOilRevenueCollected;
+
+        // Hospital Getters
+        public double HospitalTreatmentFee => hospitalTreatmentFee;
 
         // Dining Getters
         public double DrinkPrice => drinkPrice;
@@ -971,6 +1019,222 @@ namespace EmpireBuilder.World
         }
         #endregion
 
+        #region Hospital Operations
+        /// <summary>
+        /// Provides emergency and comprehensive medical treatment for the player,
+        /// restoring health completely to 100 HP.
+        /// If owned by the player, treatment is completely free.
+        /// </summary>
+        public bool ReceiveHospitalTreatment(out string message)
+        {
+            message = "";
+            if (PlayerHealthManager.Instance != null && PlayerHealthManager.Instance.CurrentHealth >= PlayerHealthManager.Instance.MaxHealth)
+            {
+                message = "Your health is already at 100%! No hospital treatment is currently needed.";
+                return false;
+            }
+
+            if (!isOwned)
+            {
+                double currentCash = GetPlayerCash();
+                if (currentCash < hospitalTreatmentFee)
+                {
+                    message = $"Hospital medical treatment fee is ${hospitalTreatmentFee:N0}. Current cash: ${currentCash:N0}.";
+                    return false;
+                }
+
+                int currentDay = GetCurrentDay();
+                if (GameManager.Instance != null && GameManager.Instance.Economy != null)
+                {
+                    GameManager.Instance.Economy.ApplyTransaction(
+                        -hospitalTreatmentFee,
+                        TransactionCategory.OperatingExpense,
+                        $"Medical Healthcare Treatment at {propertyName}",
+                        currentDay
+                    );
+                }
+                else
+                {
+                    DeductPlayerCashFallback(hospitalTreatmentFee);
+                }
+            }
+
+            if (PlayerHealthManager.Instance != null)
+            {
+                PlayerHealthManager.Instance.RestoreHealth(PlayerHealthManager.Instance.MaxHealth, "Hospital Treatment");
+            }
+
+            if (isOwned)
+            {
+                message = $"🏥 VIP Healthcare: As the owner of {propertyName}, your comprehensive treatment is complimentary! Health restored to 100 HP! ❤️";
+            }
+            else
+            {
+                message = $"🏥 Received full medical treatment for ${hospitalTreatmentFee:N0}! Health restored to 100 HP! ❤️";
+            }
+
+            GameSoundManager.Instance?.PlayCollect(transform.position);
+            NotifyStateChanged();
+            return true;
+        }
+        #endregion
+
+        #region Building Maintenance Operations
+        /// <summary>
+        /// Triggers a mandatory maintenance order on this building.
+        /// Maintenance cost is proportional to the building's purchase price.
+        /// </summary>
+        public void TriggerMaintenanceRequired(double cost, string reason)
+        {
+            hasPendingMaintenance = true;
+            pendingMaintenanceCost = cost;
+            maintenanceReason = reason;
+            SaveState();
+            NotifyStateChanged();
+        }
+
+        /// <summary>
+        /// Pays the required building maintenance fee.
+        /// Deducts money and restores building to pristine condition.
+        /// </summary>
+        public bool PayMaintenance(out string message)
+        {
+            message = "";
+            if (!hasPendingMaintenance)
+            {
+                message = "No maintenance is currently required for this building.";
+                return false;
+            }
+
+            double currentCash = GetPlayerCash();
+            if (currentCash < pendingMaintenanceCost)
+            {
+                message = $"Insufficient funds to pay maintenance! Cost: ${pendingMaintenanceCost:N0}, Cash: ${currentCash:N0}.";
+                return false;
+            }
+
+            int currentDay = GetCurrentDay();
+            if (GameManager.Instance != null && GameManager.Instance.Economy != null)
+            {
+                GameManager.Instance.Economy.ApplyTransaction(
+                    -pendingMaintenanceCost,
+                    TransactionCategory.OperatingExpense,
+                    $"Property Maintenance: {propertyName} ({maintenanceReason})",
+                    currentDay
+                );
+            }
+            else
+            {
+                DeductPlayerCashFallback(pendingMaintenanceCost);
+            }
+
+            totalMaintenanceRepairs++;
+            totalMaintenanceCostPaid += pendingMaintenanceCost;
+            double paid = pendingMaintenanceCost;
+            string reason = maintenanceReason;
+
+            hasPendingMaintenance = false;
+            pendingMaintenanceCost = 0.0;
+            maintenanceReason = "";
+
+            SaveState();
+            NotifyStateChanged();
+
+            message = $"🔧 Maintenance completed for {propertyName}! Paid ${paid:N0} ({reason}). Property restored to pristine condition!";
+            GameSoundManager.Instance?.PlayBuy(transform.position);
+            return true;
+        }
+        #endregion
+
+        #region Factory Industrial Operations
+        /// <summary>
+        /// Adds completed production batch earnings to the factory revenue backlog.
+        /// </summary>
+        public void AddProductionEarnings(double amount)
+        {
+            pendingProductionEarnings += amount;
+            productionBatchesCompleted++;
+            SaveState();
+            NotifyStateChanged();
+        }
+
+        /// <summary>
+        /// Player collects accumulated manufacturing production earnings from this factory.
+        /// </summary>
+        public bool CollectProductionRevenue(out double collectedAmount)
+        {
+            collectedAmount = pendingProductionEarnings;
+            if (collectedAmount <= 0) return false;
+
+            int currentDay = GetCurrentDay();
+            if (GameManager.Instance != null && GameManager.Instance.Economy != null)
+            {
+                GameManager.Instance.Economy.ApplyTransaction(
+                    collectedAmount,
+                    TransactionCategory.Revenue,
+                    $"Industrial Production Revenue from {propertyName}",
+                    currentDay
+                );
+            }
+            else
+            {
+                AddPlayerCashFallback(collectedAmount);
+            }
+
+            totalProductionRevenueCollected += collectedAmount;
+            pendingProductionEarnings = 0;
+            SaveState();
+            NotifyStateChanged();
+
+            GameSoundManager.Instance?.PlayCollect(transform.position);
+            return true;
+        }
+        #endregion
+
+        #region Oil Station Operations
+        /// <summary>
+        /// Adds vehicle fuel and petroleum sales revenues to the oil station backlog.
+        /// </summary>
+        public void AddOilRevenue(double amount)
+        {
+            pendingOilRevenue += amount;
+            SaveState();
+            NotifyStateChanged();
+        }
+
+        /// <summary>
+        /// Player collects accumulated vehicle fuel sales revenues from this oil station.
+        /// </summary>
+        public bool CollectOilRevenue(out double collectedAmount)
+        {
+            collectedAmount = pendingOilRevenue;
+            if (collectedAmount <= 0) return false;
+
+            int currentDay = GetCurrentDay();
+            if (GameManager.Instance != null && GameManager.Instance.Economy != null)
+            {
+                GameManager.Instance.Economy.ApplyTransaction(
+                    collectedAmount,
+                    TransactionCategory.Revenue,
+                    $"Petroleum & Vehicle Fuel Revenue from {propertyName}",
+                    currentDay
+                );
+            }
+            else
+            {
+                AddPlayerCashFallback(collectedAmount);
+            }
+
+            totalOilRevenueCollected += collectedAmount;
+            pendingOilRevenue = 0;
+            SaveState();
+            NotifyStateChanged();
+
+            GameSoundManager.Instance?.PlayCollect(transform.position);
+            return true;
+        }
+        #endregion
+
         /// <summary>
         /// Manually collect pending rent revenue (building rent + all leased flats).
         /// </summary>
@@ -1089,26 +1353,28 @@ namespace EmpireBuilder.World
             dailyRentIncome = dailyRent;
             if (!string.IsNullOrEmpty(desc)) description = desc;
 
-            if (type == PropertyType.Apartment)
+            // Strict flat buying rule: ONLY Rental Building and Small Rental Building support flats
+            if (type == PropertyType.RentalBuilding)
             {
                 hasFlats = true;
-                totalFlats = 8;
-                flatPurchasePrice = 5500;
-                flatDailyRent = 280;
+                totalFlats = 25; // 20 to 30 flats
+                flatPurchasePrice = 4200;
+                flatDailyRent = 260;
             }
-            else if (type == PropertyType.House)
+            else if (type == PropertyType.SmallRentalBuilding)
             {
                 hasFlats = true;
-                totalFlats = 3;
-                flatPurchasePrice = 4000;
-                flatDailyRent = 200;
+                totalFlats = 8; // 8 to 10 flats
+                flatPurchasePrice = 2800;
+                flatDailyRent = 180;
             }
-            else if (type != PropertyType.TaxiStation && type != PropertyType.Stadium)
+            else
             {
-                hasFlats = true;
-                totalFlats = 6;
-                flatPurchasePrice = 4500;
-                flatDailyRent = 220;
+                // Strictly disable flat buying for all other 9 building types
+                hasFlats = false;
+                totalFlats = 0;
+                flatsOwned = 0;
+                flatsRentedOut = 0;
             }
         }
 
@@ -1129,6 +1395,16 @@ namespace EmpireBuilder.World
             PlayerPrefs.SetInt($"{key}_FlatsRentedOut", flatsRentedOut);
             PlayerPrefs.SetInt($"{key}_MatchesHosted", matchesHosted);
             PlayerPrefs.SetFloat($"{key}_MatchRevenue", (float)totalMatchRevenue);
+            PlayerPrefs.SetInt($"{key}_HasMaint", hasPendingMaintenance ? 1 : 0);
+            PlayerPrefs.SetFloat($"{key}_MaintCost", (float)pendingMaintenanceCost);
+            PlayerPrefs.SetString($"{key}_MaintReason", maintenanceReason ?? "");
+            PlayerPrefs.SetInt($"{key}_MaintRepairs", totalMaintenanceRepairs);
+            PlayerPrefs.SetFloat($"{key}_MaintCostPaid", (float)totalMaintenanceCostPaid);
+            PlayerPrefs.SetFloat($"{key}_ProdEarn", (float)pendingProductionEarnings);
+            PlayerPrefs.SetInt($"{key}_ProdBatches", productionBatchesCompleted);
+            PlayerPrefs.SetFloat($"{key}_ProdTotal", (float)totalProductionRevenueCollected);
+            PlayerPrefs.SetFloat($"{key}_OilRev", (float)pendingOilRevenue);
+            PlayerPrefs.SetFloat($"{key}_OilTotal", (float)totalOilRevenueCollected);
             PlayerPrefs.Save();
         }
 
@@ -1166,6 +1442,46 @@ namespace EmpireBuilder.World
             if (PlayerPrefs.HasKey($"{key}_MatchRevenue"))
             {
                 totalMatchRevenue = PlayerPrefs.GetFloat($"{key}_MatchRevenue");
+            }
+            if (PlayerPrefs.HasKey($"{key}_HasMaint"))
+            {
+                hasPendingMaintenance = PlayerPrefs.GetInt($"{key}_HasMaint") == 1;
+            }
+            if (PlayerPrefs.HasKey($"{key}_MaintCost"))
+            {
+                pendingMaintenanceCost = PlayerPrefs.GetFloat($"{key}_MaintCost");
+            }
+            if (PlayerPrefs.HasKey($"{key}_MaintReason"))
+            {
+                maintenanceReason = PlayerPrefs.GetString($"{key}_MaintReason");
+            }
+            if (PlayerPrefs.HasKey($"{key}_MaintRepairs"))
+            {
+                totalMaintenanceRepairs = PlayerPrefs.GetInt($"{key}_MaintRepairs");
+            }
+            if (PlayerPrefs.HasKey($"{key}_MaintCostPaid"))
+            {
+                totalMaintenanceCostPaid = PlayerPrefs.GetFloat($"{key}_MaintCostPaid");
+            }
+            if (PlayerPrefs.HasKey($"{key}_ProdEarn"))
+            {
+                pendingProductionEarnings = PlayerPrefs.GetFloat($"{key}_ProdEarn");
+            }
+            if (PlayerPrefs.HasKey($"{key}_ProdBatches"))
+            {
+                productionBatchesCompleted = PlayerPrefs.GetInt($"{key}_ProdBatches");
+            }
+            if (PlayerPrefs.HasKey($"{key}_ProdTotal"))
+            {
+                totalProductionRevenueCollected = PlayerPrefs.GetFloat($"{key}_ProdTotal");
+            }
+            if (PlayerPrefs.HasKey($"{key}_OilRev"))
+            {
+                pendingOilRevenue = PlayerPrefs.GetFloat($"{key}_OilRev");
+            }
+            if (PlayerPrefs.HasKey($"{key}_OilTotal"))
+            {
+                totalOilRevenueCollected = PlayerPrefs.GetFloat($"{key}_OilTotal");
             }
         }
     }

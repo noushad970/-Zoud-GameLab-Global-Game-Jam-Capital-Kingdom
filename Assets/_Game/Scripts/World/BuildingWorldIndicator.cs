@@ -172,7 +172,20 @@ namespace EmpireBuilder.World
 
             EnsureUIHierarchy();
 
-            // 1. Check Stadium Match Request (Top Priority)
+            // 1. Check Mandatory Building Maintenance (Highest Priority Alert)
+            if (targetBuilding.HasPendingMaintenance)
+            {
+                isCollectibleReady = true; // Trigger energetic pulsing bounce
+                SetVisuals(
+                    starSprite ?? keySprite,
+                    $"MAINTENANCE: -${targetBuilding.PendingMaintenanceCost:N0}",
+                    new Color(0.92f, 0.22f, 0.18f, 0.98f), // Urgent Crimson Red
+                    Color.white
+                );
+                return;
+            }
+
+            // 2. Check Stadium Match Request
             bool isStadiumMatch = targetBuilding.PropertyType == PropertyType.Stadium &&
                                   StadiumMatchManager.Instance != null &&
                                   StadiumMatchManager.Instance.IsRequestPending;
@@ -185,7 +198,33 @@ namespace EmpireBuilder.World
                 return;
             }
 
-            // 2. Check Collectible Rent
+            // 3. Check Factory Production Earnings Ready to Collect
+            if (targetBuilding.PropertyType == PropertyType.Factory && targetBuilding.PendingProductionEarnings > 0)
+            {
+                isCollectibleReady = true;
+                SetVisuals(
+                    coinSprite ?? starSprite,
+                    $"PROD +${targetBuilding.PendingProductionEarnings:N0}",
+                    new Color(0.15f, 0.55f, 0.90f, 0.98f), // Industrial Blue
+                    Color.white
+                );
+                return;
+            }
+
+            // 4. Check Oil Station Petroleum Revenue Ready to Collect
+            if (targetBuilding.PropertyType == PropertyType.OilStation && targetBuilding.PendingOilRevenue > 0)
+            {
+                isCollectibleReady = true;
+                SetVisuals(
+                    coinSprite ?? starSprite,
+                    $"OIL +${targetBuilding.PendingOilRevenue:N0}",
+                    new Color(0.85f, 0.65f, 0.08f, 0.98f), // Petroleum Gold
+                    Color.white
+                );
+                return;
+            }
+
+            // 5. Check Collectible Rent
             double buildingRent = targetBuilding.IsOwned ? targetBuilding.DailyRentIncome : 0;
             double flatRent = targetBuilding.FlatsRentedOut * targetBuilding.FlatDailyRent;
             double totalDue = buildingRent + flatRent;
@@ -197,7 +236,32 @@ namespace EmpireBuilder.World
                 return;
             }
 
-            // 3. Check Fully Owned Building
+            // 6. Check Hospital Medical Treatment Needed (If Player Health is Low)
+            if (targetBuilding.PropertyType == PropertyType.Hospital &&
+                EmpireBuilder.Core.PlayerHealthManager.Instance != null &&
+                EmpireBuilder.Core.PlayerHealthManager.Instance.IsLowHealth)
+            {
+                isCollectibleReady = true;
+                SetVisuals(
+                    checkmarkSprite ?? starSprite,
+                    "HEAL HP (HOSPITAL)",
+                    new Color(0.88f, 0.18f, 0.24f, 0.98f), // Red Cross Alert
+                    Color.white
+                );
+                return;
+            }
+
+            // 7. Check Civic Municipal Buildings (School & Police Station)
+            if (targetBuilding.IsCivic)
+            {
+                isCollectibleReady = false;
+                Color civicBg = new Color(0.20f, 0.28f, 0.38f, 0.92f);
+                string cTxt = targetBuilding.PropertyType == PropertyType.School ? "CIVIC: SCHOOL" : "CIVIC: POLICE HQ";
+                SetVisuals(starSprite, cTxt, civicBg, Color.white);
+                return;
+            }
+
+            // 8. Check Fully Owned Building
             if (targetBuilding.IsOwned)
             {
                 isCollectibleReady = false;
@@ -206,8 +270,20 @@ namespace EmpireBuilder.World
                     case PropertyType.Restaurant:
                         SetVisuals(shopSprite, "MY RESTAURANT", new Color(0.82f, 0.35f, 0.12f, 0.95f), Color.white);
                         break;
+                    case PropertyType.Cafe:
+                        SetVisuals(shopSprite, "MY CAFE", new Color(0.78f, 0.48f, 0.15f, 0.95f), Color.white);
+                        break;
                     case PropertyType.Stadium:
                         SetVisuals(crownSprite ?? trophySprite, "MY STADIUM", new Color(0.40f, 0.28f, 0.85f, 0.95f), Color.white);
+                        break;
+                    case PropertyType.Factory:
+                        SetVisuals(starSprite, "MY FACTORY", new Color(0.28f, 0.45f, 0.60f, 0.95f), Color.white);
+                        break;
+                    case PropertyType.OilStation:
+                        SetVisuals(coinSprite, "MY OIL STATION", new Color(0.68f, 0.52f, 0.12f, 0.95f), Color.white);
+                        break;
+                    case PropertyType.Hospital:
+                        SetVisuals(checkmarkSprite, "MY HOSPITAL", new Color(0.15f, 0.65f, 0.45f, 0.95f), Color.white);
                         break;
                     case PropertyType.TaxiStation:
                         int taxis = targetBuilding.CurrentlyRentedTaxis;
@@ -222,7 +298,7 @@ namespace EmpireBuilder.World
                 return;
             }
 
-            // 4. Check Flat Ownership (Owns flats, but not entire building)
+            // 9. Check Flat Ownership (Owns some flats, but not entire building)
             if (targetBuilding.HasFlats && targetBuilding.FlatsOwned > 0)
             {
                 isCollectibleReady = false;
@@ -233,7 +309,7 @@ namespace EmpireBuilder.World
                 return;
             }
 
-            // 5. Unowned / For Sale
+            // 10. Unowned / For Sale
             isCollectibleReady = false;
             if (!showUnownedIndicators)
             {
@@ -252,11 +328,27 @@ namespace EmpireBuilder.World
             }
             else if (targetBuilding.PropertyType == PropertyType.Restaurant)
             {
+                SetVisuals(shopSprite, $"RESTAURANT (${targetBuilding.PurchasePrice:N0})", unownedBg, unownedText);
+            }
+            else if (targetBuilding.PropertyType == PropertyType.Cafe)
+            {
                 SetVisuals(shopSprite, $"CAFE (${targetBuilding.PurchasePrice:N0})", unownedBg, unownedText);
             }
             else if (targetBuilding.PropertyType == PropertyType.Stadium)
             {
                 SetVisuals(trophySprite ?? crownSprite, $"STADIUM (${targetBuilding.PurchasePrice:N0})", unownedBg, unownedText);
+            }
+            else if (targetBuilding.PropertyType == PropertyType.Factory)
+            {
+                SetVisuals(starSprite, $"FACTORY (${targetBuilding.PurchasePrice:N0})", unownedBg, unownedText);
+            }
+            else if (targetBuilding.PropertyType == PropertyType.OilStation)
+            {
+                SetVisuals(coinSprite, $"OIL STATION (${targetBuilding.PurchasePrice:N0})", unownedBg, unownedText);
+            }
+            else if (targetBuilding.PropertyType == PropertyType.Hospital)
+            {
+                SetVisuals(checkmarkSprite, $"HOSPITAL (${targetBuilding.PurchasePrice:N0})", unownedBg, unownedText);
             }
             else if (targetBuilding.PropertyType == PropertyType.TaxiStation)
             {

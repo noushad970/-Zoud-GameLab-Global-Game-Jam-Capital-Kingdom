@@ -249,8 +249,118 @@ namespace EmpireBuilder.World
                 p = p.parent;
             }
 
-            // 4. Match specific known building types
-            // 4.1 Taxi Station
+            // 4. Check Unity GameObject Tags Assigned by User (Primary source of identification)
+            string objectTag = t.tag;
+            if (!string.IsNullOrEmpty(objectTag) && objectTag != "Untagged")
+            {
+                if (objectTag == "Rental Building")
+                {
+                    friendlyName = GetCleanName(n, "Tower Residences");
+                    pType = PropertyType.RentalBuilding;
+                    price = 95000;
+                    dailyRent = 1800;
+                    desc = "High-density residential high-rise. Purchase individual flats (25 flats available) to lease out for rent, or buy the entire building for massive daily revenue!";
+                    return true;
+                }
+                if (objectTag == "Small Rental Building")
+                {
+                    friendlyName = GetCleanName(n, "Suburban Rental House");
+                    pType = PropertyType.SmallRentalBuilding;
+                    price = 28000;
+                    dailyRent = 600;
+                    desc = "Multi-unit residential property. Purchase individual flats (8 flats available) to lease out for rent, or buy the entire house!";
+                    return true;
+                }
+                if (objectTag == "Restaurent" || objectTag == "Restaurant")
+                {
+                    friendlyName = GetCleanName(n, "Gourmet City Restaurant");
+                    pType = PropertyType.Restaurant;
+                    price = 45000;
+                    dailyRent = 900;
+                    desc = "Premier dining establishment. Visit to eat gourmet dishes or drink beverages to restore health and stamina, or acquire the restaurant!";
+                    return true;
+                }
+                if (objectTag == "Cafe")
+                {
+                    friendlyName = GetCleanName(n, "Artisan Coffee Cafe");
+                    pType = PropertyType.Cafe;
+                    price = 32000;
+                    dailyRent = 700;
+                    desc = "Popular urban coffeehouse. Visit to drink roasted espresso or food to replenish health, or buy the cafe for continuous income!";
+                    return true;
+                }
+                if (objectTag == "Texi Station" || objectTag == "Taxi Station")
+                {
+                    int num = n.Contains("(1)") ? 2 : 1;
+                    friendlyName = $"City Central Taxi Station #{num}";
+                    pType = PropertyType.TaxiStation;
+                    price = 50000;
+                    dailyRent = 1100;
+                    taxiFee = 150;
+                    taxiFare = 450;
+                    desc = "Central taxi transit depot. Rent up to 8 taxis per day with roof markers to collect passenger fares on city roads, or purchase the station!";
+                    return true;
+                }
+                if (objectTag == "Stadium")
+                {
+                    friendlyName = "Grand Olympic Stadium";
+                    pType = PropertyType.Stadium;
+                    price = 180000;
+                    dailyRent = 3500;
+                    desc = "Massive sports and entertainment colosseum. Buy the stadium to receive football match hosting rental requests and earn huge rewards!";
+                    return true;
+                }
+                if (objectTag == "Factory")
+                {
+                    int num = n.Contains("(1)") ? 2 : 1;
+                    friendlyName = $"Capital Industrial Manufacturing Plant #{num}";
+                    pType = PropertyType.Factory;
+                    price = 120000;
+                    dailyRent = 2400;
+                    desc = "Heavy manufacturing plant. Buy the factory for large-scale industrial output and periodic production revenue collections!";
+                    return true;
+                }
+                if (objectTag == "Oil Station")
+                {
+                    int num = n.Contains("(1)") ? 2 : 1;
+                    friendlyName = $"Metropolitan Oil & Petroleum Station #{num}";
+                    pType = PropertyType.OilStation;
+                    price = 85000;
+                    dailyRent = 1900;
+                    desc = "High-traffic fuel and petroleum station. Buy the oil station to earn regular revenue from citywide vehicle fuel sales!";
+                    return true;
+                }
+                if (objectTag == "Hospital")
+                {
+                    friendlyName = "Capital General Hospital";
+                    pType = PropertyType.Hospital;
+                    price = 150000;
+                    dailyRent = 2800;
+                    desc = "Advanced metropolitan medical center. Visit anytime you are sick or low health for full medical treatment (restoring 100 HP), or buy the hospital!";
+                    return true;
+                }
+                if (objectTag == "School")
+                {
+                    friendlyName = "Capital Public Academy";
+                    pType = PropertyType.School;
+                    price = 0;
+                    dailyRent = 0;
+                    desc = "Civic public school dedicated to city education. Public municipal facility (not available for private purchase or flat leasing).";
+                    return true;
+                }
+                if (objectTag == "Police Station")
+                {
+                    friendlyName = "Metropolitan Police Department HQ";
+                    pType = PropertyType.PoliceStation;
+                    price = 0;
+                    dailyRent = 0;
+                    desc = "Municipal law enforcement headquarters ensuring city safety. Public facility (not available for private purchase or flat leasing).";
+                    return true;
+                }
+            }
+
+            // 5. Fallback Name-Based Matching (For any untagged structures)
+            // 5.1 Taxi Station
             if (n.Contains("Texi Station") || n.Contains("Taxi Station"))
             {
                 int num = n.Contains("(1)") ? 2 : 1;
@@ -438,6 +548,14 @@ namespace EmpireBuilder.World
                    name.Contains("Cafe") || name.Contains("Restaurant") || name.Contains("Market") ||
                    name.Contains("Shop") || name.Contains("School") || name.Contains("Factory") ||
                    name.Contains("Eco_Building") || name.Contains("House") || name.Contains("Demo_Block");
+        }
+
+        private static string GetCleanName(string raw, string fallback)
+        {
+            if (string.IsNullOrEmpty(raw)) return fallback;
+            string clean = raw.Replace('_', ' ').Trim();
+            if (clean.StartsWith("Building ")) clean = clean.Substring(9);
+            return clean;
         }
         #endregion
 

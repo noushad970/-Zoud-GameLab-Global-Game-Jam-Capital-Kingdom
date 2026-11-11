@@ -78,6 +78,34 @@ namespace EmpireBuilder.UI
         [SerializeField] private Button requestMatchButton;
         [SerializeField] private TextMeshProUGUI requestMatchButtonText;
 
+        [Header("Hospital Healthcare Section (Special)")]
+        [SerializeField] private GameObject hospitalSectionRoot;
+        [SerializeField] private TextMeshProUGUI hospitalStatusText;
+        [SerializeField] private Button treatmentButton;
+        [SerializeField] private TextMeshProUGUI treatmentButtonText;
+        [SerializeField] private Image treatmentButtonBg;
+
+        [Header("Factory Industrial Section (Special)")]
+        [SerializeField] private GameObject factorySectionRoot;
+        [SerializeField] private TextMeshProUGUI factoryStatusText;
+        [SerializeField] private Button collectProductionButton;
+        [SerializeField] private TextMeshProUGUI collectProductionButtonText;
+        [SerializeField] private Image collectProductionButtonBg;
+
+        [Header("Oil & Petroleum Station Section (Special)")]
+        [SerializeField] private GameObject oilSectionRoot;
+        [SerializeField] private TextMeshProUGUI oilStatusText;
+        [SerializeField] private Button collectOilButton;
+        [SerializeField] private TextMeshProUGUI collectOilButtonText;
+        [SerializeField] private Image collectOilButtonBg;
+
+        [Header("Building Maintenance Section")]
+        [SerializeField] private GameObject maintenanceSectionRoot;
+        [SerializeField] private TextMeshProUGUI maintenanceReasonText;
+        [SerializeField] private Button payMaintenanceButton;
+        [SerializeField] private TextMeshProUGUI payMaintenanceButtonText;
+        [SerializeField] private Image payMaintenanceButtonBg;
+
         [Header("Feedback Toast")]
         [SerializeField] private GameObject toastRoot;
         [SerializeField] private TextMeshProUGUI toastMessageText;
@@ -201,6 +229,66 @@ namespace EmpireBuilder.UI
                     requestMatchButtonText = requestMatchButton.transform.Find("Text")?.GetComponent<TextMeshProUGUI>();
             }
 
+            if (hospitalSectionRoot == null && card != null)
+            {
+                var t = card.Find("HospitalSection");
+                if (t != null) hospitalSectionRoot = t.gameObject;
+            }
+            if (hospitalSectionRoot != null)
+            {
+                if (hospitalStatusText == null)
+                    hospitalStatusText = hospitalSectionRoot.transform.Find("HospitalStatus")?.GetComponent<TextMeshProUGUI>();
+                if (treatmentButton == null)
+                    treatmentButton = hospitalSectionRoot.transform.Find("TreatmentButton")?.GetComponent<Button>();
+                if (treatmentButtonText == null && treatmentButton != null)
+                    treatmentButtonText = treatmentButton.transform.Find("Text")?.GetComponent<TextMeshProUGUI>();
+            }
+
+            if (factorySectionRoot == null && card != null)
+            {
+                var t = card.Find("FactorySection");
+                if (t != null) factorySectionRoot = t.gameObject;
+            }
+            if (factorySectionRoot != null)
+            {
+                if (factoryStatusText == null)
+                    factoryStatusText = factorySectionRoot.transform.Find("FactoryStatus")?.GetComponent<TextMeshProUGUI>();
+                if (collectProductionButton == null)
+                    collectProductionButton = factorySectionRoot.transform.Find("CollectProductionButton")?.GetComponent<Button>();
+                if (collectProductionButtonText == null && collectProductionButton != null)
+                    collectProductionButtonText = collectProductionButton.transform.Find("Text")?.GetComponent<TextMeshProUGUI>();
+            }
+
+            if (oilSectionRoot == null && card != null)
+            {
+                var t = card.Find("OilSection");
+                if (t != null) oilSectionRoot = t.gameObject;
+            }
+            if (oilSectionRoot != null)
+            {
+                if (oilStatusText == null)
+                    oilStatusText = oilSectionRoot.transform.Find("OilStatus")?.GetComponent<TextMeshProUGUI>();
+                if (collectOilButton == null)
+                    collectOilButton = oilSectionRoot.transform.Find("CollectOilButton")?.GetComponent<Button>();
+                if (collectOilButtonText == null && collectOilButton != null)
+                    collectOilButtonText = collectOilButton.transform.Find("Text")?.GetComponent<TextMeshProUGUI>();
+            }
+
+            if (maintenanceSectionRoot == null && card != null)
+            {
+                var t = card.Find("MaintenanceSection");
+                if (t != null) maintenanceSectionRoot = t.gameObject;
+            }
+            if (maintenanceSectionRoot != null)
+            {
+                if (maintenanceReasonText == null)
+                    maintenanceReasonText = maintenanceSectionRoot.transform.Find("MaintenanceReason")?.GetComponent<TextMeshProUGUI>();
+                if (payMaintenanceButton == null)
+                    payMaintenanceButton = maintenanceSectionRoot.transform.Find("PayMaintenanceButton")?.GetComponent<Button>();
+                if (payMaintenanceButtonText == null && payMaintenanceButton != null)
+                    payMaintenanceButtonText = payMaintenanceButton.transform.Find("Text")?.GetComponent<TextMeshProUGUI>();
+            }
+
             if (collectRentButton == null && card != null)
             {
                 collectRentButton = card.Find("CollectRentButton")?.GetComponent<Button>();
@@ -273,6 +361,26 @@ namespace EmpireBuilder.UI
             {
                 requestMatchButton.onClick.RemoveAllListeners();
                 requestMatchButton.onClick.AddListener(OnRequestMatchClicked);
+            }
+            if (treatmentButton != null)
+            {
+                treatmentButton.onClick.RemoveAllListeners();
+                treatmentButton.onClick.AddListener(OnTreatmentClicked);
+            }
+            if (collectProductionButton != null)
+            {
+                collectProductionButton.onClick.RemoveAllListeners();
+                collectProductionButton.onClick.AddListener(OnCollectProductionClicked);
+            }
+            if (collectOilButton != null)
+            {
+                collectOilButton.onClick.RemoveAllListeners();
+                collectOilButton.onClick.AddListener(OnCollectOilClicked);
+            }
+            if (payMaintenanceButton != null)
+            {
+                payMaintenanceButton.onClick.RemoveAllListeners();
+                payMaintenanceButton.onClick.AddListener(OnPayMaintenanceClicked);
             }
         }
 
@@ -360,10 +468,14 @@ namespace EmpireBuilder.UI
                 categoryBadgeBg.color = GetCategoryColor(currentBuilding.PropertyType);
             }
 
-            // 3. Status Badge (Owned vs For Sale vs Flats Owned)
+            // 3. Status Badge (Owned vs For Sale vs Flats Owned vs Civic)
             if (statusBadgeText != null)
             {
-                if (currentBuilding.IsOwned)
+                if (currentBuilding.IsCivic)
+                {
+                    statusBadgeText.text = "CIVIC PUBLIC FACILITY";
+                }
+                else if (currentBuilding.IsOwned)
                 {
                     statusBadgeText.text = "OWNED BY YOU";
                 }
@@ -379,7 +491,11 @@ namespace EmpireBuilder.UI
 
             if (statusBadgeBg != null)
             {
-                if (currentBuilding.IsOwned)
+                if (currentBuilding.IsCivic)
+                {
+                    statusBadgeBg.color = new Color(0.35f, 0.45f, 0.60f, 1f); // Civic Slate Navy
+                }
+                else if (currentBuilding.IsOwned)
                 {
                     statusBadgeBg.color = new Color(0.18f, 0.75f, 0.44f, 1f); // Emerald Green
                 }
@@ -396,12 +512,12 @@ namespace EmpireBuilder.UI
             // 4. Financial Stats
             if (priceValueText != null)
             {
-                priceValueText.text = $"${currentBuilding.PurchasePrice:N0}";
+                priceValueText.text = currentBuilding.IsCivic ? "N/A (CIVIC)" : $"${currentBuilding.PurchasePrice:N0}";
             }
 
             if (dailyIncomeValueText != null)
             {
-                dailyIncomeValueText.text = $"+${currentBuilding.DailyRentIncome:N0} / day";
+                dailyIncomeValueText.text = currentBuilding.IsCivic ? "PUBLIC UTILITY" : $"+${currentBuilding.DailyRentIncome:N0} / day";
             }
 
             // 5. Buy Property Button State
@@ -415,7 +531,13 @@ namespace EmpireBuilder.UI
 
             if (buyPropertyButton != null)
             {
-                if (currentBuilding.IsOwned)
+                if (currentBuilding.IsCivic)
+                {
+                    buyPropertyButton.interactable = false;
+                    if (buyButtonText != null) buyButtonText.text = "CIVIC FACILITY (NOT FOR SALE)";
+                    if (buyButtonBg != null) buyButtonBg.color = new Color(0.25f, 0.30f, 0.40f, 0.7f);
+                }
+                else if (currentBuilding.IsOwned)
                 {
                     buyPropertyButton.interactable = false;
                     if (buyButtonText != null) buyButtonText.text = "ALREADY OWNED";
@@ -504,7 +626,7 @@ namespace EmpireBuilder.UI
             }
 
             // 8. Cafe & Restaurant Dining Section
-            bool isDining = currentBuilding.PropertyType == PropertyType.Restaurant;
+            bool isDining = currentBuilding.PropertyType == PropertyType.Restaurant || currentBuilding.PropertyType == PropertyType.Cafe;
             if (restaurantSectionRoot != null)
             {
                 restaurantSectionRoot.SetActive(isDining);
@@ -617,6 +739,148 @@ namespace EmpireBuilder.UI
                         requestMatchButtonText.text = currentBuilding.IsOwned
                             ? "REQUEST MATCH RENT OFFER NOW"
                             : "BUY STADIUM TO HOST MATCHES";
+                    }
+                }
+            }
+
+            // 11. Hospital Healthcare Section
+            bool isHospital = currentBuilding.PropertyType == PropertyType.Hospital;
+            if (hospitalSectionRoot != null)
+            {
+                hospitalSectionRoot.SetActive(isHospital);
+            }
+            if (isHospital)
+            {
+                float curHp = PlayerHealthManager.Instance != null ? PlayerHealthManager.Instance.CurrentHealth : 100f;
+                float maxHp = PlayerHealthManager.Instance != null ? PlayerHealthManager.Instance.MaxHealth : 100f;
+                bool needsHeal = curHp < maxHp - 0.5f;
+
+                if (hospitalStatusText != null)
+                {
+                    hospitalStatusText.text = currentBuilding.IsOwned
+                        ? $"Health: {curHp:0}/{maxHp:0} HP. As Hospital Owner, full medical care is COMPLIMENTARY (FREE)!"
+                        : $"Health: {curHp:0}/{maxHp:0} HP. Visit anytime you are sick to restore to 100 HP!";
+                }
+
+                if (treatmentButton != null)
+                {
+                    bool canAffordTreatment = currentBuilding.IsOwned || currentCash >= currentBuilding.HospitalTreatmentFee;
+                    treatmentButton.interactable = needsHeal && canAffordTreatment;
+                    if (treatmentButtonText != null)
+                    {
+                        if (!needsHeal)
+                        {
+                            treatmentButtonText.text = "HEALTH AT 100% (NO TREATMENT NEEDED)";
+                        }
+                        else if (currentBuilding.IsOwned)
+                        {
+                            treatmentButtonText.text = "RECEIVE TREATMENT (HEAL 100 HP, FREE)";
+                        }
+                        else
+                        {
+                            treatmentButtonText.text = canAffordTreatment
+                                ? $"RECEIVE TREATMENT (HEAL 100 HP, ${currentBuilding.HospitalTreatmentFee:N0})"
+                                : $"NEED ${currentBuilding.HospitalTreatmentFee:N0} FOR TREATMENT";
+                        }
+                    }
+                    if (treatmentButtonBg != null)
+                    {
+                        treatmentButtonBg.color = needsHeal && canAffordTreatment
+                            ? new Color(0.12f, 0.78f, 0.38f, 1f)
+                            : new Color(0.45f, 0.48f, 0.52f, 0.8f);
+                    }
+                }
+            }
+
+            // 12. Factory Industrial Production Section
+            bool isFactory = currentBuilding.PropertyType == PropertyType.Factory;
+            if (factorySectionRoot != null)
+            {
+                factorySectionRoot.SetActive(isFactory);
+            }
+            if (isFactory)
+            {
+                if (factoryStatusText != null)
+                {
+                    factoryStatusText.text = $"Batches: {currentBuilding.ProductionBatchesCompleted} | Revenue: ${currentBuilding.TotalProductionRevenueCollected:N0}\nReady: +${currentBuilding.PendingProductionEarnings:N0}";
+                }
+                if (collectProductionButton != null)
+                {
+                    bool hasEarnings = currentBuilding.PendingProductionEarnings > 0;
+                    collectProductionButton.interactable = hasEarnings;
+                    if (collectProductionButtonText != null)
+                    {
+                        collectProductionButtonText.text = hasEarnings
+                            ? $"COLLECT PRODUCTION REVENUE (+${currentBuilding.PendingProductionEarnings:N0})"
+                            : (currentBuilding.IsOwned ? "MANUFACTURING IN PROGRESS..." : "BUY FACTORY TO PRODUCE GOODS");
+                    }
+                    if (collectProductionButtonBg != null)
+                    {
+                        collectProductionButtonBg.color = hasEarnings
+                            ? new Color(0.15f, 0.65f, 0.95f, 1f)
+                            : new Color(0.40f, 0.45f, 0.52f, 0.8f);
+                    }
+                }
+            }
+
+            // 13. Oil Station Petroleum Section
+            bool isOil = currentBuilding.PropertyType == PropertyType.OilStation;
+            if (oilSectionRoot != null)
+            {
+                oilSectionRoot.SetActive(isOil);
+            }
+            if (isOil)
+            {
+                if (oilStatusText != null)
+                {
+                    oilStatusText.text = $"Total Fuel Sales: ${currentBuilding.TotalOilRevenueCollected:N0}\nReady: +${currentBuilding.PendingOilRevenue:N0}";
+                }
+                if (collectOilButton != null)
+                {
+                    bool hasOilRev = currentBuilding.PendingOilRevenue > 0;
+                    collectOilButton.interactable = hasOilRev;
+                    if (collectOilButtonText != null)
+                    {
+                        collectOilButtonText.text = hasOilRev
+                            ? $"COLLECT OIL REVENUE (+${currentBuilding.PendingOilRevenue:N0})"
+                            : (currentBuilding.IsOwned ? "FUEL SALES IN PROGRESS..." : "BUY OIL STATION TO EARN FUEL SALES");
+                    }
+                    if (collectOilButtonBg != null)
+                    {
+                        collectOilButtonBg.color = hasOilRev
+                            ? new Color(0.95f, 0.65f, 0.12f, 1f)
+                            : new Color(0.45f, 0.45f, 0.45f, 0.8f);
+                    }
+                }
+            }
+
+            // 14. Building Maintenance Alert Section
+            bool hasMaint = currentBuilding.HasPendingMaintenance;
+            if (maintenanceSectionRoot != null)
+            {
+                maintenanceSectionRoot.SetActive(hasMaint);
+            }
+            if (hasMaint)
+            {
+                if (maintenanceReasonText != null)
+                {
+                    maintenanceReasonText.text = $"⚠️ MAINTENANCE REQUIRED: -${currentBuilding.PendingMaintenanceCost:N0}\n{currentBuilding.MaintenanceReason}";
+                }
+                if (payMaintenanceButton != null)
+                {
+                    bool canAffordMaint = currentCash >= currentBuilding.PendingMaintenanceCost;
+                    payMaintenanceButton.interactable = canAffordMaint;
+                    if (payMaintenanceButtonText != null)
+                    {
+                        payMaintenanceButtonText.text = canAffordMaint
+                            ? $"PAY MAINTENANCE (-${currentBuilding.PendingMaintenanceCost:N0})"
+                            : $"INSUFFICIENT FUNDS (-${currentBuilding.PendingMaintenanceCost:N0})";
+                    }
+                    if (payMaintenanceButtonBg != null)
+                    {
+                        payMaintenanceButtonBg.color = canAffordMaint
+                            ? new Color(0.90f, 0.35f, 0.15f, 1f)
+                            : new Color(0.55f, 0.25f, 0.25f, 0.8f);
                     }
                 }
             }
@@ -747,6 +1011,70 @@ namespace EmpireBuilder.UI
             }
         }
 
+        private void OnTreatmentClicked()
+        {
+            if (currentBuilding == null) return;
+            if (currentBuilding.ReceiveHospitalTreatment(out string msg))
+            {
+                ShowToast(msg);
+                GamePlayHeaderUI.Instance?.UpdateMoneyDisplay();
+                RefreshUI();
+            }
+            else
+            {
+                GameSoundManager.Instance?.PlayError();
+                ShowToast(msg);
+            }
+        }
+
+        private void OnCollectProductionClicked()
+        {
+            if (currentBuilding == null) return;
+            if (currentBuilding.CollectProductionRevenue(out double amt))
+            {
+                ShowToast($"Collected +${amt:N0} in factory production revenue!");
+                GamePlayHeaderUI.Instance?.UpdateMoneyDisplay();
+                RefreshUI();
+            }
+            else
+            {
+                GameSoundManager.Instance?.PlayError();
+                ShowToast("No factory production revenue ready to collect.");
+            }
+        }
+
+        private void OnCollectOilClicked()
+        {
+            if (currentBuilding == null) return;
+            if (currentBuilding.CollectOilRevenue(out double amt))
+            {
+                ShowToast($"Collected +${amt:N0} in oil & fuel sales revenue!");
+                GamePlayHeaderUI.Instance?.UpdateMoneyDisplay();
+                RefreshUI();
+            }
+            else
+            {
+                GameSoundManager.Instance?.PlayError();
+                ShowToast("No oil sales revenue ready to collect.");
+            }
+        }
+
+        private void OnPayMaintenanceClicked()
+        {
+            if (currentBuilding == null) return;
+            if (currentBuilding.PayMaintenance(out string msg))
+            {
+                ShowToast(msg);
+                GamePlayHeaderUI.Instance?.UpdateMoneyDisplay();
+                RefreshUI();
+            }
+            else
+            {
+                GameSoundManager.Instance?.PlayError();
+                ShowToast(msg);
+            }
+        }
+
         public void ShowToast(string message)
         {
             if (toastRoot == null || toastMessageText == null)
@@ -787,24 +1115,28 @@ namespace EmpireBuilder.UI
         {
             switch (type)
             {
-                case PropertyType.Stadium:
-                    return new Color(0.92f, 0.42f, 0.18f, 1f); // Vibrant Coral
-                case PropertyType.TaxiStation:
-                    return new Color(0.98f, 0.74f, 0.12f, 1f); // Taxi Yellow
+                case PropertyType.RentalBuilding:
+                    return new Color(0.18f, 0.65f, 0.92f, 1f); // Sky Blue
+                case PropertyType.SmallRentalBuilding:
+                    return new Color(0.28f, 0.75f, 0.42f, 1f); // Forest Green
                 case PropertyType.Restaurant:
                     return new Color(0.88f, 0.28f, 0.35f, 1f); // Crimson
-                case PropertyType.Apartment:
-                    return new Color(0.18f, 0.65f, 0.92f, 1f); // Cyan Blue
-                case PropertyType.House:
-                    return new Color(0.28f, 0.75f, 0.42f, 1f); // Forest Green
+                case PropertyType.Cafe:
+                    return new Color(0.95f, 0.58f, 0.15f, 1f); // Amber
+                case PropertyType.TaxiStation:
+                    return new Color(0.98f, 0.74f, 0.12f, 1f); // Taxi Yellow
+                case PropertyType.Stadium:
+                    return new Color(0.92f, 0.42f, 0.18f, 1f); // Vibrant Coral
+                case PropertyType.Factory:
+                    return new Color(0.48f, 0.54f, 0.62f, 1f); // Industrial Slate
+                case PropertyType.OilStation:
+                    return new Color(0.85f, 0.62f, 0.10f, 1f); // Petroleum Gold
                 case PropertyType.Hospital:
                     return new Color(0.90f, 0.22f, 0.25f, 1f); // Red
-                case PropertyType.Market:
-                    return new Color(0.95f, 0.58f, 0.15f, 1f); // Amber
-                case PropertyType.Commercial:
-                    return new Color(0.55f, 0.38f, 0.88f, 1f); // Royal Purple
-                case PropertyType.Industrial:
-                    return new Color(0.48f, 0.54f, 0.62f, 1f); // Slate
+                case PropertyType.School:
+                    return new Color(0.25f, 0.55f, 0.85f, 1f); // Academic Blue
+                case PropertyType.PoliceStation:
+                    return new Color(0.18f, 0.35f, 0.68f, 1f); // Police Navy
                 default:
                     return new Color(0.20f, 0.50f, 0.80f, 1f);
             }
@@ -1118,6 +1450,123 @@ namespace EmpireBuilder.UI
             rmbTextRt.anchorMin = Vector2.zero;
             rmbTextRt.anchorMax = Vector2.one;
             rmbTextRt.sizeDelta = Vector2.zero;
+
+            // 8e. Hospital Healthcare Section
+            hospitalSectionRoot = CreateUIElement("HospitalSection", card.transform, new Vector2(0, 1), new Vector2(1, 1), new Vector2(0.5f, 1), new Vector2(-50, 155), new Vector2(0, -260));
+            Image hospBg = hospitalSectionRoot.AddComponent<Image>();
+            hospBg.color = new Color(0.24f, 0.12f, 0.14f, 0.95f);
+
+            TextMeshProUGUI hospTitle = CreateTextMesh("HospTitle", hospitalSectionRoot.transform, "HOSPITAL EMERGENCY & HEALTHCARE", 13, FontStyles.Bold, TextAlignmentOptions.Left, new Color(1f, 0.45f, 0.50f));
+            RectTransform htRt = hospTitle.GetComponent<RectTransform>();
+            htRt.anchorMin = new Vector2(0, 1);
+            htRt.anchorMax = new Vector2(1, 1);
+            htRt.pivot = new Vector2(0, 1);
+            htRt.anchoredPosition = new Vector2(15, -10);
+            htRt.sizeDelta = new Vector2(-30, 22);
+
+            hospitalStatusText = CreateTextMesh("HospitalStatus", hospitalSectionRoot.transform, "Visit for full medical treatment (restoring 100 HP) when sick or exhausted.", 11, FontStyles.Normal, TextAlignmentOptions.Left, new Color(0.9f, 0.88f, 0.88f));
+            RectTransform hsRt = hospitalStatusText.GetComponent<RectTransform>();
+            hsRt.anchorMin = new Vector2(0, 1);
+            hsRt.anchorMax = new Vector2(1, 1);
+            hsRt.pivot = new Vector2(0, 1);
+            hsRt.anchoredPosition = new Vector2(15, -34);
+            hsRt.sizeDelta = new Vector2(-30, 34);
+
+            GameObject treatBtnObj = CreateUIElement("TreatmentButton", hospitalSectionRoot.transform, new Vector2(0, 0), new Vector2(1, 0), new Vector2(0.5f, 0), new Vector2(-30, 44), new Vector2(0, 10));
+            treatmentButtonBg = treatBtnObj.AddComponent<Image>();
+            treatmentButtonBg.color = new Color(0.12f, 0.78f, 0.38f, 1f);
+            treatmentButton = treatBtnObj.AddComponent<Button>();
+            treatmentButtonText = CreateTextMesh("Text", treatBtnObj.transform, "RECEIVE TREATMENT (RESTORE 100 HP)", 13, FontStyles.Bold, TextAlignmentOptions.Center, Color.white);
+            RectTransform tbTextRt = treatmentButtonText.GetComponent<RectTransform>();
+            tbTextRt.anchorMin = Vector2.zero;
+            tbTextRt.anchorMax = Vector2.one;
+            tbTextRt.sizeDelta = Vector2.zero;
+
+            // 8f. Factory Industrial Section
+            factorySectionRoot = CreateUIElement("FactorySection", card.transform, new Vector2(0, 1), new Vector2(1, 1), new Vector2(0.5f, 1), new Vector2(-50, 155), new Vector2(0, -260));
+            Image factBg = factorySectionRoot.AddComponent<Image>();
+            factBg.color = new Color(0.15f, 0.18f, 0.24f, 0.95f);
+
+            TextMeshProUGUI factTitle = CreateTextMesh("FactTitle", factorySectionRoot.transform, "INDUSTRIAL MANUFACTURING PRODUCTION", 13, FontStyles.Bold, TextAlignmentOptions.Left, new Color(0.45f, 0.75f, 1f));
+            RectTransform ftRt = factTitle.GetComponent<RectTransform>();
+            ftRt.anchorMin = new Vector2(0, 1);
+            ftRt.anchorMax = new Vector2(1, 1);
+            ftRt.pivot = new Vector2(0, 1);
+            ftRt.anchoredPosition = new Vector2(15, -10);
+            ftRt.sizeDelta = new Vector2(-30, 22);
+
+            factoryStatusText = CreateTextMesh("FactoryStatus", factorySectionRoot.transform, "Heavy manufacturing plant. Completes production runs with large payout revenues.", 11, FontStyles.Normal, TextAlignmentOptions.Left, new Color(0.85f, 0.88f, 0.92f));
+            RectTransform fsRt = factoryStatusText.GetComponent<RectTransform>();
+            fsRt.anchorMin = new Vector2(0, 1);
+            fsRt.anchorMax = new Vector2(1, 1);
+            fsRt.pivot = new Vector2(0, 1);
+            fsRt.anchoredPosition = new Vector2(15, -34);
+            fsRt.sizeDelta = new Vector2(-30, 34);
+
+            GameObject prodBtnObj = CreateUIElement("CollectProductionButton", factorySectionRoot.transform, new Vector2(0, 0), new Vector2(1, 0), new Vector2(0.5f, 0), new Vector2(-30, 44), new Vector2(0, 10));
+            collectProductionButtonBg = prodBtnObj.AddComponent<Image>();
+            collectProductionButtonBg.color = new Color(0.18f, 0.65f, 0.92f, 1f);
+            collectProductionButton = prodBtnObj.AddComponent<Button>();
+            collectProductionButtonText = CreateTextMesh("Text", prodBtnObj.transform, "COLLECT PRODUCTION REVENUE", 13, FontStyles.Bold, TextAlignmentOptions.Center, Color.white);
+            RectTransform pbTextRt = collectProductionButtonText.GetComponent<RectTransform>();
+            pbTextRt.anchorMin = Vector2.zero;
+            pbTextRt.anchorMax = Vector2.one;
+            pbTextRt.sizeDelta = Vector2.zero;
+
+            // 8g. Oil & Petroleum Station Section
+            oilSectionRoot = CreateUIElement("OilSection", card.transform, new Vector2(0, 1), new Vector2(1, 1), new Vector2(0.5f, 1), new Vector2(-50, 155), new Vector2(0, -260));
+            Image oilBg = oilSectionRoot.AddComponent<Image>();
+            oilBg.color = new Color(0.22f, 0.18f, 0.12f, 0.95f);
+
+            TextMeshProUGUI oilTitle = CreateTextMesh("OilTitle", oilSectionRoot.transform, "OIL & FUEL DISTRIBUTION SALES", 13, FontStyles.Bold, TextAlignmentOptions.Left, new Color(1f, 0.82f, 0.25f));
+            RectTransform otRt = oilTitle.GetComponent<RectTransform>();
+            otRt.anchorMin = new Vector2(0, 1);
+            otRt.anchorMax = new Vector2(1, 1);
+            otRt.pivot = new Vector2(0, 1);
+            otRt.anchoredPosition = new Vector2(15, -10);
+            otRt.sizeDelta = new Vector2(-30, 22);
+
+            oilStatusText = CreateTextMesh("OilStatus", oilSectionRoot.transform, "Automotive refueling center. Earns regular revenue payouts from vehicle traffic.", 11, FontStyles.Normal, TextAlignmentOptions.Left, new Color(0.92f, 0.90f, 0.85f));
+            RectTransform osRt = oilStatusText.GetComponent<RectTransform>();
+            osRt.anchorMin = new Vector2(0, 1);
+            osRt.anchorMax = new Vector2(1, 1);
+            osRt.pivot = new Vector2(0, 1);
+            osRt.anchoredPosition = new Vector2(15, -34);
+            osRt.sizeDelta = new Vector2(-30, 34);
+
+            GameObject oilBtnObj = CreateUIElement("CollectOilButton", oilSectionRoot.transform, new Vector2(0, 0), new Vector2(1, 0), new Vector2(0.5f, 0), new Vector2(-30, 44), new Vector2(0, 10));
+            collectOilButtonBg = oilBtnObj.AddComponent<Image>();
+            collectOilButtonBg.color = new Color(0.95f, 0.65f, 0.15f, 1f);
+            collectOilButton = oilBtnObj.AddComponent<Button>();
+            collectOilButtonText = CreateTextMesh("Text", oilBtnObj.transform, "COLLECT OIL REVENUE", 13, FontStyles.Bold, TextAlignmentOptions.Center, Color.black);
+            RectTransform obTextRt = collectOilButtonText.GetComponent<RectTransform>();
+            obTextRt.anchorMin = Vector2.zero;
+            obTextRt.anchorMax = Vector2.one;
+            obTextRt.sizeDelta = Vector2.zero;
+
+            // 8h. Building Maintenance Alert Section (Positioned at bottom of section slot)
+            maintenanceSectionRoot = CreateUIElement("MaintenanceSection", card.transform, new Vector2(0, 0), new Vector2(1, 0), new Vector2(0.5f, 0), new Vector2(-50, 72), new Vector2(0, 136));
+            Image maintBg = maintenanceSectionRoot.AddComponent<Image>();
+            maintBg.color = new Color(0.32f, 0.12f, 0.12f, 0.95f);
+
+            maintenanceReasonText = CreateTextMesh("MaintenanceReason", maintenanceSectionRoot.transform, "⚠️ MAINTENANCE REQUIRED: -$0", 11, FontStyles.Bold, TextAlignmentOptions.Left, new Color(1f, 0.75f, 0.75f));
+            RectTransform mrRt = maintenanceReasonText.GetComponent<RectTransform>();
+            mrRt.anchorMin = new Vector2(0, 0.5f);
+            mrRt.anchorMax = new Vector2(0.55f, 1);
+            mrRt.pivot = new Vector2(0, 0.5f);
+            mrRt.anchoredPosition = new Vector2(10, 0);
+            mrRt.sizeDelta = new Vector2(-15, 0);
+
+            GameObject payMaintBtnObj = CreateUIElement("PayMaintenanceButton", maintenanceSectionRoot.transform, new Vector2(0.55f, 0.1f), new Vector2(0.98f, 0.9f), new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
+            payMaintenanceButtonBg = payMaintBtnObj.AddComponent<Image>();
+            payMaintenanceButtonBg.color = new Color(0.90f, 0.35f, 0.15f, 1f);
+            payMaintenanceButton = payMaintBtnObj.AddComponent<Button>();
+            payMaintenanceButtonText = CreateTextMesh("Text", payMaintBtnObj.transform, "PAY MAINTENANCE", 11, FontStyles.Bold, TextAlignmentOptions.Center, Color.white);
+            RectTransform pmbTextRt = payMaintenanceButtonText.GetComponent<RectTransform>();
+            pmbTextRt.anchorMin = Vector2.zero;
+            pmbTextRt.anchorMax = Vector2.one;
+            pmbTextRt.sizeDelta = Vector2.zero;
+            maintenanceSectionRoot.SetActive(false);
 
             // 9. Collect Rent Button
             GameObject collectBtnObj = CreateUIElement("CollectRentButton", card.transform, new Vector2(0, 0), new Vector2(1, 0), new Vector2(0.5f, 0), new Vector2(-50, 48), new Vector2(0, 78));

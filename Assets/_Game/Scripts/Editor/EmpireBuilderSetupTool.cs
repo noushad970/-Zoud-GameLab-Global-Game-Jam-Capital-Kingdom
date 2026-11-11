@@ -1011,6 +1011,114 @@ namespace EmpireBuilder.Editor
             reqMatchBtnText.fontStyle = FontStyles.Bold;
             SetStretch(reqMatchBtnText.rectTransform);
 
+            // 7e. Hospital Healthcare Section
+            var hospitalSection = CreateUIElement("HospitalSection", cardObj.transform, new Vector2(0, 1), new Vector2(1, 1), new Vector2(0.5f, 1), new Vector2(-50, 160), new Vector2(0, -270));
+            var hospitalImg = hospitalSection.AddComponent<Image>();
+            hospitalImg.color = new Color(0.24f, 0.12f, 0.14f, 0.95f);
+            if (panelSprite != null) { hospitalImg.sprite = panelSprite; hospitalImg.type = Image.Type.Sliced; }
+
+            var hospTitle = CreateTMPText("HospTitle", hospitalSection.transform, "HOSPITAL EMERGENCY HEALTHCARE", new Vector2(15, -10), new Vector2(-30, 24), 13, fontAsset, TextAlignmentOptions.Left);
+            hospTitle.fontStyle = FontStyles.Bold;
+            hospTitle.color = new Color(1f, 0.45f, 0.50f);
+            hospTitle.rectTransform.anchorMin = new Vector2(0, 1);
+            hospTitle.rectTransform.anchorMax = new Vector2(1, 1);
+            hospTitle.rectTransform.pivot = new Vector2(0, 1);
+
+            var hospStatus = CreateTMPText("HospitalStatus", hospitalSection.transform, "Visit for medical treatment when health is depleted or exhausted.", new Vector2(15, -34), new Vector2(-30, 36), 12, fontAsset, TextAlignmentOptions.Left);
+            hospStatus.color = new Color(0.9f, 0.88f, 0.88f);
+            hospStatus.rectTransform.anchorMin = new Vector2(0, 1);
+            hospStatus.rectTransform.anchorMax = new Vector2(1, 1);
+            hospStatus.rectTransform.pivot = new Vector2(0, 1);
+
+            var treatBtnObj = CreateUIElement("TreatmentButton", hospitalSection.transform, new Vector2(0, 0), new Vector2(1, 0), new Vector2(0.5f, 0), new Vector2(-30, 44), new Vector2(0, 10));
+            var treatBtnImg = treatBtnObj.AddComponent<Image>();
+            treatBtnImg.color = new Color(0.12f, 0.78f, 0.38f, 1f);
+            if (btnGreen != null) { treatBtnImg.sprite = btnGreen; treatBtnImg.type = Image.Type.Sliced; }
+            var treatBtn = treatBtnObj.AddComponent<Button>();
+            var treatBtnText = CreateTMPText("Text", treatBtnObj.transform, "RECEIVE TREATMENT (HEAL 100 HP)", Vector2.zero, Vector2.zero, 13, fontAsset, TextAlignmentOptions.Center);
+            treatBtnText.fontStyle = FontStyles.Bold;
+            SetStretch(treatBtnText.rectTransform);
+
+            // 7f. Factory Industrial Section
+            var factorySection = CreateUIElement("FactorySection", cardObj.transform, new Vector2(0, 1), new Vector2(1, 1), new Vector2(0.5f, 1), new Vector2(-50, 160), new Vector2(0, -270));
+            var factoryImg = factorySection.AddComponent<Image>();
+            factoryImg.color = new Color(0.15f, 0.18f, 0.24f, 0.95f);
+            if (panelSprite != null) { factoryImg.sprite = panelSprite; factoryImg.type = Image.Type.Sliced; }
+
+            var factTitle = CreateTMPText("FactTitle", factorySection.transform, "INDUSTRIAL MANUFACTURING PRODUCTION", new Vector2(15, -10), new Vector2(-30, 24), 13, fontAsset, TextAlignmentOptions.Left);
+            factTitle.fontStyle = FontStyles.Bold;
+            factTitle.color = new Color(0.45f, 0.75f, 1f);
+            factTitle.rectTransform.anchorMin = new Vector2(0, 1);
+            factTitle.rectTransform.anchorMax = new Vector2(1, 1);
+            factTitle.rectTransform.pivot = new Vector2(0, 1);
+
+            var factStatus = CreateTMPText("FactoryStatus", factorySection.transform, "Industrial manufacturing generates batch payouts at random intervals.", new Vector2(15, -34), new Vector2(-30, 36), 12, fontAsset, TextAlignmentOptions.Left);
+            factStatus.color = new Color(0.85f, 0.88f, 0.92f);
+            factStatus.rectTransform.anchorMin = new Vector2(0, 1);
+            factStatus.rectTransform.anchorMax = new Vector2(1, 1);
+            factStatus.rectTransform.pivot = new Vector2(0, 1);
+
+            var prodBtnObj = CreateUIElement("CollectProductionButton", factorySection.transform, new Vector2(0, 0), new Vector2(1, 0), new Vector2(0.5f, 0), new Vector2(-30, 44), new Vector2(0, 10));
+            var prodBtnImg = prodBtnObj.AddComponent<Image>();
+            prodBtnImg.color = new Color(0.18f, 0.65f, 0.92f, 1f);
+            if (btnBlue != null) { prodBtnImg.sprite = btnBlue; prodBtnImg.type = Image.Type.Sliced; }
+            var prodBtn = prodBtnObj.AddComponent<Button>();
+            var prodBtnText = CreateTMPText("Text", prodBtnObj.transform, "COLLECT PRODUCTION REVENUE", Vector2.zero, Vector2.zero, 13, fontAsset, TextAlignmentOptions.Center);
+            prodBtnText.fontStyle = FontStyles.Bold;
+            SetStretch(prodBtnText.rectTransform);
+
+            // 7g. Oil Station Section
+            var oilSection = CreateUIElement("OilSection", cardObj.transform, new Vector2(0, 1), new Vector2(1, 1), new Vector2(0.5f, 1), new Vector2(-50, 160), new Vector2(0, -270));
+            var oilImg = oilSection.AddComponent<Image>();
+            oilImg.color = new Color(0.22f, 0.18f, 0.12f, 0.95f);
+            if (panelSprite != null) { oilImg.sprite = panelSprite; oilImg.type = Image.Type.Sliced; }
+
+            var oilTitle = CreateTMPText("OilTitle", oilSection.transform, "OIL & FUEL DISTRIBUTION SALES", new Vector2(15, -10), new Vector2(-30, 24), 13, fontAsset, TextAlignmentOptions.Left);
+            oilTitle.fontStyle = FontStyles.Bold;
+            oilTitle.color = new Color(1f, 0.82f, 0.25f);
+            oilTitle.rectTransform.anchorMin = new Vector2(0, 1);
+            oilTitle.rectTransform.anchorMax = new Vector2(1, 1);
+            oilTitle.rectTransform.pivot = new Vector2(0, 1);
+
+            var oilStatus = CreateTMPText("OilStatus", oilSection.transform, "Automotive refueling depot generates regular sales revenue from vehicles.", new Vector2(15, -34), new Vector2(-30, 36), 12, fontAsset, TextAlignmentOptions.Left);
+            oilStatus.color = new Color(0.92f, 0.90f, 0.85f);
+            oilStatus.rectTransform.anchorMin = new Vector2(0, 1);
+            oilStatus.rectTransform.anchorMax = new Vector2(1, 1);
+            oilStatus.rectTransform.pivot = new Vector2(0, 1);
+
+            var oilBtnObj = CreateUIElement("CollectOilButton", oilSection.transform, new Vector2(0, 0), new Vector2(1, 0), new Vector2(0.5f, 0), new Vector2(-30, 44), new Vector2(0, 10));
+            var oilBtnImg = oilBtnObj.AddComponent<Image>();
+            oilBtnImg.color = new Color(0.95f, 0.65f, 0.15f, 1f);
+            if (btnOrange != null) { oilBtnImg.sprite = btnOrange; oilBtnImg.type = Image.Type.Sliced; }
+            var oilBtn = oilBtnObj.AddComponent<Button>();
+            var oilBtnText = CreateTMPText("Text", oilBtnObj.transform, "COLLECT OIL REVENUE", Vector2.zero, Vector2.zero, 13, fontAsset, TextAlignmentOptions.Center);
+            oilBtnText.fontStyle = FontStyles.Bold;
+            oilBtnText.color = Color.black;
+            SetStretch(oilBtnText.rectTransform);
+
+            // 7h. Building Maintenance Alert Section
+            var maintSection = CreateUIElement("MaintenanceSection", cardObj.transform, new Vector2(0, 0), new Vector2(1, 0), new Vector2(0.5f, 0), new Vector2(-50, 72), new Vector2(0, 138));
+            var maintImg = maintSection.AddComponent<Image>();
+            maintImg.color = new Color(0.32f, 0.12f, 0.12f, 0.95f);
+            if (panelSprite != null) { maintImg.sprite = panelSprite; maintImg.type = Image.Type.Sliced; }
+
+            var maintReasonText = CreateTMPText("MaintenanceReason", maintSection.transform, "⚠️ MAINTENANCE REQUIRED: -$0", new Vector2(12, 0), new Vector2(-15, 0), 11, fontAsset, TextAlignmentOptions.Left);
+            maintReasonText.fontStyle = FontStyles.Bold;
+            maintReasonText.color = new Color(1f, 0.75f, 0.75f);
+            maintReasonText.rectTransform.anchorMin = new Vector2(0, 0.5f);
+            maintReasonText.rectTransform.anchorMax = new Vector2(0.55f, 1);
+            maintReasonText.rectTransform.pivot = new Vector2(0, 0.5f);
+
+            var payMaintBtnObj = CreateUIElement("PayMaintenanceButton", maintSection.transform, new Vector2(0.55f, 0.1f), new Vector2(0.98f, 0.9f), new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
+            var payMaintBtnImg = payMaintBtnObj.AddComponent<Image>();
+            payMaintBtnImg.color = new Color(0.90f, 0.35f, 0.15f, 1f);
+            if (btnOrange != null) { payMaintBtnImg.sprite = btnOrange; payMaintBtnImg.type = Image.Type.Sliced; }
+            var payMaintBtn = payMaintBtnObj.AddComponent<Button>();
+            var payMaintBtnText = CreateTMPText("Text", payMaintBtnObj.transform, "PAY MAINTENANCE", Vector2.zero, Vector2.zero, 11, fontAsset, TextAlignmentOptions.Center);
+            payMaintBtnText.fontStyle = FontStyles.Bold;
+            SetStretch(payMaintBtnText.rectTransform);
+            maintSection.SetActive(false);
+
             // 8. Collect Rent Button
             var collectBtnObj = CreateUIElement("CollectRentButton", cardObj.transform, new Vector2(0, 0), new Vector2(1, 0), new Vector2(0.5f, 0), new Vector2(-50, 50), new Vector2(0, 82));
             var collectBtnImg = collectBtnObj.AddComponent<Image>();
@@ -1098,6 +1206,30 @@ namespace EmpireBuilder.Editor
             serModal.FindProperty("stadiumStatsText").objectReferenceValue = stadiumStats;
             serModal.FindProperty("requestMatchButton").objectReferenceValue = reqMatchBtn;
             serModal.FindProperty("requestMatchButtonText").objectReferenceValue = reqMatchBtnText;
+
+            serModal.FindProperty("hospitalSectionRoot").objectReferenceValue = hospitalSection;
+            serModal.FindProperty("hospitalStatusText").objectReferenceValue = hospStatus;
+            serModal.FindProperty("treatmentButton").objectReferenceValue = treatBtn;
+            serModal.FindProperty("treatmentButtonText").objectReferenceValue = treatBtnText;
+            serModal.FindProperty("treatmentButtonBg").objectReferenceValue = treatBtnImg;
+
+            serModal.FindProperty("factorySectionRoot").objectReferenceValue = factorySection;
+            serModal.FindProperty("factoryStatusText").objectReferenceValue = factStatus;
+            serModal.FindProperty("collectProductionButton").objectReferenceValue = prodBtn;
+            serModal.FindProperty("collectProductionButtonText").objectReferenceValue = prodBtnText;
+            serModal.FindProperty("collectProductionButtonBg").objectReferenceValue = prodBtnImg;
+
+            serModal.FindProperty("oilSectionRoot").objectReferenceValue = oilSection;
+            serModal.FindProperty("oilStatusText").objectReferenceValue = oilStatus;
+            serModal.FindProperty("collectOilButton").objectReferenceValue = oilBtn;
+            serModal.FindProperty("collectOilButtonText").objectReferenceValue = oilBtnText;
+            serModal.FindProperty("collectOilButtonBg").objectReferenceValue = oilBtnImg;
+
+            serModal.FindProperty("maintenanceSectionRoot").objectReferenceValue = maintSection;
+            serModal.FindProperty("maintenanceReasonText").objectReferenceValue = maintReasonText;
+            serModal.FindProperty("payMaintenanceButton").objectReferenceValue = payMaintBtn;
+            serModal.FindProperty("payMaintenanceButtonText").objectReferenceValue = payMaintBtnText;
+            serModal.FindProperty("payMaintenanceButtonBg").objectReferenceValue = payMaintBtnImg;
 
             serModal.FindProperty("toastRoot").objectReferenceValue = toastObj;
             serModal.FindProperty("toastMessageText").objectReferenceValue = toastText;
@@ -1220,6 +1352,13 @@ namespace EmpireBuilder.Editor
             if (smm == null) smm = bimObj.AddComponent<StadiumMatchManager>();
             smm.FindStadiumInScene();
             EditorUtility.SetDirty(bimObj);
+
+            // Setup BuildingMaintenanceManager in Scene Root
+            var maintObj = GameObject.Find("BuildingMaintenanceManager");
+            if (maintObj == null) maintObj = new GameObject("BuildingMaintenanceManager");
+            var maintMgr = maintObj.GetComponent<BuildingMaintenanceManager>();
+            if (maintMgr == null) maintMgr = maintObj.AddComponent<BuildingMaintenanceManager>();
+            EditorUtility.SetDirty(maintObj);
 
             // 5. Statically Attach and Configure PropertyBuilding to Every Building in the Scene
             string[] sectorNames = new string[]
