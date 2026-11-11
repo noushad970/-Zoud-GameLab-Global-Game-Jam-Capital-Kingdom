@@ -37,6 +37,14 @@ namespace EmpireBuilder.World
         [SerializeField] private bool isRequestPending = false;
         [SerializeField] private int totalMatchesHosted = 0;
         [SerializeField] private double totalMatchRevenueEarned = 0.0;
+        [SerializeField] private string currentPendingMatchName = "";
+        [SerializeField] private double currentPendingRentOffer = 0.0;
+
+        public bool IsRequestPending => isRequestPending;
+        public string CurrentPendingMatchName => currentPendingMatchName;
+        public double CurrentPendingRentOffer => currentPendingRentOffer;
+        public PropertyBuilding StadiumProperty => stadiumProperty;
+        public static event System.Action<bool> OnMatchRequestStateChanged;
 
         private Coroutine requestLoopCoroutine;
 
@@ -144,6 +152,10 @@ namespace EmpireBuilder.World
             double rentOffer = System.Math.Round(Random.Range((float)minMatchRent, (float)maxMatchRent) / 100.0) * 100.0;
 
             isRequestPending = true;
+            currentPendingMatchName = matchName;
+            currentPendingRentOffer = rentOffer;
+            OnMatchRequestStateChanged?.Invoke(true);
+            if (stadiumProperty != null) stadiumProperty.NotifyStateChanged();
 
             if (StadiumMatchRequestModalUI.Instance != null)
             {
@@ -164,6 +176,11 @@ namespace EmpireBuilder.World
         public void AcceptMatch(string matchName, double rentOffer)
         {
             isRequestPending = false;
+            currentPendingMatchName = "";
+            currentPendingRentOffer = 0.0;
+            OnMatchRequestStateChanged?.Invoke(false);
+            if (stadiumProperty != null) stadiumProperty.NotifyStateChanged();
+
             totalMatchesHosted++;
             totalMatchRevenueEarned += rentOffer;
 
@@ -208,6 +225,11 @@ namespace EmpireBuilder.World
         public void DeclineMatch()
         {
             isRequestPending = false;
+            currentPendingMatchName = "";
+            currentPendingRentOffer = 0.0;
+            OnMatchRequestStateChanged?.Invoke(false);
+            if (stadiumProperty != null) stadiumProperty.NotifyStateChanged();
+
             PropertyDetailModalUI.Instance?.ShowToast("⚽ Match rent request declined.");
             Debug.Log("[StadiumMatchManager] Player declined match rent request.");
         }

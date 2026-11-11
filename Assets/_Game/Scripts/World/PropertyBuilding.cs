@@ -86,6 +86,10 @@ namespace EmpireBuilder.World
         private bool isSelected = false;
         private bool rentAvailableToCollect = false;
 
+        [Header("Overhead World Indicator")]
+        [Tooltip("Overhead 3D animated indicator displaying collection alerts and ownership status")]
+        [SerializeField] private BuildingWorldIndicator worldIndicator;
+
         // Events
         public static event Action<PropertyBuilding> OnAnyBuildingSelected;
         public static event Action<PropertyBuilding> OnAnyBuildingDeselected;
@@ -105,6 +109,7 @@ namespace EmpireBuilder.World
         public bool IsSelected => isSelected;
         public bool RentAvailableToCollect => rentAvailableToCollect;
         public Material SelectionShaderMaterial => selectionShaderMaterial;
+        public BuildingWorldIndicator WorldIndicator => worldIndicator;
 
         // Flats Getters
         public bool HasFlats => hasFlats && (propertyType != PropertyType.TaxiStation && propertyType != PropertyType.Stadium);
@@ -147,10 +152,76 @@ namespace EmpireBuilder.World
 
         private void Start()
         {
+            EnsureWorldIndicator();
+
             if (GameManager.Instance != null && GameManager.Instance.Simulation != null)
             {
                 GameManager.Instance.Simulation.OnDayCompleted += HandleDayCompleted;
             }
+        }
+
+        public void NotifyStateChanged()
+        {
+            OnStateChanged?.Invoke(this);
+            if (worldIndicator != null)
+            {
+                worldIndicator.RefreshVisuals();
+            }
+        }
+
+        /// <summary>
+        /// Guarantees that the animated overhead 3D world-space indicator is present and positioned.
+        /// </summary>
+        public void EnsureWorldIndicator()
+        {
+            if (worldIndicator == null)
+            {
+                worldIndicator = GetComponentInChildren<BuildingWorldIndicator>();
+            }
+            if (worldIndicator == null)
+            {
+                GameObject indObj = new GameObject("BuildingWorldIndicator");
+                indObj.transform.SetParent(transform, false);
+                worldIndicator = indObj.AddComponent<BuildingWorldIndicator>();
+            }
+
+            Vector3 roofPos = GetRoofPosition();
+            worldIndicator.Setup(this, roofPos);
+        }
+
+        /// <summary>
+        /// Calculates the local position directly above the rooftop of this building.
+        /// </summary>
+        public Vector3 GetRoofPosition()
+        {
+            BoxCollider col = GetComponent<BoxCollider>();
+            if (col != null)
+            {
+                return col.center + new Vector3(0f, col.size.y * 0.5f + 2.2f, 0f);
+            }
+
+            Bounds bounds = new Bounds(Vector3.zero, Vector3.zero);
+            bool hasBounds = false;
+            foreach (var mr in GetComponentsInChildren<MeshRenderer>())
+            {
+                if (mr == null || mr.transform == transform || mr.GetComponentInParent<BuildingWorldIndicator>() != null) continue;
+                if (!hasBounds)
+                {
+                    bounds = mr.bounds;
+                    hasBounds = true;
+                }
+                else
+                {
+                    bounds.Encapsulate(mr.bounds);
+                }
+            }
+            if (hasBounds)
+            {
+                Vector3 worldRoof = bounds.center + new Vector3(0f, bounds.extents.y + 2.2f, 0f);
+                return transform.InverseTransformPoint(worldRoof);
+            }
+
+            return new Vector3(0f, 12f, 0f);
         }
 
         private void OnDisable()

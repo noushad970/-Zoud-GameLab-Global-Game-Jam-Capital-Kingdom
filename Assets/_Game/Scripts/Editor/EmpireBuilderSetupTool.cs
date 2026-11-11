@@ -1262,6 +1262,7 @@ namespace EmpireBuilder.Editor
                         pb.SetSelectionMaterial(ghostMat);
                     }
                     pb.EnsureCollider();
+                    pb.EnsureWorldIndicator();
                     EditorUtility.SetDirty(t.gameObject);
                     buildingsConfigured++;
                 }
@@ -1274,7 +1275,10 @@ namespace EmpireBuilder.Editor
             // 7. Setup Static Health Bar & Player Health System
             SetupPlayerHealthSystemInScene();
 
-            // 8. Save Scene & Assets
+            // 8. Setup Static Building Animated World Indicators
+            SetupBuildingWorldIndicatorsInScene();
+
+            // 9. Save Scene & Assets
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene);
             AssetDatabase.SaveAssets();
@@ -1434,6 +1438,55 @@ namespace EmpireBuilder.Editor
             AssetDatabase.SaveAssets();
 
             Debug.Log("[EmpireBuilderSetupTool] PlayerHealthManager and HealthBarBox successfully setup statically in GamePlay scene!");
+        }
+
+        [MenuItem("Tools/Empire Builder/6. Setup Building Animated World Indicators in GamePlay Scene", false, 6)]
+        public static void SetupBuildingWorldIndicatorsInScene()
+        {
+            var scene = EditorSceneManager.OpenScene(GamePlayScenePath, OpenSceneMode.Single);
+
+            var coinSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Assets No/GUIPackCartoon/Demo/Sprites/Icons/Icons Colored/Coins/Coin.png");
+            var trophySprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Assets No/GUIPackCartoon/Demo/Sprites/Icons/Icons Colored/Badges/Cup.png");
+            var crownSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Assets No/GUIPackCartoon/Demo/Sprites/Icons/Icons Colored/Badges/Crown.png");
+            var keySprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Assets No/GUIPackCartoon/Demo/Sprites/Icons/Icons Colored/Lock - Key/Key - Gold.png");
+            var shopSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Assets No/GUIPackCartoon/Demo/Sprites/Icons/Icons Colored/Commerce/Shop.png");
+            var starSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Assets No/GUIPackCartoon/Demo/Sprites/Icons/Icons Colored/Stars/Star Yellow.png");
+            var checkmarkSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Assets No/GUIPackCartoon/Demo/Sprites/Icons/Icons Colored/Basic/Checkmark.png");
+            var roundedSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Assets No/GUIPackCartoon/Demo/Sprites/Shapes/Shapes/Rectangle/Rounded Rectangle - 256px.png");
+
+            var allBuildings = Object.FindObjectsByType<PropertyBuilding>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            int indicatorsConfigured = 0;
+
+            foreach (var pb in allBuildings)
+            {
+                if (pb == null) continue;
+                pb.EnsureWorldIndicator();
+                var ind = pb.WorldIndicator;
+                if (ind != null)
+                {
+                    ind.EnsureUIHierarchy();
+                    var serInd = new SerializedObject(ind);
+                    if (coinSprite != null) serInd.FindProperty("coinSprite").objectReferenceValue = coinSprite;
+                    if (trophySprite != null) serInd.FindProperty("trophySprite").objectReferenceValue = trophySprite;
+                    if (crownSprite != null) serInd.FindProperty("crownSprite").objectReferenceValue = crownSprite;
+                    if (keySprite != null) serInd.FindProperty("keySprite").objectReferenceValue = keySprite;
+                    if (shopSprite != null) serInd.FindProperty("shopSprite").objectReferenceValue = shopSprite;
+                    if (starSprite != null) serInd.FindProperty("starSprite").objectReferenceValue = starSprite;
+                    if (checkmarkSprite != null) serInd.FindProperty("checkmarkSprite").objectReferenceValue = checkmarkSprite;
+                    if (roundedSprite != null) serInd.FindProperty("backgroundRoundedSprite").objectReferenceValue = roundedSprite;
+                    serInd.ApplyModifiedProperties();
+
+                    ind.RefreshVisuals();
+                    EditorUtility.SetDirty(ind.gameObject);
+                    indicatorsConfigured++;
+                }
+            }
+
+            EditorSceneManager.MarkSceneDirty(scene);
+            EditorSceneManager.SaveScene(scene);
+            AssetDatabase.SaveAssets();
+
+            Debug.Log($"[EmpireBuilderSetupTool] Configured animated world indicators for {indicatorsConfigured} buildings in GamePlay scene.");
         }
     }
 }

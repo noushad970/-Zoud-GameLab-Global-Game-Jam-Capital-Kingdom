@@ -172,6 +172,7 @@ namespace EmpireBuilder.World
                     }
 
                     pb.EnsureCollider();
+                    pb.EnsureWorldIndicator();
                     registeredCount++;
                 }
             }
@@ -187,6 +188,7 @@ namespace EmpireBuilder.World
                     continue;
                 }
                 pb.EnsureCollider();
+                pb.EnsureWorldIndicator();
                 if (defaultSelectionMaterial != null && pb.SelectionShaderMaterial == null)
                 {
                     pb.SetSelectionMaterial(defaultSelectionMaterial);
@@ -549,6 +551,7 @@ namespace EmpireBuilder.World
                             if (pType == PropertyType.TaxiStation) hitBuilding.SetTaxiConfig(tFee, tFare);
                             if (defaultSelectionMaterial != null && hitBuilding.SelectionShaderMaterial == null) hitBuilding.SetSelectionMaterial(defaultSelectionMaterial);
                             hitBuilding.EnsureCollider();
+                            hitBuilding.EnsureWorldIndicator();
                             break;
                         }
                         curr = curr.parent;
