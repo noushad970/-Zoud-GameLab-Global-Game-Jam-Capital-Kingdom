@@ -42,6 +42,8 @@ namespace EmpireBuilder.Editor
         private const string SpriteIconCoin = "Assets/Assets No/GUIPackCartoon/Demo/Sprites/Icons/Icons Colored/Coins/Coin.png";
         private const string SpriteIconShop = "Assets/Assets No/GUIPackCartoon/Demo/Sprites/Icons/Icons Colored/Commerce/Shop.png";
         private const string SpriteIconTool = "Assets/Assets No/GUIPackCartoon/Demo/Sprites/Icons/Icons Colored/Tools/Hammer.png";
+        private const string SpriteIconHeart = "Assets/Assets No/GUIPackCartoon/Demo/Sprites/Icons/Icons Colored/Heart - Health/Heart - Red.png";
+        private const string SpriteRoundedRect = "Assets/Assets No/GUIPackCartoon/Demo/Sprites/Shapes/Shapes/Rectangle/Rounded Rectangle - 256px.png";
 
         // Existing Audio & Fonts
         private const string AudioCoins = "Assets/Assets No/GUIPackCartoon/Demo/Sounds/Coins.wav";
@@ -1269,13 +1271,169 @@ namespace EmpireBuilder.Editor
             // 6. Setup Static AI Pedestrians in Scene
             SetupAIPedestriansInScene();
 
-            // 7. Save Scene & Assets
+            // 7. Setup Static Health Bar & Player Health System
+            SetupPlayerHealthSystemInScene();
+
+            // 8. Save Scene & Assets
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene);
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
 
             Debug.Log("[EmpireBuilderSetupTool] ALL UI, BUILDINGS, MANAGERS & SCRIPTS ARE NOW STATIC IN GAMEPLAY SCENE!");
+        }
+
+        [MenuItem("Tools/Empire Builder/5. Setup Health Bar & Player Health System in GamePlay Scene", false, 5)]
+        public static void SetupPlayerHealthSystemInScene()
+        {
+            var scene = EditorSceneManager.OpenScene(GamePlayScenePath, OpenSceneMode.Single);
+
+            // 1. Ensure PlayerHealthManager GameObject exists at Scene Root
+            var healthMgrObj = GameObject.Find("PlayerHealthManager");
+            if (healthMgrObj == null)
+            {
+                healthMgrObj = new GameObject("PlayerHealthManager");
+            }
+            var healthMgr = healthMgrObj.GetComponent<PlayerHealthManager>();
+            if (healthMgr == null) healthMgr = healthMgrObj.AddComponent<PlayerHealthManager>();
+
+            var serHealth = new SerializedObject(healthMgr);
+            serHealth.FindProperty("maxHealth").floatValue = 100f;
+            serHealth.FindProperty("currentHealth").floatValue = 100f;
+            serHealth.FindProperty("decayRatePerSecond").floatValue = 0.4f;
+            serHealth.FindProperty("decayActive").boolValue = true;
+            serHealth.FindProperty("foodHealthRestore").floatValue = 45f;
+            serHealth.FindProperty("drinkHealthRestore").floatValue = 25f;
+            serHealth.FindProperty("lowHealthWarningThreshold").floatValue = 30f;
+            serHealth.FindProperty("criticalHealthThreshold").floatValue = 15f;
+            serHealth.FindProperty("warningRepeatInterval").floatValue = 16f;
+            serHealth.ApplyModifiedProperties();
+            EditorUtility.SetDirty(healthMgrObj);
+
+            // 2. Ensure HealthBarBox exists inside TopHeader in GamePlayCanvas
+            var canvasObj = GameObject.Find("GamePlayCanvas");
+            if (canvasObj == null)
+            {
+                Debug.LogError("[EmpireBuilderSetupTool] GamePlayCanvas not found!");
+                return;
+            }
+            var headerTr = canvasObj.transform.Find("TopHeader");
+            if (headerTr == null)
+            {
+                Debug.LogError("[EmpireBuilderSetupTool] TopHeader not found!");
+                return;
+            }
+
+            var heartSprite = AssetDatabase.LoadAssetAtPath<Sprite>(SpriteIconHeart);
+            var roundedSprite = AssetDatabase.LoadAssetAtPath<Sprite>(SpriteRoundedRect);
+            var fontAsset = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(FontLilita);
+
+            // Remove previous HealthBox if re-generating
+            var existingHb = headerTr.Find("HealthBox");
+            if (existingHb != null)
+            {
+                UnityEngine.Object.DestroyImmediate(existingHb.gameObject);
+            }
+
+            var healthBoxObj = new GameObject("HealthBox", typeof(RectTransform), typeof(Image));
+            healthBoxObj.transform.SetParent(headerTr, false);
+            var hbRect = healthBoxObj.GetComponent<RectTransform>();
+            hbRect.anchorMin = new Vector2(0, 0.5f);
+            hbRect.anchorMax = new Vector2(0, 0.5f);
+            hbRect.pivot = new Vector2(0, 0.5f);
+            hbRect.anchoredPosition = new Vector2(285, 0);
+            hbRect.sizeDelta = new Vector2(235, 50);
+
+            var hbImg = healthBoxObj.GetComponent<Image>();
+            if (roundedSprite != null) { hbImg.sprite = roundedSprite; hbImg.type = Image.Type.Sliced; }
+            hbImg.color = new Color(0.08f, 0.11f, 0.16f, 0.95f);
+
+            // Heart Icon (Left)
+            var heartObj = new GameObject("HeartIcon", typeof(RectTransform), typeof(Image));
+            heartObj.transform.SetParent(healthBoxObj.transform, false);
+            var heartRect = heartObj.GetComponent<RectTransform>();
+            heartRect.anchorMin = new Vector2(0, 0.5f);
+            heartRect.anchorMax = new Vector2(0, 0.5f);
+            heartRect.pivot = new Vector2(0, 0.5f);
+            heartRect.anchoredPosition = new Vector2(8, 0);
+            heartRect.sizeDelta = new Vector2(36, 36);
+            var heartImg = heartObj.GetComponent<Image>();
+            if (heartSprite != null) heartImg.sprite = heartSprite;
+            heartImg.preserveAspect = true;
+
+            // Health Track (Background)
+            var trackObj = new GameObject("HealthTrack", typeof(RectTransform), typeof(Image));
+            trackObj.transform.SetParent(healthBoxObj.transform, false);
+            var trackRect = trackObj.GetComponent<RectTransform>();
+            trackRect.anchorMin = new Vector2(0, 0.5f);
+            trackRect.anchorMax = new Vector2(1, 0.5f);
+            trackRect.pivot = new Vector2(0, 0.5f);
+            trackRect.anchoredPosition = new Vector2(50, 0);
+            trackRect.sizeDelta = new Vector2(-58, 28);
+            var trackImg = trackObj.GetComponent<Image>();
+            if (roundedSprite != null) { trackImg.sprite = roundedSprite; trackImg.type = Image.Type.Sliced; }
+            trackImg.color = new Color(0.18f, 0.08f, 0.08f, 0.95f);
+
+            // Health Fill (Foreground Filled Image)
+            var fillObj = new GameObject("HealthFill", typeof(RectTransform), typeof(Image));
+            fillObj.transform.SetParent(trackObj.transform, false);
+            var fillRect = fillObj.GetComponent<RectTransform>();
+            fillRect.anchorMin = Vector2.zero;
+            fillRect.anchorMax = Vector2.one;
+            fillRect.pivot = new Vector2(0, 0.5f);
+            fillRect.sizeDelta = Vector2.zero;
+            fillRect.anchoredPosition = Vector2.zero;
+            var fillImg = fillObj.GetComponent<Image>();
+            if (roundedSprite != null) { fillImg.sprite = roundedSprite; fillImg.type = Image.Type.Sliced; }
+            fillImg.type = Image.Type.Filled;
+            fillImg.fillMethod = Image.FillMethod.Horizontal;
+            fillImg.fillOrigin = 0;
+            fillImg.fillAmount = 1f;
+            fillImg.color = new Color(0.18f, 0.82f, 0.44f);
+
+            // Health Text (Inside HealthTrack)
+            var healthText = CreateTMPText("HealthText", trackObj.transform, "100/100 HP", Vector2.zero, Vector2.zero, 15, fontAsset, TextAlignmentOptions.Center);
+            healthText.fontStyle = FontStyles.Bold;
+            healthText.color = Color.white;
+            SetStretch(healthText.rectTransform);
+
+            // Warning Badge
+            var warningObj = new GameObject("WarningBadge", typeof(RectTransform), typeof(Image));
+            warningObj.transform.SetParent(healthBoxObj.transform, false);
+            var warningRect = warningObj.GetComponent<RectTransform>();
+            warningRect.anchorMin = new Vector2(1, 1);
+            warningRect.anchorMax = new Vector2(1, 1);
+            warningRect.pivot = new Vector2(0.5f, 0.5f);
+            warningRect.anchoredPosition = new Vector2(-4, -4);
+            warningRect.sizeDelta = new Vector2(22, 22);
+            var warningImg = warningObj.GetComponent<Image>();
+            if (roundedSprite != null) { warningImg.sprite = roundedSprite; warningImg.type = Image.Type.Sliced; }
+            warningImg.color = new Color(0.92f, 0.25f, 0.25f);
+            var warningText = CreateTMPText("Exclamation", warningObj.transform, "!", Vector2.zero, Vector2.zero, 13, fontAsset, TextAlignmentOptions.Center);
+            warningText.fontStyle = FontStyles.Bold;
+            warningText.color = Color.white;
+            SetStretch(warningText.rectTransform);
+            warningObj.SetActive(false);
+
+            // Attach PlayerHealthBarUI
+            var healthBarUI = healthBoxObj.AddComponent<PlayerHealthBarUI>();
+            var serUI = new SerializedObject(healthBarUI);
+            serUI.FindProperty("healthFillImage").objectReferenceValue = fillImg;
+            serUI.FindProperty("healthTrackImage").objectReferenceValue = trackImg;
+            serUI.FindProperty("healthText").objectReferenceValue = healthText;
+            serUI.FindProperty("heartIconImage").objectReferenceValue = heartImg;
+            serUI.FindProperty("warningBadge").objectReferenceValue = warningObj;
+            serUI.FindProperty("warningBadgeText").objectReferenceValue = warningText;
+            serUI.ApplyModifiedProperties();
+
+            EditorUtility.SetDirty(healthBoxObj);
+
+            // Save Scene
+            EditorSceneManager.MarkSceneDirty(scene);
+            EditorSceneManager.SaveScene(scene);
+            AssetDatabase.SaveAssets();
+
+            Debug.Log("[EmpireBuilderSetupTool] PlayerHealthManager and HealthBarBox successfully setup statically in GamePlay scene!");
         }
     }
 }

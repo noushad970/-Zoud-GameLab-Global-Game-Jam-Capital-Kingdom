@@ -506,19 +506,22 @@ namespace EmpireBuilder.UI
             }
             if (isDining)
             {
+                float foodRestore = PlayerHealthManager.Instance != null ? PlayerHealthManager.Instance.FoodHealthRestore : 45f;
+                float drinkRestore = PlayerHealthManager.Instance != null ? PlayerHealthManager.Instance.DrinkHealthRestore : 25f;
+
                 if (diningStatusText != null)
                 {
                     diningStatusText.text = currentBuilding.IsOwned
-                        ? "VIP Owner Status: Free dining & drinks! Customer dining earns you daily profits."
-                        : "Relax with fine coffee and gourmet dishes, or buy the establishment!";
+                        ? $"VIP Owner: Food (+{foodRestore:0} HP) & Drinks (+{drinkRestore:0} HP) are FREE! Replenish your health anytime."
+                        : $"Replenish Health! Food restores +{foodRestore:0} HP, Drinks restore +{drinkRestore:0} HP.";
                 }
                 if (drinkButton != null)
                 {
                     if (drinkButtonText != null)
                     {
                         drinkButtonText.text = currentBuilding.IsOwned
-                            ? $"DRINK {currentBuilding.DrinkName.ToUpper()} (FREE - OWNER)"
-                            : $"DRINK {currentBuilding.DrinkName.ToUpper()} (${currentBuilding.DrinkPrice:N0})";
+                            ? $"DRINK (+{drinkRestore:0} HP, FREE)"
+                            : $"DRINK (+{drinkRestore:0} HP, ${currentBuilding.DrinkPrice:N0})";
                     }
                 }
                 if (eatButton != null)
@@ -526,8 +529,8 @@ namespace EmpireBuilder.UI
                     if (eatButtonText != null)
                     {
                         eatButtonText.text = currentBuilding.IsOwned
-                            ? $"EAT {currentBuilding.FoodName.ToUpper()} (FREE - OWNER)"
-                            : $"EAT {currentBuilding.FoodName.ToUpper()} (${currentBuilding.FoodPrice:N0})";
+                            ? $"EAT (+{foodRestore:0} HP, FREE)"
+                            : $"EAT (+{foodRestore:0} HP, ${currentBuilding.FoodPrice:N0})";
                     }
                 }
             }

@@ -587,40 +587,56 @@ namespace EmpireBuilder.World
         /// <summary>
         /// Orders a beverage at this cafe/restaurant.
         /// Free for the building owner; charged to patrons.
+        /// Restores player health and hydration.
         /// </summary>
         public bool DrinkBeverage(out string message)
         {
             message = "";
+
+            if (!isOwned)
+            {
+                double currentCash = GetPlayerCash();
+                if (currentCash < drinkPrice)
+                {
+                    message = $"You need ${drinkPrice:N0} to order a {drinkName}!";
+                    return false;
+                }
+
+                int currentDay = GetCurrentDay();
+                if (GameManager.Instance != null && GameManager.Instance.Economy != null)
+                {
+                    GameManager.Instance.Economy.ApplyTransaction(
+                        -drinkPrice,
+                        TransactionCategory.OperatingExpense,
+                        $"Ordered {drinkName} at {propertyName}",
+                        currentDay
+                    );
+                }
+                else
+                {
+                    DeductPlayerCashFallback(drinkPrice);
+                }
+            }
+
+            float healthRestored = 0f;
+            if (PlayerHealthManager.Instance != null)
+            {
+                healthRestored = PlayerHealthManager.Instance.DrinkBeverage();
+            }
+
+            string healthNote = healthRestored > 0f
+                ? $" Restored +{healthRestored:F0} HP (Health: {PlayerHealthManager.Instance.CurrentHealth:F0}/{PlayerHealthManager.Instance.MaxHealth:F0})!"
+                : (PlayerHealthManager.Instance != null && PlayerHealthManager.Instance.CurrentHealth >= PlayerHealthManager.Instance.MaxHealth ? " (Health is at 100%!)" : "");
+
             if (isOwned)
             {
-                message = $"As the owner of {propertyName}, your {drinkName} is on the house! ☕✨";
-                Debug.Log($"[PropertyBuilding] {message}");
-                return true;
-            }
-
-            double currentCash = GetPlayerCash();
-            if (currentCash < drinkPrice)
-            {
-                message = $"You need ${drinkPrice:N0} to order a {drinkName}!";
-                return false;
-            }
-
-            int currentDay = GetCurrentDay();
-            if (GameManager.Instance != null && GameManager.Instance.Economy != null)
-            {
-                GameManager.Instance.Economy.ApplyTransaction(
-                    -drinkPrice,
-                    TransactionCategory.OperatingExpense,
-                    $"Ordered {drinkName} at {propertyName}",
-                    currentDay
-                );
+                message = $"As the owner of {propertyName}, your {drinkName} is on the house! ☕✨{healthNote}";
             }
             else
             {
-                DeductPlayerCashFallback(drinkPrice);
+                message = $"Enjoyed a refreshing {drinkName} for ${drinkPrice:N0}! ☕✨ Feeling energized!{healthNote}";
             }
 
-            message = $"Enjoyed a refreshing {drinkName} for ${drinkPrice:N0}! ☕✨ Feeling energized!";
             Debug.Log($"[PropertyBuilding] {message}");
             OnStateChanged?.Invoke(this);
             return true;
@@ -629,40 +645,56 @@ namespace EmpireBuilder.World
         /// <summary>
         /// Orders gourmet food/dining at this cafe/restaurant.
         /// Free for the building owner; charged to patrons.
+        /// Restores substantial player health and relieves hunger.
         /// </summary>
         public bool EatFood(out string message)
         {
             message = "";
+
+            if (!isOwned)
+            {
+                double currentCash = GetPlayerCash();
+                if (currentCash < foodPrice)
+                {
+                    message = $"You need ${foodPrice:N0} to order the {foodName}!";
+                    return false;
+                }
+
+                int currentDay = GetCurrentDay();
+                if (GameManager.Instance != null && GameManager.Instance.Economy != null)
+                {
+                    GameManager.Instance.Economy.ApplyTransaction(
+                        -foodPrice,
+                        TransactionCategory.OperatingExpense,
+                        $"Ordered {foodName} at {propertyName}",
+                        currentDay
+                    );
+                }
+                else
+                {
+                    DeductPlayerCashFallback(foodPrice);
+                }
+            }
+
+            float healthRestored = 0f;
+            if (PlayerHealthManager.Instance != null)
+            {
+                healthRestored = PlayerHealthManager.Instance.EatFood();
+            }
+
+            string healthNote = healthRestored > 0f
+                ? $" Restored +{healthRestored:F0} HP (Health: {PlayerHealthManager.Instance.CurrentHealth:F0}/{PlayerHealthManager.Instance.MaxHealth:F0})!"
+                : (PlayerHealthManager.Instance != null && PlayerHealthManager.Instance.CurrentHealth >= PlayerHealthManager.Instance.MaxHealth ? " (Health is at 100%!)" : "");
+
             if (isOwned)
             {
-                message = $"As the proud owner of {propertyName}, your VIP meal ({foodName}) is complimentary! 🍽️✨";
-                Debug.Log($"[PropertyBuilding] {message}");
-                return true;
-            }
-
-            double currentCash = GetPlayerCash();
-            if (currentCash < foodPrice)
-            {
-                message = $"You need ${foodPrice:N0} to order the {foodName}!";
-                return false;
-            }
-
-            int currentDay = GetCurrentDay();
-            if (GameManager.Instance != null && GameManager.Instance.Economy != null)
-            {
-                GameManager.Instance.Economy.ApplyTransaction(
-                    -foodPrice,
-                    TransactionCategory.OperatingExpense,
-                    $"Ordered {foodName} at {propertyName}",
-                    currentDay
-                );
+                message = $"As the proud owner of {propertyName}, your VIP meal ({foodName}) is complimentary! 🍽️✨{healthNote}";
             }
             else
             {
-                DeductPlayerCashFallback(foodPrice);
+                message = $"Savored a gourmet {foodName} for ${foodPrice:N0}! 🍽️✨ Truly satisfying!{healthNote}";
             }
 
-            message = $"Savored a gourmet {foodName} for ${foodPrice:N0}! 🍽️✨ Truly satisfying!";
             Debug.Log($"[PropertyBuilding] {message}");
             OnStateChanged?.Invoke(this);
             return true;
