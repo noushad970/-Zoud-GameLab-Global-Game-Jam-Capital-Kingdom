@@ -107,6 +107,7 @@ namespace EmpireBuilder.World
                    n.StartsWith("demonstration") ||
                    n.StartsWith("roadnetwork") ||
                    n.StartsWith("ai waypoints") ||
+                   n.StartsWith("parkwaypoints") ||
                    n == "terrain" ||
                    n == "environment" ||
                    n == "gameplay" ||
@@ -129,7 +130,7 @@ namespace EmpireBuilder.World
             string[] sectorNames = new string[]
             {
                 "Buildings", "Hotel Zone", "Demonstration", "Demonstration (1)",
-                "Demonstration (2)", "Demonstration (3)", "RoadNetwork", "AI Waypoints for character", "Terrain"
+                "Demonstration (2)", "Demonstration (3)", "RoadNetwork", "AI Waypoints for character", "Terrain", "ParkWaypoints"
             };
             foreach (var sName in sectorNames)
             {
@@ -140,6 +141,52 @@ namespace EmpireBuilder.World
                     if (pb != null) Destroy(pb);
                     BoxCollider bc = sObj.GetComponent<BoxCollider>();
                     if (bc != null) Destroy(bc);
+                }
+            }
+
+            // Clean any stray PropertyBuilding and BuildingWorldIndicator components from all children of Park & ParkWaypoints
+            GameObject parkObj = GameObject.Find("Park");
+            if (parkObj == null)
+            {
+                var allT = UnityEngine.Object.FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+                foreach (var tr in allT)
+                {
+                    if (tr != null && (tr.name == "Park" || tr.CompareTag("Park")) && (tr.parent == null || tr.parent.name != "Park"))
+                    {
+                        parkObj = tr.gameObject;
+                        break;
+                    }
+                }
+            }
+
+            if (parkObj != null)
+            {
+                foreach (var childPb in parkObj.GetComponentsInChildren<PropertyBuilding>(true))
+                {
+                    if (childPb.gameObject != parkObj)
+                    {
+                        Destroy(childPb);
+                    }
+                }
+                foreach (var childInd in parkObj.GetComponentsInChildren<BuildingWorldIndicator>(true))
+                {
+                    if (childInd.gameObject != parkObj && childInd.transform.parent != parkObj.transform)
+                    {
+                        Destroy(childInd.gameObject);
+                    }
+                }
+            }
+
+            GameObject pwpRoot = GameObject.Find("ParkWaypoints");
+            if (pwpRoot != null)
+            {
+                foreach (var childPb in pwpRoot.GetComponentsInChildren<PropertyBuilding>(true))
+                {
+                    Destroy(childPb);
+                }
+                foreach (var childInd in pwpRoot.GetComponentsInChildren<BuildingWorldIndicator>(true))
+                {
+                    Destroy(childInd.gameObject);
                 }
             }
 
@@ -195,6 +242,34 @@ namespace EmpireBuilder.World
                 }
             }
 
+            // Ensure TennisMatchManager exists
+            if (TennisMatchManager.Instance == null)
+            {
+                var tmm = UnityEngine.Object.FindAnyObjectByType<TennisMatchManager>();
+                if (tmm == null)
+                {
+                    gameObject.AddComponent<TennisMatchManager>();
+                }
+            }
+
+            // Ensure ParkAIManager exists
+            if (EmpireBuilder.Traffic.ParkAIManager.Instance == null)
+            {
+                var pam = UnityEngine.Object.FindAnyObjectByType<EmpireBuilder.Traffic.ParkAIManager>();
+                if (pam == null)
+                {
+                    GameObject pwp = GameObject.Find("ParkWaypoints");
+                    if (pwp != null)
+                    {
+                        pwp.AddComponent<EmpireBuilder.Traffic.ParkAIManager>();
+                    }
+                    else
+                    {
+                        gameObject.AddComponent<EmpireBuilder.Traffic.ParkAIManager>();
+                    }
+                }
+            }
+
             Debug.Log($"[BuildingInteractionManager] Initialized {registeredCount} interactive buildings across the city.");
         }
 
@@ -231,10 +306,23 @@ namespace EmpireBuilder.World
                 n.StartsWith("Vehicle_") || n.StartsWith("Train") || n.StartsWith("Rail") || n.StartsWith("Straight rail") ||
                 n.StartsWith("Bus_Stop") || n.StartsWith("Signboard") || n.StartsWith("Billboard") ||
                 n.StartsWith("Fountain") || n.StartsWith("Van") || n.StartsWith("Taxi") || n.StartsWith("AI Character") ||
+                n.StartsWith("Park AI") || n.Contains("Park AI Character") ||
                 n.StartsWith("Smoke") || n.StartsWith("Waypoint") || n.Contains("Marker") || n.Contains("Particle") ||
                 n.Contains("Car") || n.Contains("Vehicle") || n.Contains("Train") || n.Contains("Rail") || n.Contains("Spawn Point"))
             {
                 return false;
+            }
+
+            // 2.5 Exclude any sub-object or asset inside Park or ParkWaypoints (Only the root Park is interactive)
+            Transform checkAncestor = t.parent;
+            while (checkAncestor != null)
+            {
+                if (checkAncestor.name == "Park" || checkAncestor.CompareTag("Park") ||
+                    checkAncestor.name == "ParkWaypoints" || checkAncestor.CompareTag("ParkWaypoints"))
+                {
+                    return false;
+                }
+                checkAncestor = checkAncestor.parent;
             }
 
             // 3. Do not register sub-nodes if an ancestor is already a registered or recognizable building
@@ -357,10 +445,52 @@ namespace EmpireBuilder.World
                     desc = "Municipal law enforcement headquarters ensuring city safety. Public facility (not available for private purchase or flat leasing).";
                     return true;
                 }
+                if (objectTag == "Tennis Court" || objectTag == "Tennis")
+                {
+                    int num = n.Contains("(1)") ? 2 : 1;
+                    friendlyName = $"Capital Tennis Club Court #{num}";
+                    pType = PropertyType.TennisCourt;
+                    price = 45000;
+                    dailyRent = 1500;
+                    desc = "Championship tennis courts with professional lighting. Buy the tennis court to receive lucrative tournament match hosting requests and earn match fees!";
+                    return true;
+                }
+                if (objectTag == "Park")
+                {
+                    friendlyName = "Grand Central Municipal Park";
+                    pType = PropertyType.Park;
+                    price = 200000;
+                    dailyRent = 2500;
+                    desc = "Expansive scenic public park with walking trails and garden attractions. Buy this prestigious park to earn visitor entry fees from citizens walking through!";
+                    return true;
+                }
             }
 
             // 5. Fallback Name-Based Matching (For any untagged structures)
-            // 5.1 Taxi Station
+            // 5.1 Tennis Court
+            if (n.Contains("Tennis Court") || n.Contains("Tennis"))
+            {
+                int num = n.Contains("(1)") ? 2 : 1;
+                friendlyName = $"Capital Tennis Club Court #{num}";
+                pType = PropertyType.TennisCourt;
+                price = 45000;
+                dailyRent = 1500;
+                desc = "Championship tennis courts with professional lighting. Buy the tennis court to receive lucrative tournament match hosting requests and earn match fees!";
+                return true;
+            }
+
+            // 5.2 Park
+            if (n.Contains("Park") && !n.Contains("ParkWaypoints"))
+            {
+                friendlyName = "Grand Central Municipal Park";
+                pType = PropertyType.Park;
+                price = 200000;
+                dailyRent = 2500;
+                desc = "Expansive scenic public park with walking trails and garden attractions. Buy this prestigious park to earn visitor entry fees from citizens walking through!";
+                return true;
+            }
+
+            // 5.3 Taxi Station
             if (n.Contains("Texi Station") || n.Contains("Taxi Station"))
             {
                 int num = n.Contains("(1)") ? 2 : 1;
@@ -547,7 +677,8 @@ namespace EmpireBuilder.World
             return name.Contains("Station") || name.Contains("Stadium") || name.Contains("Hospital") ||
                    name.Contains("Cafe") || name.Contains("Restaurant") || name.Contains("Market") ||
                    name.Contains("Shop") || name.Contains("School") || name.Contains("Factory") ||
-                   name.Contains("Eco_Building") || name.Contains("House") || name.Contains("Demo_Block");
+                   name.Contains("Eco_Building") || name.Contains("House") || name.Contains("Demo_Block") ||
+                   name.Contains("Park") || name.Contains("Tennis");
         }
 
         private static string GetCleanName(string raw, string fallback)
@@ -647,7 +778,30 @@ namespace EmpireBuilder.World
             Ray ray = targetCamera.ScreenPointToRay(screenPoint);
             if (Physics.Raycast(ray, out RaycastHit hit, maxRayDistance, raycastMask))
             {
-                PropertyBuilding hitBuilding = hit.collider.GetComponentInParent<PropertyBuilding>();
+                PropertyBuilding hitBuilding = null;
+
+                // Check if hit object is inside the Park area
+                Transform trCheck = hit.collider.transform;
+                while (trCheck != null)
+                {
+                    if (trCheck.name == "Park" || trCheck.CompareTag("Park"))
+                    {
+                        hitBuilding = trCheck.GetComponent<PropertyBuilding>();
+                        break;
+                    }
+                    if (trCheck.name == "ParkWaypoints" || trCheck.CompareTag("ParkWaypoints"))
+                    {
+                        GameObject pRoot = GameObject.Find("Park");
+                        if (pRoot != null) hitBuilding = pRoot.GetComponent<PropertyBuilding>();
+                        break;
+                    }
+                    trCheck = trCheck.parent;
+                }
+
+                if (hitBuilding == null)
+                {
+                    hitBuilding = hit.collider.GetComponentInParent<PropertyBuilding>();
+                }
 
                 // If hitBuilding was found on a sector container, ignore it
                 if (hitBuilding != null && IsSectorOrContainer(hitBuilding.gameObject.name))

@@ -257,22 +257,34 @@ namespace EmpireBuilder.Traffic
                 }
             }
 
-            // Find all existing AIPedestrianControllers in the scene
+            // Find all existing AIPedestrianControllers in the scene (excluding park-dedicated AI)
             AIPedestrianController[] existingControllers = Object.FindObjectsByType<AIPedestrianController>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             foreach (var c in existingControllers)
             {
-                if (c != null && !targetCharacters.Contains(c))
+                if (c == null) continue;
+                if (c.name.Contains("Park") || (c.transform.parent != null && c.transform.parent.name.Contains("Park")) || c.GetComponent<ParkPedestrianController>() != null)
+                {
+                    // Remove rogue AIPedestrianController from park character
+                    Destroy(c);
+                    continue;
+                }
+                if (!targetCharacters.Contains(c))
                 {
                     targetCharacters.Add(c);
                 }
             }
 
-            // Also discover all GameObject roots/children starting with "AI Character"
+            // Also discover all GameObject roots/children starting with "AI Character" (strictly city pedestrians, not park)
             var allSceneObjects = Object.FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             foreach (var t in allSceneObjects)
             {
                 if (t == null) continue;
                 string n = t.name;
+                if (n.Contains("Park") || (t.parent != null && t.parent.name.Contains("Park")) || t.GetComponent<ParkPedestrianController>() != null)
+                {
+                    continue;
+                }
+
                 if (n.StartsWith("AI Character") && (n.Contains("Male") || n.Contains("Female")))
                 {
                     var ctrl = t.GetComponent<AIPedestrianController>();

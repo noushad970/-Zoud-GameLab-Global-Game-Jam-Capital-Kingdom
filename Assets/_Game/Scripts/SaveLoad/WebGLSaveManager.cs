@@ -27,6 +27,9 @@ namespace EmpireBuilder.SaveLoad
         public double totalProductionRevenueCollected;
         public double pendingOilRevenue;
         public double totalOilRevenueCollected;
+        public double pendingParkRevenue;
+        public double totalParkRevenueCollected;
+        public int parkVisitorsServed;
         public int matchesHosted;
         public double totalMatchRevenue;
         public bool isTaxiRentedToday;
@@ -40,6 +43,8 @@ namespace EmpireBuilder.SaveLoad
         public int currentDay = 1;
         public double cash = 10000.0;
         public float health = 100f;
+        public bool isIll = false;
+        public string illnessReason = "";
         public bool tutorialCompleted = false;
         public string timestamp;
         public List<PropertySaveEntry> properties = new List<PropertySaveEntry>();
@@ -139,6 +144,8 @@ namespace EmpireBuilder.SaveLoad
             PlayerPrefs.DeleteKey(SAVE_KEY);
             PlayerPrefs.DeleteKey("SavedPlayerCash");
             PlayerPrefs.DeleteKey("SavedPlayerHealth");
+            PlayerPrefs.DeleteKey("SavedPlayerIsIll");
+            PlayerPrefs.DeleteKey("SavedPlayerIllnessReason");
             PlayerPrefs.SetInt("LoadOnStart", 0);
             PlayerPrefs.Save();
 
@@ -213,15 +220,19 @@ namespace EmpireBuilder.SaveLoad
                     data.currentDay = PlayerPrefs.GetInt("CurrentDay", 1);
                 }
 
-                // 3. Player Health
+                // 3. Player Health & Illness
                 if (PlayerHealthManager.Instance != null)
                 {
                     data.health = PlayerHealthManager.Instance.CurrentHealth;
+                    data.isIll = PlayerHealthManager.Instance.IsIll;
+                    data.illnessReason = PlayerHealthManager.Instance.IllnessReason;
                     PlayerHealthManager.Instance.SaveHealth();
                 }
                 else
                 {
                     data.health = PlayerPrefs.GetFloat("SavedPlayerHealth", 100f);
+                    data.isIll = PlayerPrefs.GetInt("SavedPlayerIsIll", 0) == 1;
+                    data.illnessReason = PlayerPrefs.GetString("SavedPlayerIllnessReason", "");
                 }
 
                 // 4. Tutorial
@@ -251,6 +262,9 @@ namespace EmpireBuilder.SaveLoad
                         totalProductionRevenueCollected = b.TotalProductionRevenueCollected,
                         pendingOilRevenue = b.PendingOilRevenue,
                         totalOilRevenueCollected = b.TotalOilRevenueCollected,
+                        pendingParkRevenue = b.PendingParkRevenue,
+                        totalParkRevenueCollected = b.TotalParkRevenueCollected,
+                        parkVisitorsServed = b.ParkVisitorsServed,
                         matchesHosted = b.MatchesHosted,
                         totalMatchRevenue = b.TotalMatchRevenue,
                         isTaxiRentedToday = b.IsTaxiRentedToday,
@@ -310,12 +324,22 @@ namespace EmpireBuilder.SaveLoad
                     GameManager.Instance.Simulation.Initialize(data.currentDay);
                 }
 
-                // 3. Health
+                // 3. Health & Illness
                 if (PlayerHealthManager.Instance != null)
                 {
                     PlayerHealthManager.Instance.SetHealth(data.health);
+                    if (data.isIll)
+                    {
+                        PlayerHealthManager.Instance.ContractIllness(data.illnessReason);
+                    }
+                    else
+                    {
+                        PlayerHealthManager.Instance.CureIllness();
+                    }
                 }
                 PlayerPrefs.SetFloat("SavedPlayerHealth", data.health);
+                PlayerPrefs.SetInt("SavedPlayerIsIll", data.isIll ? 1 : 0);
+                PlayerPrefs.SetString("SavedPlayerIllnessReason", data.illnessReason ?? "");
 
                 // 4. Properties
                 if (data.properties != null && data.properties.Count > 0)

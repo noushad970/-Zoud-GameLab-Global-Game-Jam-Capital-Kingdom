@@ -1875,6 +1875,153 @@ namespace EmpireBuilder.Editor
 
             Debug.Log("[EmpireBuilderSetupTool] Successfully setup CityNoticeBar, GameTutorialModal, GuideButton, and WebGLSaveManager in GamePlay scene!");
         }
+
+        [MenuItem("Tools/Empire Builder/Setup Park Dedicated AI and Single Indicator", false, 9)]
+        public static void SetupParkDedicatedAIAndSingleIndicator()
+        {
+            var scene = EditorSceneManager.OpenScene(GamePlayScenePath, OpenSceneMode.Single);
+
+            // 1. Remove orphaned root BuildingWorldIndicator objects (where parent == null)
+            var allIndicators = Object.FindObjectsByType<BuildingWorldIndicator>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            int cleanedIndicators = 0;
+            foreach (var ind in allIndicators)
+            {
+                if (ind == null) continue;
+                if (ind.transform.parent == null)
+                {
+                    Undo.DestroyObjectImmediate(ind.gameObject);
+                    cleanedIndicators++;
+                }
+            }
+            if (cleanedIndicators > 0)
+            {
+                Debug.Log($"[EmpireBuilderSetupTool] Cleaned up {cleanedIndicators} orphaned root indicators from scene hierarchy.");
+            }
+
+            // 2. Locate Park and ParkWaypoints roots
+            GameObject parkObj = GameObject.Find("Park");
+            GameObject pwpObj = GameObject.Find("ParkWaypoints");
+
+            if (parkObj == null)
+            {
+                var allT = Object.FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+                foreach (var tr in allT)
+                {
+                    if (tr != null && (tr.name == "Park" || tr.CompareTag("Park")) && (tr.parent == null || tr.parent.name != "Park"))
+                    {
+                        parkObj = tr.gameObject;
+                        break;
+                    }
+                }
+            }
+
+            if (parkObj != null)
+            {
+                // Strip PropertyBuilding and BuildingWorldIndicator from all children of Park
+                foreach (var childPb in parkObj.GetComponentsInChildren<PropertyBuilding>(true))
+                {
+                    if (childPb.gameObject != parkObj)
+                    {
+                        Undo.DestroyObjectImmediate(childPb);
+                    }
+                }
+                foreach (var childInd in parkObj.GetComponentsInChildren<BuildingWorldIndicator>(true))
+                {
+                    if (childInd.gameObject != parkObj && childInd.transform.parent != parkObj.transform)
+                    {
+                        Undo.DestroyObjectImmediate(childInd.gameObject);
+                    }
+                }
+
+                // Ensure single root PropertyBuilding
+                var pb = parkObj.GetComponent<PropertyBuilding>() ?? parkObj.AddComponent<PropertyBuilding>();
+                pb.SetConfig(
+                    "Grand Central Municipal Park",
+                    PropertyType.Park,
+                    200000,
+                    2500,
+                    "Expansive scenic public park with walking trails and garden attractions. Buy this prestigious park to earn visitor entry fees from citizens walking through!"
+                );
+                var ghostMat = AssetDatabase.LoadAssetAtPath<Material>("Assets/characterEffects/shaders/ghostEffect/ghostMaterial.mat");
+                if (ghostMat != null && pb.SelectionShaderMaterial == null)
+                {
+                    pb.SetSelectionMaterial(ghostMat);
+                }
+                pb.EnsureCollider();
+                pb.EnsureWorldIndicator();
+                EditorUtility.SetDirty(parkObj);
+            }
+
+            // 3. Configure ParkWaypoints and dedicated Park AI Characters
+            if (pwpObj != null)
+            {
+                // Strip stray PropertyBuilding and BuildingWorldIndicator
+                foreach (var childPb in pwpObj.GetComponentsInChildren<PropertyBuilding>(true))
+                {
+                    Undo.DestroyObjectImmediate(childPb);
+                }
+                foreach (var childInd in pwpObj.GetComponentsInChildren<BuildingWorldIndicator>(true))
+                {
+                    Undo.DestroyObjectImmediate(childInd.gameObject);
+                }
+
+                // Add or configure ParkAIManager
+                var pam = pwpObj.GetComponent<EmpireBuilder.Traffic.ParkAIManager>();
+                if (pam == null) pam = pwpObj.AddComponent<EmpireBuilder.Traffic.ParkAIManager>();
+
+                var femaleCtrl = AssetDatabase.LoadAssetAtPath<RuntimeAnimatorController>(
+                    "Assets/Assets No/Tiny_Toony_City_Demo/PolygonBlacksmith/TT_Citizens_demo/animation/male/Female Anim Controller.controller"
+                );
+                var maleCtrl = AssetDatabase.LoadAssetAtPath<RuntimeAnimatorController>(
+                    "Assets/Assets No/Tiny_Toony_City_Demo/PolygonBlacksmith/TT_Citizens_demo/animation/male/Male Anim Controller.controller"
+                );
+
+                var serPam = new SerializedObject(pam);
+                serPam.FindProperty("parkWaypointsRoot").objectReferenceValue = pwpObj.transform;
+                if (femaleCtrl != null) serPam.FindProperty("femaleAnimController").objectReferenceValue = femaleCtrl;
+                if (maleCtrl != null) serPam.FindProperty("maleAnimController").objectReferenceValue = maleCtrl;
+                if (parkObj != null) serPam.FindProperty("parkProperty").objectReferenceValue = parkObj.GetComponent<PropertyBuilding>();
+                serPam.ApplyModifiedProperties();
+
+                pam.BuildWaypointsAndCharacters();
+                EditorUtility.SetDirty(pwpObj);
+
+                // Ensure all 16 Park AI Characters have ParkPedestrianController and correct Animator Controller
+                foreach (Transform child in pwpObj.transform)
+                {
+                    if (child.name.Contains("Character") || child.name.Contains("Park AI"))
+                    {
+                        var cityCtrl = child.GetComponent<EmpireBuilder.Traffic.AIPedestrianController>();
+                        if (cityCtrl != null) Undo.DestroyObjectImmediate(cityCtrl);
+
+                        var parkCtrl = child.GetComponent<EmpireBuilder.Traffic.ParkPedestrianController>();
+                        if (parkCtrl == null) parkCtrl = child.gameObject.AddComponent<EmpireBuilder.Traffic.ParkPedestrianController>();
+
+                        bool isFemale = EmpireBuilder.Traffic.ParkAIManager.IsFemaleCharacter(child);
+                        RuntimeAnimatorController targetAnimCtrl = isFemale ? femaleCtrl : maleCtrl;
+
+                        var anim = child.GetComponentInChildren<Animator>();
+                        if (anim != null && targetAnimCtrl != null)
+                        {
+                            anim.runtimeAnimatorController = targetAnimCtrl;
+                            anim.applyRootMotion = false;
+                            anim.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+                            EditorUtility.SetDirty(anim);
+                        }
+
+                        // Force rotation upright
+                        child.rotation = Quaternion.Euler(0f, child.eulerAngles.y, 0f);
+                        EditorUtility.SetDirty(child.gameObject);
+                    }
+                }
+            }
+
+            EditorSceneManager.MarkSceneDirty(scene);
+            EditorSceneManager.SaveScene(scene);
+            AssetDatabase.SaveAssets();
+
+            Debug.Log("[EmpireBuilderSetupTool] Successfully setup Park dedicated AI characters and single park indicator!");
+        }
     }
 }
 #endif

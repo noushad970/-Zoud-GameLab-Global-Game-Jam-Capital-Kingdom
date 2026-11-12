@@ -95,6 +95,12 @@ namespace EmpireBuilder.World
 
             InitializeDefaultCurves();
             ApplyLighting(currentTimeOfDay);
+
+            // Ensure city streetlights and night lighting manager is active
+            if (GetComponent<CityNightLightingManager>() == null)
+            {
+                gameObject.AddComponent<CityNightLightingManager>();
+            }
         }
 
         private void Start()

@@ -21,6 +21,8 @@ namespace EmpireBuilder.World
         Hospital,
         School,
         PoliceStation,
+        TennisCourt,
+        Park,
         // Legacy aliases for backward compatibility with serialized scenes
         House = SmallRentalBuilding,
         Apartment = RentalBuilding,
@@ -73,6 +75,11 @@ namespace EmpireBuilder.World
         [Header("Oil & Petroleum Station")]
         [SerializeField] private double pendingOilRevenue = 0.0;
         [SerializeField] private double totalOilRevenueCollected = 0.0;
+
+        [Header("Park Operations & Entry Fees")]
+        [SerializeField] private double pendingParkRevenue = 0.0;
+        [SerializeField] private double totalParkRevenueCollected = 0.0;
+        [SerializeField] private int parkVisitorsServed = 0;
 
         [Header("Hospital Healthcare")]
         [SerializeField] private double hospitalTreatmentFee = 150.0;
@@ -164,6 +171,11 @@ namespace EmpireBuilder.World
         // Oil Station Getters
         public double PendingOilRevenue => pendingOilRevenue;
         public double TotalOilRevenueCollected => totalOilRevenueCollected;
+
+        // Park Getters
+        public double PendingParkRevenue => pendingParkRevenue;
+        public double TotalParkRevenueCollected => totalParkRevenueCollected;
+        public int ParkVisitorsServed => parkVisitorsServed;
 
         // Hospital Getters
         public double HospitalTreatmentFee => hospitalTreatmentFee;
@@ -276,6 +288,24 @@ namespace EmpireBuilder.World
         /// </summary>
         public Vector3 GetRoofPosition()
         {
+            if (propertyType == PropertyType.Park)
+            {
+                Transform gateChild = transform.Find("Gate");
+                if (gateChild != null)
+                {
+                    return transform.InverseTransformPoint(gateChild.position + Vector3.up * 6.5f);
+                }
+            }
+
+            if (propertyType == PropertyType.TennisCourt)
+            {
+                BoxCollider tcCol = GetComponent<BoxCollider>();
+                if (tcCol != null)
+                {
+                    return tcCol.center + new Vector3(0f, Mathf.Max(tcCol.size.y * 0.5f + 4.5f, 5.5f), 0f);
+                }
+            }
+
             BoxCollider col = GetComponent<BoxCollider>();
             if (col != null)
             {
@@ -1065,7 +1095,11 @@ namespace EmpireBuilder.World
 
         public void TriggerExhibitionMatchRequest()
         {
-            if (StadiumMatchManager.Instance != null)
+            if (propertyType == PropertyType.TennisCourt && TennisMatchManager.Instance != null)
+            {
+                TennisMatchManager.Instance.TriggerRandomMatchRequest();
+            }
+            else if (StadiumMatchManager.Instance != null)
             {
                 StadiumMatchManager.Instance.TriggerRandomMatchRequest();
             }
@@ -1075,15 +1109,18 @@ namespace EmpireBuilder.World
         #region Hospital Operations
         /// <summary>
         /// Provides emergency and comprehensive medical treatment for the player,
-        /// restoring health completely to 100 HP.
+        /// curing any contracted illness from starvation and restoring health completely to 100 HP.
         /// If owned by the player, treatment is completely free.
         /// </summary>
         public bool ReceiveHospitalTreatment(out string message)
         {
             message = "";
-            if (PlayerHealthManager.Instance != null && PlayerHealthManager.Instance.CurrentHealth >= PlayerHealthManager.Instance.MaxHealth)
+            bool isIll = PlayerHealthManager.Instance != null && PlayerHealthManager.Instance.IsIll;
+            bool atMaxHealth = PlayerHealthManager.Instance != null && PlayerHealthManager.Instance.CurrentHealth >= PlayerHealthManager.Instance.MaxHealth;
+
+            if (atMaxHealth && !isIll)
             {
-                message = "Your health is already at 100%! No hospital treatment is currently needed.";
+                message = "Your health is already at 100% and you are completely healthy! No hospital treatment is currently needed.";
                 return false;
             }
 
@@ -1114,16 +1151,18 @@ namespace EmpireBuilder.World
 
             if (PlayerHealthManager.Instance != null)
             {
+                PlayerHealthManager.Instance.CureIllness();
                 PlayerHealthManager.Instance.RestoreHealth(PlayerHealthManager.Instance.MaxHealth, "Hospital Treatment");
+                PlayerHealthManager.Instance.SaveHealth();
             }
 
             if (isOwned)
             {
-                message = $"🏥 VIP Healthcare: As the owner of {propertyName}, your comprehensive treatment is complimentary! Health restored to 100 HP! ❤️";
+                message = $"🏥 VIP Healthcare: As the owner of {propertyName}, your treatment is complimentary! Illness cured and health restored to 100 HP! ❤️";
             }
             else
             {
-                message = $"🏥 Received full medical treatment for ${hospitalTreatmentFee:N0}! Health restored to 100 HP! ❤️";
+                message = $"🏥 Received full medical treatment for ${hospitalTreatmentFee:N0}! Illness cured and health restored to 100 HP! ❤️";
             }
 
             GameSoundManager.Instance?.PlayCollect(transform.position);
@@ -1240,6 +1279,57 @@ namespace EmpireBuilder.World
             NotifyStateChanged();
 
             GameSoundManager.Instance?.PlayCollect(transform.position);
+            return true;
+        }
+        #endregion
+
+        #region Park Operations
+        /// <summary>
+        /// Adds visitor entry fee revenue to the park treasury backlog.
+        /// </summary>
+        public void AddParkEntryFee(double amount)
+        {
+            if (!isOwned || amount <= 0) return;
+            pendingParkRevenue += amount;
+            parkVisitorsServed++;
+            SaveState();
+            NotifyStateChanged();
+        }
+
+        /// <summary>
+        /// Player claims accumulated visitor entry fees from the park.
+        /// </summary>
+        public bool CollectParkRevenue(out double collectedAmount, out string message)
+        {
+            collectedAmount = pendingParkRevenue;
+            if (collectedAmount <= 0)
+            {
+                message = "No park entry fees currently accumulated to collect.";
+                return false;
+            }
+
+            int currentDay = GetCurrentDay();
+            if (GameManager.Instance != null && GameManager.Instance.Economy != null)
+            {
+                GameManager.Instance.Economy.ApplyTransaction(
+                    collectedAmount,
+                    TransactionCategory.Revenue,
+                    $"Park Visitor Entry Fees from {propertyName}",
+                    currentDay
+                );
+            }
+            else
+            {
+                AddPlayerCashFallback(collectedAmount);
+            }
+
+            totalParkRevenueCollected += collectedAmount;
+            pendingParkRevenue = 0;
+            SaveState();
+            NotifyStateChanged();
+
+            GameSoundManager.Instance?.PlayCollect(transform.position);
+            message = $"🎟️ Collected +${collectedAmount:N0} in visitor entry fees from {propertyName}!";
             return true;
         }
         #endregion
@@ -1458,6 +1548,9 @@ namespace EmpireBuilder.World
             PlayerPrefs.SetFloat($"{key}_ProdTotal", (float)totalProductionRevenueCollected);
             PlayerPrefs.SetFloat($"{key}_OilRev", (float)pendingOilRevenue);
             PlayerPrefs.SetFloat($"{key}_OilTotal", (float)totalOilRevenueCollected);
+            PlayerPrefs.SetFloat($"{key}_ParkRev", (float)pendingParkRevenue);
+            PlayerPrefs.SetFloat($"{key}_ParkTotal", (float)totalParkRevenueCollected);
+            PlayerPrefs.SetInt($"{key}_ParkVisitors", parkVisitorsServed);
             PlayerPrefs.Save();
         }
 
@@ -1536,6 +1629,18 @@ namespace EmpireBuilder.World
             {
                 totalOilRevenueCollected = PlayerPrefs.GetFloat($"{key}_OilTotal");
             }
+            if (PlayerPrefs.HasKey($"{key}_ParkRev"))
+            {
+                pendingParkRevenue = PlayerPrefs.GetFloat($"{key}_ParkRev");
+            }
+            if (PlayerPrefs.HasKey($"{key}_ParkTotal"))
+            {
+                totalParkRevenueCollected = PlayerPrefs.GetFloat($"{key}_ParkTotal");
+            }
+            if (PlayerPrefs.HasKey($"{key}_ParkVisitors"))
+            {
+                parkVisitorsServed = PlayerPrefs.GetInt($"{key}_ParkVisitors");
+            }
         }
 
         public void ApplySavedState(EmpireBuilder.SaveLoad.PropertySaveEntry entry)
@@ -1555,6 +1660,9 @@ namespace EmpireBuilder.World
             totalProductionRevenueCollected = entry.totalProductionRevenueCollected;
             pendingOilRevenue = entry.pendingOilRevenue;
             totalOilRevenueCollected = entry.totalOilRevenueCollected;
+            pendingParkRevenue = entry.pendingParkRevenue;
+            totalParkRevenueCollected = entry.totalParkRevenueCollected;
+            parkVisitorsServed = entry.parkVisitorsServed;
             matchesHosted = entry.matchesHosted;
             totalMatchRevenue = entry.totalMatchRevenue;
             isTaxiRentedToday = entry.isTaxiRentedToday;

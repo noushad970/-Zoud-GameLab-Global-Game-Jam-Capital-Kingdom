@@ -95,10 +95,19 @@ namespace EmpireBuilder.UI
                 targetFill = PlayerHealthManager.Instance.HealthNormalized;
                 isLowHealth = PlayerHealthManager.Instance.IsLowHealth;
                 isCriticalHealth = PlayerHealthManager.Instance.IsCriticalHealth;
+                bool isIll = PlayerHealthManager.Instance.IsIll;
 
-                if (warningBadge != null && warningBadge.activeSelf != isLowHealth)
+                bool shouldShowBadge = isLowHealth || isIll;
+                if (warningBadge != null)
                 {
-                    warningBadge.SetActive(isLowHealth);
+                    if (warningBadge.activeSelf != shouldShowBadge)
+                    {
+                        warningBadge.SetActive(shouldShowBadge);
+                    }
+                    if (warningBadgeText != null && shouldShowBadge)
+                    {
+                        warningBadgeText.text = isIll ? "SICK!" : (isCriticalHealth ? "CRITICAL" : "HUNGRY");
+                    }
                 }
             }
 
@@ -170,7 +179,8 @@ namespace EmpireBuilder.UI
             {
                 int hpDisplay = Mathf.RoundToInt(currentDisplayHealth);
                 int hpMax = Mathf.RoundToInt(maxHealth);
-                healthText.text = $"{hpDisplay}/{hpMax} HP";
+                bool isIll = PlayerHealthManager.Instance != null && PlayerHealthManager.Instance.IsIll;
+                healthText.text = isIll ? $"ILL: {hpDisplay}/{hpMax} HP" : $"{hpDisplay}/{hpMax} HP";
             }
         }
 

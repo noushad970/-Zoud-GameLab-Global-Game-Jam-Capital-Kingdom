@@ -89,12 +89,32 @@ namespace EmpireBuilder.UI
         }
 
         /// <summary>
-        /// Displays the match rent request modal with match details and rent offer.
+        /// Displays the match rent request modal with default football stadium styling.
         /// </summary>
         public void OpenRequest(string matchName, double rentOffer, Action onAccepted, Action onDeclined)
         {
+            OpenRequest(
+                "⚽ STADIUM MATCH RENTAL REQUEST",
+                matchName,
+                rentOffer,
+                "A major sports association is offering to rent your facility for this high-profile match!",
+                onAccepted,
+                onDeclined
+            );
+        }
+
+        /// <summary>
+        /// Displays the match rent request modal with customizable header, match details, and description.
+        /// </summary>
+        public void OpenRequest(string headerTitle, string matchName, double rentOffer, string description, Action onAccepted, Action onDeclined)
+        {
             onAcceptedCallback = onAccepted;
             onDeclinedCallback = onDeclined;
+
+            if (headerTitleText != null && !string.IsNullOrEmpty(headerTitle))
+            {
+                headerTitleText.text = headerTitle;
+            }
 
             if (matchNameText != null)
             {
@@ -113,7 +133,7 @@ namespace EmpireBuilder.UI
 
             if (descriptionText != null)
             {
-                descriptionText.text = "A major football association is offering to rent your Grand Olympic Stadium for this high-profile match!";
+                descriptionText.text = description;
             }
 
             if (panelRoot != null)

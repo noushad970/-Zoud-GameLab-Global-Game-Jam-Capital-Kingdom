@@ -203,6 +203,12 @@ namespace EmpireBuilder.Traffic
 
             // Ensure car has a trigger / collider for other cars to sense
             EnsureCollider();
+
+            // Ensure car lights (dual forward headlights & glowing taillights) are attached and operational
+            if (GetComponent<AICarLightController>() == null)
+            {
+                gameObject.AddComponent<AICarLightController>();
+            }
         }
 
         private void Start()

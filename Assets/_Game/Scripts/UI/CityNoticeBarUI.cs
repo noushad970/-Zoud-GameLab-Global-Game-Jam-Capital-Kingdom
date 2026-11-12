@@ -189,6 +189,14 @@ namespace EmpireBuilder.UI
             GameSoundManager.Instance?.PlayNotification();
         }
 
+        /// <summary>
+        /// Simple single-message helper to post a notification.
+        /// </summary>
+        public void ShowNotice(string message, NoticeType type = NoticeType.General, float duration = 8f)
+        {
+            PostNotice("CITY NOTIFICATION", message, type, null, duration);
+        }
+
         private void DismissNotice(CityNoticeItem item)
         {
             if (item == null) return;
@@ -410,10 +418,34 @@ namespace EmpireBuilder.UI
                 );
             }
 
-            // 2. Check Player Health
+            // 1b. Check Tennis Tournament Match Request
+            if (TennisMatchManager.Instance != null && TennisMatchManager.Instance.IsRequestPending)
+            {
+                PostNotice(
+                    "TENNIS TOURNAMENT INVITATION",
+                    $"{TennisMatchManager.Instance.CurrentPendingMatchName} offers ${TennisMatchManager.Instance.CurrentPendingRentOffer:N0}! Tap to host.",
+                    NoticeType.StadiumMatch,
+                    TennisMatchManager.Instance.TennisCourtProperty,
+                    15f
+                );
+            }
+
+            // 2. Check Player Health & Illness
             if (PlayerHealthManager.Instance != null)
             {
-                if (PlayerHealthManager.Instance.IsExhausted)
+                if (PlayerHealthManager.Instance.IsIll)
+                {
+                    PropertyBuilding hosp = FindHospital();
+                    string hospCost = hosp != null && hosp.IsOwned ? "FREE" : "$150";
+                    PostNotice(
+                        "🤒 ILLNESS DETECTED",
+                        $"Starvation sickness ({PlayerHealthManager.Instance.IllnessReason})! Visit Hospital for treatment ({hospCost})!",
+                        NoticeType.Hospital,
+                        hosp,
+                        14f
+                    );
+                }
+                else if (PlayerHealthManager.Instance.IsExhausted)
                 {
                     PostNotice(
                         "💀 EXHAUSTION WARNING",
@@ -497,6 +529,18 @@ namespace EmpireBuilder.UI
                     PostNotice(
                         "FUEL REVENUE READY",
                         $"{b.PropertyName} accumulated ${b.PendingOilRevenue:N0} oil & gas distribution profits!",
+                        NoticeType.RentReady,
+                        b,
+                        12f
+                    );
+                }
+
+                // Park visitor revenue ready
+                if (b.IsOwned && b.PropertyType == PropertyType.Park && b.PendingParkRevenue > 0)
+                {
+                    PostNotice(
+                        "PARK ENTRY FEES READY",
+                        $"{b.PropertyName} accumulated ${b.PendingParkRevenue:N0} in visitor admission fees! Tap to collect.",
                         NoticeType.RentReady,
                         b,
                         12f

@@ -101,6 +101,47 @@ namespace EmpireBuilder.Editor
             var fontAsset = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(FontLilita);
             var ghostMat = AssetDatabase.LoadAssetAtPath<Material>("Assets/characterEffects/shaders/ghostEffect/ghostMaterial.mat");
 
+            // 0. Clean orphaned root indicators and stray park child indicators
+            GameObject parkObj = GameObject.Find("Park");
+            GameObject pwpObj = GameObject.Find("ParkWaypoints");
+
+            var allIndicators = Object.FindObjectsByType<BuildingWorldIndicator>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            foreach (var ind in allIndicators)
+            {
+                if (ind == null) continue;
+                if (ind.transform.parent == null)
+                {
+                    Undo.DestroyObjectImmediate(ind.gameObject);
+                }
+                else if (parkObj != null && ind.transform.parent != parkObj.transform && ind.transform.IsChildOf(parkObj.transform))
+                {
+                    Undo.DestroyObjectImmediate(ind.gameObject);
+                }
+                else if (pwpObj != null && ind.transform.IsChildOf(pwpObj.transform))
+                {
+                    Undo.DestroyObjectImmediate(ind.gameObject);
+                }
+            }
+
+            if (parkObj != null)
+            {
+                foreach (var childPb in parkObj.GetComponentsInChildren<PropertyBuilding>(true))
+                {
+                    if (childPb.gameObject != parkObj)
+                    {
+                        Undo.DestroyObjectImmediate(childPb);
+                    }
+                }
+            }
+
+            if (pwpObj != null)
+            {
+                foreach (var childPb in pwpObj.GetComponentsInChildren<PropertyBuilding>(true))
+                {
+                    Undo.DestroyObjectImmediate(childPb);
+                }
+            }
+
             // 1. First ensure all tagged/recognized buildings have PropertyBuilding configured
             var allTransforms = Object.FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             var buildings = new List<PropertyBuilding>();

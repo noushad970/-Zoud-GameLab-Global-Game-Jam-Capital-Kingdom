@@ -99,6 +99,13 @@ namespace EmpireBuilder.UI
         [SerializeField] private TextMeshProUGUI collectOilButtonText;
         [SerializeField] private Image collectOilButtonBg;
 
+        [Header("Park Visitor Operations (Special)")]
+        [SerializeField] private GameObject parkSectionRoot;
+        [SerializeField] private TextMeshProUGUI parkStatusText;
+        [SerializeField] private Button collectParkButton;
+        [SerializeField] private TextMeshProUGUI collectParkButtonText;
+        [SerializeField] private Image collectParkButtonBg;
+
         [Header("Building Maintenance Section")]
         [SerializeField] private GameObject maintenanceSectionRoot;
         [SerializeField] private TextMeshProUGUI maintenanceReasonText;
@@ -274,6 +281,21 @@ namespace EmpireBuilder.UI
                     collectOilButtonText = collectOilButton.transform.Find("Text")?.GetComponent<TextMeshProUGUI>();
             }
 
+            if (parkSectionRoot == null && card != null)
+            {
+                var t = card.Find("ParkSection");
+                if (t != null) parkSectionRoot = t.gameObject;
+            }
+            if (parkSectionRoot != null)
+            {
+                if (parkStatusText == null)
+                    parkStatusText = parkSectionRoot.transform.Find("ParkStatus")?.GetComponent<TextMeshProUGUI>();
+                if (collectParkButton == null)
+                    collectParkButton = parkSectionRoot.transform.Find("CollectParkButton")?.GetComponent<Button>();
+                if (collectParkButtonText == null && collectParkButton != null)
+                    collectParkButtonText = collectParkButton.transform.Find("Text")?.GetComponent<TextMeshProUGUI>();
+            }
+
             if (maintenanceSectionRoot == null && card != null)
             {
                 var t = card.Find("MaintenanceSection");
@@ -376,6 +398,11 @@ namespace EmpireBuilder.UI
             {
                 collectOilButton.onClick.RemoveAllListeners();
                 collectOilButton.onClick.AddListener(OnCollectOilClicked);
+            }
+            if (collectParkButton != null)
+            {
+                collectParkButton.onClick.RemoveAllListeners();
+                collectParkButton.onClick.AddListener(OnCollectParkRevenueClicked);
             }
             if (payMaintenanceButton != null)
             {
@@ -719,26 +746,29 @@ namespace EmpireBuilder.UI
                 }
             }
 
-            // 10. Stadium Section
-            bool isStadium = currentBuilding.PropertyType == PropertyType.Stadium;
+            // 10. Stadium & Tennis Court Section
+            bool isStadiumOrTennis = currentBuilding.PropertyType == PropertyType.Stadium || currentBuilding.PropertyType == PropertyType.TennisCourt;
             if (stadiumSectionRoot != null)
             {
-                stadiumSectionRoot.SetActive(isStadium);
+                stadiumSectionRoot.SetActive(isStadiumOrTennis);
             }
-            if (isStadium)
+            if (isStadiumOrTennis)
             {
+                bool isTennis = currentBuilding.PropertyType == PropertyType.TennisCourt;
                 if (stadiumStatsText != null)
                 {
-                    stadiumStatsText.text = $"Matches Hosted: {currentBuilding.MatchesHosted}  |  Total Match Rent: ${currentBuilding.TotalMatchRevenue:N0}";
+                    string matchTerm = isTennis ? "Tournaments Hosted" : "Matches Hosted";
+                    stadiumStatsText.text = $"{matchTerm}: {currentBuilding.MatchesHosted}  |  Total Match Rent: ${currentBuilding.TotalMatchRevenue:N0}";
                 }
                 if (requestMatchButton != null)
                 {
                     requestMatchButton.interactable = currentBuilding.IsOwned;
                     if (requestMatchButtonText != null)
                     {
+                        string venueTerm = isTennis ? "TENNIS COURT" : "STADIUM";
                         requestMatchButtonText.text = currentBuilding.IsOwned
                             ? "REQUEST MATCH RENT OFFER NOW"
-                            : "BUY STADIUM TO HOST MATCHES";
+                            : $"BUY {venueTerm} TO HOST MATCHES";
                     }
                 }
             }
@@ -753,13 +783,28 @@ namespace EmpireBuilder.UI
             {
                 float curHp = PlayerHealthManager.Instance != null ? PlayerHealthManager.Instance.CurrentHealth : 100f;
                 float maxHp = PlayerHealthManager.Instance != null ? PlayerHealthManager.Instance.MaxHealth : 100f;
-                bool needsHeal = curHp < maxHp - 0.5f;
+                bool isIll = PlayerHealthManager.Instance != null && PlayerHealthManager.Instance.IsIll;
+                string illnessReason = PlayerHealthManager.Instance != null ? PlayerHealthManager.Instance.IllnessReason : "";
+                bool needsHeal = isIll || curHp < maxHp - 0.5f;
 
                 if (hospitalStatusText != null)
                 {
-                    hospitalStatusText.text = currentBuilding.IsOwned
-                        ? $"Health: {curHp:0}/{maxHp:0} HP. As Hospital Owner, full medical care is COMPLIMENTARY (FREE)!"
-                        : $"Health: {curHp:0}/{maxHp:0} HP. Visit anytime you are sick to restore to 100 HP!";
+                    if (isIll)
+                    {
+                        hospitalStatusText.text = currentBuilding.IsOwned
+                            ? $"<color=#FF4444>🚨 DIAGNOSIS: SICK ({illnessReason})</color>\nHealth: {curHp:0}/{maxHp:0} HP. As Hospital Owner, full emergency care is COMPLIMENTARY (FREE)!"
+                            : $"<color=#FF4444>🚨 DIAGNOSIS: SICK ({illnessReason})</color>\nHealth: {curHp:0}/{maxHp:0} HP. Immediate hospital treatment required (${currentBuilding.HospitalTreatmentFee:N0})!";
+                    }
+                    else if (needsHeal)
+                    {
+                        hospitalStatusText.text = currentBuilding.IsOwned
+                            ? $"Health: {curHp:0}/{maxHp:0} HP. As Hospital Owner, full medical care is COMPLIMENTARY (FREE)!"
+                            : $"Health: {curHp:0}/{maxHp:0} HP. Visit anytime you are sick or weak to restore to 100 HP (${currentBuilding.HospitalTreatmentFee:N0})!";
+                    }
+                    else
+                    {
+                        hospitalStatusText.text = "<color=#44FF88>✅ HEALTHY & ENERGIZED (100% HP)</color>\nNo illness detected. Hospital emergency facilities standing by.";
+                    }
                 }
 
                 if (treatmentButton != null)
@@ -774,20 +819,36 @@ namespace EmpireBuilder.UI
                         }
                         else if (currentBuilding.IsOwned)
                         {
-                            treatmentButtonText.text = "RECEIVE TREATMENT (HEAL 100 HP, FREE)";
+                            treatmentButtonText.text = isIll
+                                ? "CURE ILLNESS & RESTORE 100 HP (FREE)"
+                                : "RECEIVE TREATMENT (HEAL 100 HP, FREE)";
                         }
                         else
                         {
-                            treatmentButtonText.text = canAffordTreatment
-                                ? $"RECEIVE TREATMENT (HEAL 100 HP, ${currentBuilding.HospitalTreatmentFee:N0})"
-                                : $"NEED ${currentBuilding.HospitalTreatmentFee:N0} FOR TREATMENT";
+                            if (canAffordTreatment)
+                            {
+                                treatmentButtonText.text = isIll
+                                    ? $"CURE ILLNESS & RESTORE 100 HP (${currentBuilding.HospitalTreatmentFee:N0})"
+                                    : $"RECEIVE TREATMENT (HEAL 100 HP, ${currentBuilding.HospitalTreatmentFee:N0})";
+                            }
+                            else
+                            {
+                                treatmentButtonText.text = $"NEED ${currentBuilding.HospitalTreatmentFee:N0} FOR TREATMENT";
+                            }
                         }
                     }
                     if (treatmentButtonBg != null)
                     {
-                        treatmentButtonBg.color = needsHeal && canAffordTreatment
-                            ? new Color(0.12f, 0.78f, 0.38f, 1f)
-                            : new Color(0.45f, 0.48f, 0.52f, 0.8f);
+                        if (isIll && canAffordTreatment)
+                        {
+                            treatmentButtonBg.color = new Color(0.92f, 0.22f, 0.28f, 1f); // Emergency Red
+                        }
+                        else
+                        {
+                            treatmentButtonBg.color = needsHeal && canAffordTreatment
+                                ? new Color(0.12f, 0.78f, 0.38f, 1f) // Healthy Green
+                                : new Color(0.45f, 0.48f, 0.52f, 0.8f);
+                        }
                     }
                 }
             }
@@ -849,6 +910,37 @@ namespace EmpireBuilder.UI
                     {
                         collectOilButtonBg.color = hasOilRev
                             ? new Color(0.95f, 0.65f, 0.12f, 1f)
+                            : new Color(0.45f, 0.45f, 0.45f, 0.8f);
+                    }
+                }
+            }
+
+            // 13b. Park Visitor Revenue Section
+            bool isPark = currentBuilding.PropertyType == PropertyType.Park;
+            if (parkSectionRoot != null)
+            {
+                parkSectionRoot.SetActive(isPark);
+            }
+            if (isPark)
+            {
+                if (parkStatusText != null)
+                {
+                    parkStatusText.text = $"Total Visitor Revenue: ${currentBuilding.TotalParkRevenueCollected:N0}  (Visitors: {currentBuilding.ParkVisitorsServed})\nReady to Collect: +${currentBuilding.PendingParkRevenue:N0}";
+                }
+                if (collectParkButton != null)
+                {
+                    bool hasParkRev = currentBuilding.PendingParkRevenue > 0;
+                    collectParkButton.interactable = hasParkRev;
+                    if (collectParkButtonText != null)
+                    {
+                        collectParkButtonText.text = hasParkRev
+                            ? $"COLLECT ENTRY FEES (+${currentBuilding.PendingParkRevenue:N0})"
+                            : (currentBuilding.IsOwned ? "VISITORS STROLLING IN PARK..." : "BUY PARK TO EARN ENTRY FEES");
+                    }
+                    if (collectParkButtonBg != null)
+                    {
+                        collectParkButtonBg.color = hasParkRev
+                            ? new Color(0.15f, 0.72f, 0.40f, 1f)
                             : new Color(0.45f, 0.45f, 0.45f, 0.8f);
                     }
                 }
@@ -1059,6 +1151,22 @@ namespace EmpireBuilder.UI
             }
         }
 
+        private void OnCollectParkRevenueClicked()
+        {
+            if (currentBuilding == null) return;
+            if (currentBuilding.CollectParkRevenue(out double amt, out string msg))
+            {
+                ShowToast(msg);
+                GamePlayHeaderUI.Instance?.UpdateMoneyDisplay();
+                RefreshUI();
+            }
+            else
+            {
+                GameSoundManager.Instance?.PlayError();
+                ShowToast(msg);
+            }
+        }
+
         private void OnPayMaintenanceClicked()
         {
             if (currentBuilding == null) return;
@@ -1137,6 +1245,10 @@ namespace EmpireBuilder.UI
                     return new Color(0.25f, 0.55f, 0.85f, 1f); // Academic Blue
                 case PropertyType.PoliceStation:
                     return new Color(0.18f, 0.35f, 0.68f, 1f); // Police Navy
+                case PropertyType.TennisCourt:
+                    return new Color(0.20f, 0.72f, 0.35f, 1f); // Tennis Green
+                case PropertyType.Park:
+                    return new Color(0.15f, 0.68f, 0.40f, 1f); // Park Emerald
                 default:
                     return new Color(0.20f, 0.50f, 0.80f, 1f);
             }
@@ -1543,6 +1655,37 @@ namespace EmpireBuilder.UI
             obTextRt.anchorMin = Vector2.zero;
             obTextRt.anchorMax = Vector2.one;
             obTextRt.sizeDelta = Vector2.zero;
+
+            // 8g2. Park Visitor Entry Fee Section
+            parkSectionRoot = CreateUIElement("ParkSection", card.transform, new Vector2(0, 1), new Vector2(1, 1), new Vector2(0.5f, 1), new Vector2(-50, 155), new Vector2(0, -260));
+            Image parkBg = parkSectionRoot.AddComponent<Image>();
+            parkBg.color = new Color(0.12f, 0.24f, 0.16f, 0.95f);
+
+            TextMeshProUGUI parkTitle = CreateTextMesh("ParkTitle", parkSectionRoot.transform, "GRAND PARK VISITOR ADMISSION FEES", 13, FontStyles.Bold, TextAlignmentOptions.Left, new Color(0.35f, 0.92f, 0.55f));
+            RectTransform pktRt = parkTitle.GetComponent<RectTransform>();
+            pktRt.anchorMin = new Vector2(0, 1);
+            pktRt.anchorMax = new Vector2(1, 1);
+            pktRt.pivot = new Vector2(0, 1);
+            pktRt.anchoredPosition = new Vector2(15, -10);
+            pktRt.sizeDelta = new Vector2(-30, 22);
+
+            parkStatusText = CreateTextMesh("ParkStatus", parkSectionRoot.transform, "Scenic city park. Strolling citizens pay admission entry fees periodically.", 11, FontStyles.Normal, TextAlignmentOptions.Left, new Color(0.85f, 0.95f, 0.88f));
+            RectTransform pksRt = parkStatusText.GetComponent<RectTransform>();
+            pksRt.anchorMin = new Vector2(0, 1);
+            pksRt.anchorMax = new Vector2(1, 1);
+            pksRt.pivot = new Vector2(0, 1);
+            pksRt.anchoredPosition = new Vector2(15, -34);
+            pksRt.sizeDelta = new Vector2(-30, 34);
+
+            GameObject parkBtnObj = CreateUIElement("CollectParkButton", parkSectionRoot.transform, new Vector2(0, 0), new Vector2(1, 0), new Vector2(0.5f, 0), new Vector2(-30, 44), new Vector2(0, 10));
+            collectParkButtonBg = parkBtnObj.AddComponent<Image>();
+            collectParkButtonBg.color = new Color(0.15f, 0.72f, 0.40f, 1f);
+            collectParkButton = parkBtnObj.AddComponent<Button>();
+            collectParkButtonText = CreateTextMesh("Text", parkBtnObj.transform, "COLLECT PARK ENTRY FEES", 13, FontStyles.Bold, TextAlignmentOptions.Center, Color.white);
+            RectTransform pkbTextRt = collectParkButtonText.GetComponent<RectTransform>();
+            pkbTextRt.anchorMin = Vector2.zero;
+            pkbTextRt.anchorMax = Vector2.one;
+            pkbTextRt.sizeDelta = Vector2.zero;
 
             // 8h. Building Maintenance Alert Section (Positioned at bottom of section slot)
             maintenanceSectionRoot = CreateUIElement("MaintenanceSection", card.transform, new Vector2(0, 0), new Vector2(1, 0), new Vector2(0.5f, 0), new Vector2(-50, 72), new Vector2(0, 136));

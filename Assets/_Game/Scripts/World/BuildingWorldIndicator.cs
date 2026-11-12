@@ -84,6 +84,7 @@ namespace EmpireBuilder.World
             }
 
             StadiumMatchManager.OnMatchRequestStateChanged += HandleMatchRequestChanged;
+            TennisMatchManager.OnMatchRequestStateChanged += HandleMatchRequestChanged;
 
             RefreshVisuals();
         }
@@ -96,6 +97,7 @@ namespace EmpireBuilder.World
             }
 
             StadiumMatchManager.OnMatchRequestStateChanged -= HandleMatchRequestChanged;
+            TennisMatchManager.OnMatchRequestStateChanged -= HandleMatchRequestChanged;
         }
 
         private void LateUpdate()
@@ -183,7 +185,7 @@ namespace EmpireBuilder.World
 
         private void HandleMatchRequestChanged(bool pending)
         {
-            if (targetBuilding != null && targetBuilding.PropertyType == PropertyType.Stadium)
+            if (targetBuilding != null && (targetBuilding.PropertyType == PropertyType.Stadium || targetBuilding.PropertyType == PropertyType.TennisCourt))
             {
                 RefreshVisuals();
             }
@@ -228,6 +230,19 @@ namespace EmpireBuilder.World
                 return;
             }
 
+            // 2b. Check Tennis Match Request
+            bool isTennisMatch = targetBuilding.PropertyType == PropertyType.TennisCourt &&
+                                  TennisMatchManager.Instance != null &&
+                                  TennisMatchManager.Instance.IsRequestPending;
+            if (isTennisMatch)
+            {
+                isCollectibleReady = true;
+                double offer = TennisMatchManager.Instance.CurrentPendingRentOffer;
+                string text = offer > 0 ? $"🎾 MATCH +${offer:N0}!" : "🎾 MATCH READY!";
+                SetVisuals(trophySprite ?? crownSprite ?? coinSprite, text, new Color(0.12f, 0.65f, 0.25f, 0.98f), Color.white);
+                return;
+            }
+
             // 3. Check Factory Production Earnings Ready to Collect
             if (targetBuilding.PropertyType == PropertyType.Factory && targetBuilding.PendingProductionEarnings > 0)
             {
@@ -254,6 +269,19 @@ namespace EmpireBuilder.World
                 return;
             }
 
+            // 4b. Check Park Visitor Revenue Ready to Collect
+            if (targetBuilding.PropertyType == PropertyType.Park && targetBuilding.PendingParkRevenue > 0)
+            {
+                isCollectibleReady = true;
+                SetVisuals(
+                    coinSprite ?? starSprite,
+                    $"PARK +${targetBuilding.PendingParkRevenue:N0}",
+                    new Color(0.12f, 0.68f, 0.38f, 0.98f), // Park Emerald
+                    Color.white
+                );
+                return;
+            }
+
             // 5. Check Collectible Rent
             double buildingRent = targetBuilding.IsOwned ? targetBuilding.DailyRentIncome : 0;
             double flatRent = targetBuilding.FlatsRentedOut * targetBuilding.FlatDailyRent;
@@ -266,16 +294,23 @@ namespace EmpireBuilder.World
                 return;
             }
 
-            // 6. Check Hospital Medical Treatment Needed (If Player Health is Low)
+            // 6. Check Hospital Medical Treatment Needed (If Player is Ill or Health is Low)
             if (targetBuilding.PropertyType == PropertyType.Hospital &&
                 EmpireBuilder.Core.PlayerHealthManager.Instance != null &&
-                EmpireBuilder.Core.PlayerHealthManager.Instance.IsLowHealth)
+                (EmpireBuilder.Core.PlayerHealthManager.Instance.IsIll || EmpireBuilder.Core.PlayerHealthManager.Instance.IsLowHealth))
             {
                 isCollectibleReady = true;
+                bool isIll = EmpireBuilder.Core.PlayerHealthManager.Instance.IsIll;
+                string feeText = targetBuilding.IsOwned ? "FREE" : $"${targetBuilding.HospitalTreatmentFee:N0}";
+                string actionText = isIll ? $"TREAT ILLNESS ({feeText})" : $"HEAL HP ({feeText})";
+                Color alertColor = isIll
+                    ? new Color(0.92f, 0.14f, 0.20f, 0.98f) // Deep Emergency Red
+                    : new Color(0.88f, 0.22f, 0.28f, 0.98f); // Red Cross Alert
+
                 SetVisuals(
                     checkmarkSprite ?? starSprite,
-                    "HEAL HP (HOSPITAL)",
-                    new Color(0.88f, 0.18f, 0.24f, 0.98f), // Red Cross Alert
+                    actionText,
+                    alertColor,
                     Color.white
                 );
                 return;
@@ -319,6 +354,12 @@ namespace EmpireBuilder.World
                         int taxis = targetBuilding.CurrentlyRentedTaxis;
                         string taxiTxt = taxis > 0 ? $"TAXIS: {taxis}/8 ACTIVE" : "MY TAXI STATION";
                         SetVisuals(starSprite ?? coinSprite, taxiTxt, new Color(0.78f, 0.52f, 0.08f, 0.95f), Color.white);
+                        break;
+                    case PropertyType.TennisCourt:
+                        SetVisuals(trophySprite ?? starSprite, "MY TENNIS COURT", new Color(0.18f, 0.65f, 0.28f, 0.95f), Color.white);
+                        break;
+                    case PropertyType.Park:
+                        SetVisuals(starSprite ?? shopSprite, "MY GRAND PARK", new Color(0.12f, 0.62f, 0.32f, 0.95f), Color.white);
                         break;
                     default:
                         string ownedTxt = targetBuilding.HasFlats ? $"ALL {targetBuilding.TotalFlats} FLATS OWNED" : "OWNED PROPERTY";
@@ -383,6 +424,14 @@ namespace EmpireBuilder.World
             else if (targetBuilding.PropertyType == PropertyType.TaxiStation)
             {
                 SetVisuals(coinSprite, $"TAXI FLEET (${targetBuilding.PurchasePrice:N0})", unownedBg, unownedText);
+            }
+            else if (targetBuilding.PropertyType == PropertyType.TennisCourt)
+            {
+                SetVisuals(trophySprite ?? starSprite, $"TENNIS COURT (${targetBuilding.PurchasePrice:N0})", unownedBg, unownedText);
+            }
+            else if (targetBuilding.PropertyType == PropertyType.Park)
+            {
+                SetVisuals(starSprite ?? shopSprite, $"GRAND PARK (${targetBuilding.PurchasePrice:N0})", unownedBg, unownedText);
             }
             else
             {

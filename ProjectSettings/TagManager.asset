@@ -15,6 +15,9 @@ TagManager:
   - Hospital
   - School
   - Police Station
+  - Tennis Court
+  - Park
+  - ParkWaypoints
   layers:
   - Default
   - TransparentFX

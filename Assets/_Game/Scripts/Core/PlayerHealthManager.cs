@@ -44,10 +44,24 @@ namespace EmpireBuilder.Core
         [Tooltip("Seconds between recurring warning toasts when health is below threshold")]
         [SerializeField] private float warningRepeatInterval = 16f;
 
+        [Header("Illness Condition")]
+        [Tooltip("Health percentage/value threshold to contract illness from starvation (e.g. 25 HP)")]
+        [SerializeField] private float illnessThreshold = 25f;
+
+        [Tooltip("Whether the player is currently suffering from illness")]
+        [SerializeField] private bool isIll = false;
+
+        [Tooltip("Description of the current illness")]
+        [SerializeField] private string illnessReason = "Severe Starvation & Exhaustion";
+
+        [Tooltip("Multiplier applied to health decay rate when ill")]
+        [SerializeField] private float illnessDecayMultiplier = 1.35f;
+
         // Events
         public event Action<float, float> OnHealthChanged; // (currentHealth, maxHealth)
         public event Action<string, bool> OnWarningTriggered; // (message, isCritical)
         public event Action<bool> OnLowHealthStateChanged; // (isLow)
+        public event Action<bool, string> OnIllnessStateChanged; // (isIll, illnessReason)
 
         // Runtime state
         private float warningCooldownTimer = 0f;
@@ -62,6 +76,10 @@ namespace EmpireBuilder.Core
         public bool IsLowHealth => currentHealth <= lowHealthWarningThreshold;
         public bool IsCriticalHealth => currentHealth <= criticalHealthThreshold;
         public bool IsExhausted => currentHealth <= 0.01f;
+        public bool IsIll => isIll;
+        public string IllnessReason => illnessReason;
+        public float IllnessThreshold => illnessThreshold;
+        public float IllnessDecayMultiplier => illnessDecayMultiplier;
 
         private void Awake()
         {
@@ -79,6 +97,12 @@ namespace EmpireBuilder.Core
                 currentHealth = PlayerPrefs.GetFloat("SavedPlayerHealth", maxHealth);
             }
 
+            if (PlayerPrefs.HasKey("SavedPlayerIsIll"))
+            {
+                isIll = PlayerPrefs.GetInt("SavedPlayerIsIll", 0) == 1;
+                illnessReason = PlayerPrefs.GetString("SavedPlayerIllnessReason", "Severe Starvation & Exhaustion");
+            }
+
             currentHealth = Mathf.Clamp(currentHealth, 0f, maxHealth);
             lastReportedHealth = currentHealth;
         }
@@ -86,6 +110,10 @@ namespace EmpireBuilder.Core
         private void Start()
         {
             OnHealthChanged?.Invoke(currentHealth, maxHealth);
+            if (isIll)
+            {
+                OnIllnessStateChanged?.Invoke(true, illnessReason);
+            }
             // Give player initial grace period before first low-health warning if started low
             warningCooldownTimer = 8f;
         }
@@ -94,7 +122,14 @@ namespace EmpireBuilder.Core
         {
             if (decayActive && currentHealth > 0f)
             {
-                currentHealth = Mathf.Max(0f, currentHealth - decayRatePerSecond * Time.deltaTime);
+                float decayRate = decayRatePerSecond * (isIll ? illnessDecayMultiplier : 1.0f);
+                currentHealth = Mathf.Max(0f, currentHealth - decayRate * Time.deltaTime);
+
+                // Auto-contract illness if health falls below illness threshold
+                if (!isIll && currentHealth <= illnessThreshold)
+                {
+                    ContractIllness("Severe Starvation & Malnutrition");
+                }
 
                 // Notify listeners when health changes noticeably or hits zero
                 if (Mathf.Abs(lastReportedHealth - currentHealth) >= 0.08f || currentHealth <= 0f)
@@ -201,8 +236,61 @@ namespace EmpireBuilder.Core
         public void SetHealth(float value)
         {
             currentHealth = Mathf.Clamp(value, 0f, maxHealth);
+            if (!isIll && currentHealth <= illnessThreshold)
+            {
+                ContractIllness("Severe Starvation & Malnutrition");
+            }
             OnHealthChanged?.Invoke(currentHealth, maxHealth);
             CheckLowHealthState();
+        }
+
+        /// <summary>
+        /// Contracts illness from starvation, dehydration, or critical exhaustion.
+        /// </summary>
+        public void ContractIllness(string reason = "Severe Starvation & Malnutrition")
+        {
+            if (isIll) return;
+
+            isIll = true;
+            illnessReason = string.IsNullOrEmpty(reason) ? "Severe Starvation & Malnutrition" : reason;
+            OnIllnessStateChanged?.Invoke(true, illnessReason);
+
+            string alertMsg = $"🤒 ILLNESS CONTRACTED! You have fallen ill from starvation ({illnessReason})! Visit Capital General Hospital for medical treatment ($150)!";
+            CityNoticeBarUI.Instance?.PostNotice(
+                "🤒 ILLNESS DETECTED",
+                alertMsg,
+                NoticeType.Hospital,
+                null,
+                14f
+            );
+
+            TriggerLowHealthWarning();
+            SaveHealth();
+            Debug.LogWarning($"[PlayerHealthManager] Contracted illness: {illnessReason}");
+        }
+
+        /// <summary>
+        /// Fully cures the player's illness through medical treatment at the Hospital.
+        /// </summary>
+        public void CureIllness()
+        {
+            if (!isIll) return;
+
+            isIll = false;
+            illnessReason = "";
+            OnIllnessStateChanged?.Invoke(false, "");
+
+            string healMsg = "❤️ FULLY CURED! Hospital medical treatment has cured your illness and restored full vitality!";
+            CityNoticeBarUI.Instance?.PostNotice(
+                "❤️ HEALTH RESTORED",
+                healMsg,
+                NoticeType.General,
+                null,
+                8f
+            );
+
+            SaveHealth();
+            Debug.Log("[PlayerHealthManager] Illness successfully cured by hospital treatment!");
         }
 
         /// <summary>
@@ -213,7 +301,11 @@ namespace EmpireBuilder.Core
             string message;
             bool isCritical = IsCriticalHealth;
 
-            if (IsExhausted)
+            if (isIll)
+            {
+                message = $"🤒 SICK & WEAK ({currentHealth:F0}/{maxHealth:F0})! Illness: {illnessReason}! Visit Capital General Hospital for medical treatment!";
+            }
+            else if (IsExhausted)
             {
                 message = "💀 CRITICAL EXHAUSTION! Your health is empty! Visit a Restaurant or Cafe immediately to eat or drink!";
             }
@@ -266,6 +358,8 @@ namespace EmpireBuilder.Core
         public void SaveHealth()
         {
             PlayerPrefs.SetFloat("SavedPlayerHealth", currentHealth);
+            PlayerPrefs.SetInt("SavedPlayerIsIll", isIll ? 1 : 0);
+            PlayerPrefs.SetString("SavedPlayerIllnessReason", illnessReason ?? "");
             PlayerPrefs.Save();
         }
 
