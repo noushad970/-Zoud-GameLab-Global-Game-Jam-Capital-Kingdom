@@ -28,12 +28,21 @@ namespace EmpireBuilder.SaveLoad
 
         public static bool HasSaveFile()
         {
+            if (PlayerPrefs.HasKey("EmpireBuilder_SaveService_Json"))
+            {
+                string json = PlayerPrefs.GetString("EmpireBuilder_SaveService_Json", "");
+                if (!string.IsNullOrEmpty(json)) return true;
+            }
             return WebGLSaveManager.HasSaveData() || File.Exists(SaveFilePath);
         }
 
         public static void DeleteSave()
         {
             WebGLSaveManager.ClearSaveData();
+            PlayerPrefs.DeleteKey("EmpireBuilder_SaveService_Json");
+            PlayerPrefs.DeleteKey("CurrentDay");
+            PlayerPrefs.SetFloat("SavedPlayerCash", 10000f);
+            PlayerPrefs.Save();
 
             try
             {

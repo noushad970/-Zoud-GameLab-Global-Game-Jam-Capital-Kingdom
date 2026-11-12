@@ -503,9 +503,26 @@ namespace EmpireBuilder.World
             {
 #if UNITY_EDITOR
                 matToApply = UnityEditor.AssetDatabase.LoadAssetAtPath<Material>(
-                    "Assets/characterEffects/shaders/ghostEffect/ghostMaterial.mat"
+                    "Assets/Assets No/characterEffects/shaders/ghostEffect/ghostMaterial.mat"
                 );
 #endif
+                if (matToApply == null)
+                {
+                    Shader s = Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Sprites/Default");
+                    if (s != null)
+                    {
+                        matToApply = new Material(s);
+                        matToApply.name = "BuildingSelectionGlow_Runtime";
+                        matToApply.SetColor("_BaseColor", new Color(0.2f, 0.75f, 1f, 0.35f));
+                        matToApply.SetColor("_Color", new Color(0.2f, 0.75f, 1f, 0.35f));
+                        matToApply.SetFloat("_Surface", 1);
+                        matToApply.SetFloat("_Blend", 0);
+                        matToApply.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
+                        matToApply.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+                        matToApply.SetFloat("_ZWrite", 0);
+                        matToApply.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+                    }
+                }
             }
 
             if (matToApply != null)

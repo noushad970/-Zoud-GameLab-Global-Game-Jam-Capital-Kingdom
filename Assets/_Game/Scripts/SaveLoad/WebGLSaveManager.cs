@@ -142,11 +142,14 @@ namespace EmpireBuilder.SaveLoad
         public static void ClearSaveData()
         {
             PlayerPrefs.DeleteKey(SAVE_KEY);
+            PlayerPrefs.DeleteKey("EmpireBuilder_SaveService_Json");
+            PlayerPrefs.DeleteKey("CurrentDay");
             PlayerPrefs.DeleteKey("SavedPlayerCash");
             PlayerPrefs.DeleteKey("SavedPlayerHealth");
             PlayerPrefs.DeleteKey("SavedPlayerIsIll");
             PlayerPrefs.DeleteKey("SavedPlayerIllnessReason");
             PlayerPrefs.SetInt("LoadOnStart", 0);
+            PlayerPrefs.SetFloat("SavedPlayerCash", 10000f);
             PlayerPrefs.Save();
 
 #if !UNITY_WEBGL
