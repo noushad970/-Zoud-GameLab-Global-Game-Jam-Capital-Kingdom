@@ -178,7 +178,8 @@ namespace EmpireBuilder.World
         public int ParkVisitorsServed => parkVisitorsServed;
 
         // Hospital Getters
-        public double HospitalTreatmentFee => hospitalTreatmentFee;
+        public double HospitalTreatmentFee => CalculateHospitalTreatmentFee();
+        public double BaseHospitalTreatmentFee => hospitalTreatmentFee;
 
         // Dining Getters
         public double DrinkPrice => drinkPrice;
@@ -1108,15 +1109,107 @@ namespace EmpireBuilder.World
 
         #region Hospital Operations
         /// <summary>
+        /// Calculates dynamic medical treatment fee scaled to the severity of the illness condition.
+        /// If the condition is too serious (severe illness, critical health < 12 HP), it costs more.
+        /// If mild fatigue / less serious, it costs significantly less.
+        /// If the hospital is owned by the player, treatment is completely free (0).
+        /// </summary>
+        public double CalculateHospitalTreatmentFee()
+        {
+            if (isOwned) return 0.0;
+
+            var pm = PlayerHealthManager.Instance;
+            if (pm == null) return hospitalTreatmentFee;
+
+            float curHp = pm.CurrentHealth;
+            float maxHp = pm.MaxHealth;
+            bool isIll = pm.IsIll;
+
+            if (curHp >= maxHp - 0.1f && !isIll) return 0.0;
+
+            // Tier 1: Critical Emergency (Life-threatening starvation / collapse < 12 HP)
+            if (curHp < 12f)
+            {
+                return 750.0; // Serious critical emergency: intensive resuscitation
+            }
+            // Tier 2: Serious Illness (Contracted starvation sickness & health < 28 HP)
+            else if (isIll && curHp < 28f)
+            {
+                return 480.0; // Serious illness: emergency acute care
+            }
+            // Tier 3: Moderate Illness (Contracted illness or health 28 - 45 HP)
+            else if (isIll || curHp < 45f)
+            {
+                return 280.0; // Moderate illness: clinical treatment & medication
+            }
+            // Tier 4: Moderate Fatigue & Hunger (Health 45 - 75 HP, not ill)
+            else if (curHp < 75f)
+            {
+                return 130.0; // Less serious: IV hydration & nutritional recovery
+            }
+            // Tier 5: Mild Fatigue (Health 75 - 99 HP, not ill)
+            else
+            {
+                return 55.0; // Minor: outpatient booster & health checkup
+            }
+        }
+
+        /// <summary>
+        /// Returns diagnostic details regarding current illness severity, condition name, badge label, and hex color.
+        /// </summary>
+        public (string conditionName, string severityBadge, string hexColor, double fee) GetHospitalTreatmentDiagnosis()
+        {
+            var pm = PlayerHealthManager.Instance;
+            double fee = CalculateHospitalTreatmentFee();
+
+            if (pm == null)
+            {
+                return ("Stable Vitality", "NORMAL", "#44FF88", fee);
+            }
+
+            float curHp = pm.CurrentHealth;
+            float maxHp = pm.MaxHealth;
+            bool isIll = pm.IsIll;
+
+            if (curHp >= maxHp - 0.1f && !isIll)
+            {
+                return ("Optimal Vitality (100% HP)", "HEALTHY", "#44FF88", 0.0);
+            }
+
+            if (curHp < 12f)
+            {
+                return ("Critical Starvation Shock & Exhaustion", "CRITICAL EMERGENCY", "#FF2233", fee);
+            }
+            else if (isIll && curHp < 28f)
+            {
+                string r = string.IsNullOrEmpty(pm.IllnessReason) ? "Severe Malnutrition" : pm.IllnessReason;
+                return ($"Severe Starvation Illness ({r})", "SERIOUS ILLNESS", "#FF4433", fee);
+            }
+            else if (isIll || curHp < 45f)
+            {
+                string r = string.IsNullOrEmpty(pm.IllnessReason) ? "Starvation Sickness" : pm.IllnessReason;
+                return ($"Moderate Illness ({r})", "MODERATE ILLNESS", "#FFAA22", fee);
+            }
+            else if (curHp < 75f)
+            {
+                return ("Moderate Fatigue & Energy Depletion", "MODERATE FATIGUE", "#FFDD33", fee);
+            }
+            else
+            {
+                return ("Mild Hunger & Exhaustion", "MILD CONDITION", "#AACC44", fee);
+            }
+        }
+
+        /// <summary>
         /// Provides emergency and comprehensive medical treatment for the player,
         /// curing any contracted illness from starvation and restoring health completely to 100 HP.
-        /// If owned by the player, treatment is completely free.
+        /// Fee scales with illness severity; if owned by the player, treatment is completely free.
         /// </summary>
         public bool ReceiveHospitalTreatment(out string message)
         {
             message = "";
             bool isIll = PlayerHealthManager.Instance != null && PlayerHealthManager.Instance.IsIll;
-            bool atMaxHealth = PlayerHealthManager.Instance != null && PlayerHealthManager.Instance.CurrentHealth >= PlayerHealthManager.Instance.MaxHealth;
+            bool atMaxHealth = PlayerHealthManager.Instance != null && PlayerHealthManager.Instance.CurrentHealth >= PlayerHealthManager.Instance.MaxHealth - 0.1f;
 
             if (atMaxHealth && !isIll)
             {
@@ -1124,12 +1217,15 @@ namespace EmpireBuilder.World
                 return false;
             }
 
+            var diag = GetHospitalTreatmentDiagnosis();
+            double fee = diag.fee;
+
             if (!isOwned)
             {
                 double currentCash = GetPlayerCash();
-                if (currentCash < hospitalTreatmentFee)
+                if (currentCash < fee)
                 {
-                    message = $"Hospital medical treatment fee is ${hospitalTreatmentFee:N0}. Current cash: ${currentCash:N0}.";
+                    message = $"Hospital treatment for {diag.conditionName} ({diag.severityBadge}) requires ${fee:N0}. Current cash: ${currentCash:N0}.";
                     return false;
                 }
 
@@ -1137,15 +1233,15 @@ namespace EmpireBuilder.World
                 if (GameManager.Instance != null && GameManager.Instance.Economy != null)
                 {
                     GameManager.Instance.Economy.ApplyTransaction(
-                        -hospitalTreatmentFee,
+                        -fee,
                         TransactionCategory.OperatingExpense,
-                        $"Medical Healthcare Treatment at {propertyName}",
+                        $"Hospital Treatment ({diag.severityBadge}) at {propertyName}",
                         currentDay
                     );
                 }
                 else
                 {
-                    DeductPlayerCashFallback(hospitalTreatmentFee);
+                    DeductPlayerCashFallback(fee);
                 }
             }
 
@@ -1158,11 +1254,11 @@ namespace EmpireBuilder.World
 
             if (isOwned)
             {
-                message = $"🏥 VIP Healthcare: As the owner of {propertyName}, your treatment is complimentary! Illness cured and health restored to 100 HP! ❤️";
+                message = $"🏥 VIP Healthcare: As the owner of {propertyName}, your treatment for {diag.conditionName} is complimentary! Illness cured and health restored to 100 HP! ❤️";
             }
             else
             {
-                message = $"🏥 Received full medical treatment for ${hospitalTreatmentFee:N0}! Illness cured and health restored to 100 HP! ❤️";
+                message = $"🏥 Hospital Treatment Successful: Treated {diag.conditionName} ({diag.severityBadge}) for ${fee:N0}! Illness cured and health restored to 100 HP! ❤️";
             }
 
             GameSoundManager.Instance?.PlayCollect(transform.position);

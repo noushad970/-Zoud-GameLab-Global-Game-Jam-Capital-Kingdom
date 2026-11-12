@@ -180,6 +180,10 @@ namespace EmpireBuilder.UI
             {
                 card = panelRoot.transform.Find("ModalCard") ?? panelRoot.transform;
             }
+            if (card == null && modalCardTransform != null)
+            {
+                card = modalCardTransform;
+            }
 
             if (flatSectionRoot == null && card != null)
             {
@@ -240,6 +244,7 @@ namespace EmpireBuilder.UI
             {
                 var t = card.Find("HospitalSection");
                 if (t != null) hospitalSectionRoot = t.gameObject;
+                else CreateHospitalSection(card);
             }
             if (hospitalSectionRoot != null)
             {
@@ -247,14 +252,23 @@ namespace EmpireBuilder.UI
                     hospitalStatusText = hospitalSectionRoot.transform.Find("HospitalStatus")?.GetComponent<TextMeshProUGUI>();
                 if (treatmentButton == null)
                     treatmentButton = hospitalSectionRoot.transform.Find("TreatmentButton")?.GetComponent<Button>();
-                if (treatmentButtonText == null && treatmentButton != null)
-                    treatmentButtonText = treatmentButton.transform.Find("Text")?.GetComponent<TextMeshProUGUI>();
+                if (treatmentButton != null)
+                {
+                    if (treatmentButtonText == null)
+                        treatmentButtonText = treatmentButton.transform.Find("Text")?.GetComponent<TextMeshProUGUI>();
+                    if (treatmentButtonBg == null)
+                        treatmentButtonBg = treatmentButton.GetComponent<Image>();
+
+                    treatmentButton.onClick.RemoveAllListeners();
+                    treatmentButton.onClick.AddListener(OnTreatmentClicked);
+                }
             }
 
             if (factorySectionRoot == null && card != null)
             {
                 var t = card.Find("FactorySection");
                 if (t != null) factorySectionRoot = t.gameObject;
+                else CreateFactorySection(card);
             }
             if (factorySectionRoot != null)
             {
@@ -264,12 +278,20 @@ namespace EmpireBuilder.UI
                     collectProductionButton = factorySectionRoot.transform.Find("CollectProductionButton")?.GetComponent<Button>();
                 if (collectProductionButtonText == null && collectProductionButton != null)
                     collectProductionButtonText = collectProductionButton.transform.Find("Text")?.GetComponent<TextMeshProUGUI>();
+                if (collectProductionButtonBg == null && collectProductionButton != null)
+                    collectProductionButtonBg = collectProductionButton.GetComponent<Image>();
+                if (collectProductionButton != null)
+                {
+                    collectProductionButton.onClick.RemoveAllListeners();
+                    collectProductionButton.onClick.AddListener(OnCollectProductionClicked);
+                }
             }
 
             if (oilSectionRoot == null && card != null)
             {
                 var t = card.Find("OilSection");
                 if (t != null) oilSectionRoot = t.gameObject;
+                else CreateOilSection(card);
             }
             if (oilSectionRoot != null)
             {
@@ -279,12 +301,20 @@ namespace EmpireBuilder.UI
                     collectOilButton = oilSectionRoot.transform.Find("CollectOilButton")?.GetComponent<Button>();
                 if (collectOilButtonText == null && collectOilButton != null)
                     collectOilButtonText = collectOilButton.transform.Find("Text")?.GetComponent<TextMeshProUGUI>();
+                if (collectOilButtonBg == null && collectOilButton != null)
+                    collectOilButtonBg = collectOilButton.GetComponent<Image>();
+                if (collectOilButton != null)
+                {
+                    collectOilButton.onClick.RemoveAllListeners();
+                    collectOilButton.onClick.AddListener(OnCollectOilClicked);
+                }
             }
 
             if (parkSectionRoot == null && card != null)
             {
                 var t = card.Find("ParkSection");
                 if (t != null) parkSectionRoot = t.gameObject;
+                else CreateParkSection(card);
             }
             if (parkSectionRoot != null)
             {
@@ -294,12 +324,20 @@ namespace EmpireBuilder.UI
                     collectParkButton = parkSectionRoot.transform.Find("CollectParkButton")?.GetComponent<Button>();
                 if (collectParkButtonText == null && collectParkButton != null)
                     collectParkButtonText = collectParkButton.transform.Find("Text")?.GetComponent<TextMeshProUGUI>();
+                if (collectParkButtonBg == null && collectParkButton != null)
+                    collectParkButtonBg = collectParkButton.GetComponent<Image>();
+                if (collectParkButton != null)
+                {
+                    collectParkButton.onClick.RemoveAllListeners();
+                    collectParkButton.onClick.AddListener(OnCollectParkRevenueClicked);
+                }
             }
 
             if (maintenanceSectionRoot == null && card != null)
             {
                 var t = card.Find("MaintenanceSection");
                 if (t != null) maintenanceSectionRoot = t.gameObject;
+                else CreateMaintenanceSection(card);
             }
             if (maintenanceSectionRoot != null)
             {
@@ -309,6 +347,13 @@ namespace EmpireBuilder.UI
                     payMaintenanceButton = maintenanceSectionRoot.transform.Find("PayMaintenanceButton")?.GetComponent<Button>();
                 if (payMaintenanceButtonText == null && payMaintenanceButton != null)
                     payMaintenanceButtonText = payMaintenanceButton.transform.Find("Text")?.GetComponent<TextMeshProUGUI>();
+                if (payMaintenanceButtonBg == null && payMaintenanceButton != null)
+                    payMaintenanceButtonBg = payMaintenanceButton.GetComponent<Image>();
+                if (payMaintenanceButton != null)
+                {
+                    payMaintenanceButton.onClick.RemoveAllListeners();
+                    payMaintenanceButton.onClick.AddListener(OnPayMaintenanceClicked);
+                }
             }
 
             if (collectRentButton == null && card != null)
@@ -784,32 +829,34 @@ namespace EmpireBuilder.UI
                 float curHp = PlayerHealthManager.Instance != null ? PlayerHealthManager.Instance.CurrentHealth : 100f;
                 float maxHp = PlayerHealthManager.Instance != null ? PlayerHealthManager.Instance.MaxHealth : 100f;
                 bool isIll = PlayerHealthManager.Instance != null && PlayerHealthManager.Instance.IsIll;
-                string illnessReason = PlayerHealthManager.Instance != null ? PlayerHealthManager.Instance.IllnessReason : "";
                 bool needsHeal = isIll || curHp < maxHp - 0.5f;
+
+                var diag = currentBuilding.GetHospitalTreatmentDiagnosis();
+                double treatmentCost = diag.fee;
+                bool canAffordTreatment = currentBuilding.IsOwned || currentCash >= treatmentCost;
 
                 if (hospitalStatusText != null)
                 {
-                    if (isIll)
+                    if (!needsHeal)
                     {
-                        hospitalStatusText.text = currentBuilding.IsOwned
-                            ? $"<color=#FF4444>🚨 DIAGNOSIS: SICK ({illnessReason})</color>\nHealth: {curHp:0}/{maxHp:0} HP. As Hospital Owner, full emergency care is COMPLIMENTARY (FREE)!"
-                            : $"<color=#FF4444>🚨 DIAGNOSIS: SICK ({illnessReason})</color>\nHealth: {curHp:0}/{maxHp:0} HP. Immediate hospital treatment required (${currentBuilding.HospitalTreatmentFee:N0})!";
+                        hospitalStatusText.text = "<color=#44FF88>✅ HEALTHY & FIT (100% HP)</color>\nVital signs optimal. Hospital emergency facilities standing by (No treatment needed).";
                     }
-                    else if (needsHeal)
+                    else if (currentBuilding.IsOwned)
                     {
-                        hospitalStatusText.text = currentBuilding.IsOwned
-                            ? $"Health: {curHp:0}/{maxHp:0} HP. As Hospital Owner, full medical care is COMPLIMENTARY (FREE)!"
-                            : $"Health: {curHp:0}/{maxHp:0} HP. Visit anytime you are sick or weak to restore to 100 HP (${currentBuilding.HospitalTreatmentFee:N0})!";
+                        hospitalStatusText.text = $"<color={diag.hexColor}>🚨 CONDITION: {diag.severityBadge}</color>\n{diag.conditionName} (Health: {curHp:0}/{maxHp:0} HP).\n<color=#44FF88>★ As Hospital Owner, VIP emergency medical care is COMPLIMENTARY (FREE)!</color>";
                     }
                     else
                     {
-                        hospitalStatusText.text = "<color=#44FF88>✅ HEALTHY & ENERGIZED (100% HP)</color>\nNo illness detected. Hospital emergency facilities standing by.";
+                        string severityNote = (diag.severityBadge.Contains("CRITICAL") || diag.severityBadge.Contains("SERIOUS"))
+                            ? "<color=#FF6666>⚠️ Condition is serious! Requires intensive emergency medical care & IV medication.</color>"
+                            : "<color=#88DDFF>ℹ️ Condition is moderate/mild. Outpatient treatment & nutritional recovery available.</color>";
+
+                        hospitalStatusText.text = $"<color={diag.hexColor}>🚨 CONDITION: {diag.severityBadge}</color>\n{diag.conditionName} (Health: {curHp:0}/{maxHp:0} HP).\nTreatment Fee: <color=#FFDD44>${treatmentCost:N0}</color> | {severityNote}";
                     }
                 }
 
                 if (treatmentButton != null)
                 {
-                    bool canAffordTreatment = currentBuilding.IsOwned || currentCash >= currentBuilding.HospitalTreatmentFee;
                     treatmentButton.interactable = needsHeal && canAffordTreatment;
                     if (treatmentButtonText != null)
                     {
@@ -820,34 +867,37 @@ namespace EmpireBuilder.UI
                         else if (currentBuilding.IsOwned)
                         {
                             treatmentButtonText.text = isIll
-                                ? "CURE ILLNESS & RESTORE 100 HP (FREE)"
-                                : "RECEIVE TREATMENT (HEAL 100 HP, FREE)";
+                                ? "🏥 CURE ILLNESS & RESTORE 100 HP (FREE - OWNER)"
+                                : "🏥 RESTORE 100 HP (FREE - OWNER)";
                         }
                         else
                         {
                             if (canAffordTreatment)
                             {
                                 treatmentButtonText.text = isIll
-                                    ? $"CURE ILLNESS & RESTORE 100 HP (${currentBuilding.HospitalTreatmentFee:N0})"
-                                    : $"RECEIVE TREATMENT (HEAL 100 HP, ${currentBuilding.HospitalTreatmentFee:N0})";
+                                    ? $"🏥 CURE {diag.severityBadge} & RESTORE 100 HP (${treatmentCost:N0})"
+                                    : $"🏥 RECEIVE TREATMENT (RESTORE 100 HP, ${treatmentCost:N0})";
                             }
                             else
                             {
-                                treatmentButtonText.text = $"NEED ${currentBuilding.HospitalTreatmentFee:N0} FOR TREATMENT";
+                                treatmentButtonText.text = $"INSUFFICIENT FUNDS (${treatmentCost:N0} REQUIRED)";
                             }
                         }
                     }
+
                     if (treatmentButtonBg != null)
                     {
-                        if (isIll && canAffordTreatment)
+                        if (!needsHeal || !canAffordTreatment)
                         {
-                            treatmentButtonBg.color = new Color(0.92f, 0.22f, 0.28f, 1f); // Emergency Red
+                            treatmentButtonBg.color = new Color(0.40f, 0.44f, 0.48f, 0.85f);
+                        }
+                        else if (diag.severityBadge.Contains("CRITICAL") || diag.severityBadge.Contains("SERIOUS"))
+                        {
+                            treatmentButtonBg.color = new Color(0.92f, 0.22f, 0.26f, 1f); // Emergency Red
                         }
                         else
                         {
-                            treatmentButtonBg.color = needsHeal && canAffordTreatment
-                                ? new Color(0.12f, 0.78f, 0.38f, 1f) // Healthy Green
-                                : new Color(0.45f, 0.48f, 0.52f, 0.8f);
+                            treatmentButtonBg.color = new Color(0.12f, 0.78f, 0.38f, 1f); // Medical Emerald Green
                         }
                     }
                 }
@@ -1564,152 +1614,19 @@ namespace EmpireBuilder.UI
             rmbTextRt.sizeDelta = Vector2.zero;
 
             // 8e. Hospital Healthcare Section
-            hospitalSectionRoot = CreateUIElement("HospitalSection", card.transform, new Vector2(0, 1), new Vector2(1, 1), new Vector2(0.5f, 1), new Vector2(-50, 155), new Vector2(0, -260));
-            Image hospBg = hospitalSectionRoot.AddComponent<Image>();
-            hospBg.color = new Color(0.24f, 0.12f, 0.14f, 0.95f);
-
-            TextMeshProUGUI hospTitle = CreateTextMesh("HospTitle", hospitalSectionRoot.transform, "HOSPITAL EMERGENCY & HEALTHCARE", 13, FontStyles.Bold, TextAlignmentOptions.Left, new Color(1f, 0.45f, 0.50f));
-            RectTransform htRt = hospTitle.GetComponent<RectTransform>();
-            htRt.anchorMin = new Vector2(0, 1);
-            htRt.anchorMax = new Vector2(1, 1);
-            htRt.pivot = new Vector2(0, 1);
-            htRt.anchoredPosition = new Vector2(15, -10);
-            htRt.sizeDelta = new Vector2(-30, 22);
-
-            hospitalStatusText = CreateTextMesh("HospitalStatus", hospitalSectionRoot.transform, "Visit for full medical treatment (restoring 100 HP) when sick or exhausted.", 11, FontStyles.Normal, TextAlignmentOptions.Left, new Color(0.9f, 0.88f, 0.88f));
-            RectTransform hsRt = hospitalStatusText.GetComponent<RectTransform>();
-            hsRt.anchorMin = new Vector2(0, 1);
-            hsRt.anchorMax = new Vector2(1, 1);
-            hsRt.pivot = new Vector2(0, 1);
-            hsRt.anchoredPosition = new Vector2(15, -34);
-            hsRt.sizeDelta = new Vector2(-30, 34);
-
-            GameObject treatBtnObj = CreateUIElement("TreatmentButton", hospitalSectionRoot.transform, new Vector2(0, 0), new Vector2(1, 0), new Vector2(0.5f, 0), new Vector2(-30, 44), new Vector2(0, 10));
-            treatmentButtonBg = treatBtnObj.AddComponent<Image>();
-            treatmentButtonBg.color = new Color(0.12f, 0.78f, 0.38f, 1f);
-            treatmentButton = treatBtnObj.AddComponent<Button>();
-            treatmentButtonText = CreateTextMesh("Text", treatBtnObj.transform, "RECEIVE TREATMENT (RESTORE 100 HP)", 13, FontStyles.Bold, TextAlignmentOptions.Center, Color.white);
-            RectTransform tbTextRt = treatmentButtonText.GetComponent<RectTransform>();
-            tbTextRt.anchorMin = Vector2.zero;
-            tbTextRt.anchorMax = Vector2.one;
-            tbTextRt.sizeDelta = Vector2.zero;
+            CreateHospitalSection(card.transform);
 
             // 8f. Factory Industrial Section
-            factorySectionRoot = CreateUIElement("FactorySection", card.transform, new Vector2(0, 1), new Vector2(1, 1), new Vector2(0.5f, 1), new Vector2(-50, 155), new Vector2(0, -260));
-            Image factBg = factorySectionRoot.AddComponent<Image>();
-            factBg.color = new Color(0.15f, 0.18f, 0.24f, 0.95f);
-
-            TextMeshProUGUI factTitle = CreateTextMesh("FactTitle", factorySectionRoot.transform, "INDUSTRIAL MANUFACTURING PRODUCTION", 13, FontStyles.Bold, TextAlignmentOptions.Left, new Color(0.45f, 0.75f, 1f));
-            RectTransform ftRt = factTitle.GetComponent<RectTransform>();
-            ftRt.anchorMin = new Vector2(0, 1);
-            ftRt.anchorMax = new Vector2(1, 1);
-            ftRt.pivot = new Vector2(0, 1);
-            ftRt.anchoredPosition = new Vector2(15, -10);
-            ftRt.sizeDelta = new Vector2(-30, 22);
-
-            factoryStatusText = CreateTextMesh("FactoryStatus", factorySectionRoot.transform, "Heavy manufacturing plant. Completes production runs with large payout revenues.", 11, FontStyles.Normal, TextAlignmentOptions.Left, new Color(0.85f, 0.88f, 0.92f));
-            RectTransform fsRt = factoryStatusText.GetComponent<RectTransform>();
-            fsRt.anchorMin = new Vector2(0, 1);
-            fsRt.anchorMax = new Vector2(1, 1);
-            fsRt.pivot = new Vector2(0, 1);
-            fsRt.anchoredPosition = new Vector2(15, -34);
-            fsRt.sizeDelta = new Vector2(-30, 34);
-
-            GameObject prodBtnObj = CreateUIElement("CollectProductionButton", factorySectionRoot.transform, new Vector2(0, 0), new Vector2(1, 0), new Vector2(0.5f, 0), new Vector2(-30, 44), new Vector2(0, 10));
-            collectProductionButtonBg = prodBtnObj.AddComponent<Image>();
-            collectProductionButtonBg.color = new Color(0.18f, 0.65f, 0.92f, 1f);
-            collectProductionButton = prodBtnObj.AddComponent<Button>();
-            collectProductionButtonText = CreateTextMesh("Text", prodBtnObj.transform, "COLLECT PRODUCTION REVENUE", 13, FontStyles.Bold, TextAlignmentOptions.Center, Color.white);
-            RectTransform pbTextRt = collectProductionButtonText.GetComponent<RectTransform>();
-            pbTextRt.anchorMin = Vector2.zero;
-            pbTextRt.anchorMax = Vector2.one;
-            pbTextRt.sizeDelta = Vector2.zero;
+            CreateFactorySection(card.transform);
 
             // 8g. Oil & Petroleum Station Section
-            oilSectionRoot = CreateUIElement("OilSection", card.transform, new Vector2(0, 1), new Vector2(1, 1), new Vector2(0.5f, 1), new Vector2(-50, 155), new Vector2(0, -260));
-            Image oilBg = oilSectionRoot.AddComponent<Image>();
-            oilBg.color = new Color(0.22f, 0.18f, 0.12f, 0.95f);
-
-            TextMeshProUGUI oilTitle = CreateTextMesh("OilTitle", oilSectionRoot.transform, "OIL & FUEL DISTRIBUTION SALES", 13, FontStyles.Bold, TextAlignmentOptions.Left, new Color(1f, 0.82f, 0.25f));
-            RectTransform otRt = oilTitle.GetComponent<RectTransform>();
-            otRt.anchorMin = new Vector2(0, 1);
-            otRt.anchorMax = new Vector2(1, 1);
-            otRt.pivot = new Vector2(0, 1);
-            otRt.anchoredPosition = new Vector2(15, -10);
-            otRt.sizeDelta = new Vector2(-30, 22);
-
-            oilStatusText = CreateTextMesh("OilStatus", oilSectionRoot.transform, "Automotive refueling center. Earns regular revenue payouts from vehicle traffic.", 11, FontStyles.Normal, TextAlignmentOptions.Left, new Color(0.92f, 0.90f, 0.85f));
-            RectTransform osRt = oilStatusText.GetComponent<RectTransform>();
-            osRt.anchorMin = new Vector2(0, 1);
-            osRt.anchorMax = new Vector2(1, 1);
-            osRt.pivot = new Vector2(0, 1);
-            osRt.anchoredPosition = new Vector2(15, -34);
-            osRt.sizeDelta = new Vector2(-30, 34);
-
-            GameObject oilBtnObj = CreateUIElement("CollectOilButton", oilSectionRoot.transform, new Vector2(0, 0), new Vector2(1, 0), new Vector2(0.5f, 0), new Vector2(-30, 44), new Vector2(0, 10));
-            collectOilButtonBg = oilBtnObj.AddComponent<Image>();
-            collectOilButtonBg.color = new Color(0.95f, 0.65f, 0.15f, 1f);
-            collectOilButton = oilBtnObj.AddComponent<Button>();
-            collectOilButtonText = CreateTextMesh("Text", oilBtnObj.transform, "COLLECT OIL REVENUE", 13, FontStyles.Bold, TextAlignmentOptions.Center, Color.black);
-            RectTransform obTextRt = collectOilButtonText.GetComponent<RectTransform>();
-            obTextRt.anchorMin = Vector2.zero;
-            obTextRt.anchorMax = Vector2.one;
-            obTextRt.sizeDelta = Vector2.zero;
+            CreateOilSection(card.transform);
 
             // 8g2. Park Visitor Entry Fee Section
-            parkSectionRoot = CreateUIElement("ParkSection", card.transform, new Vector2(0, 1), new Vector2(1, 1), new Vector2(0.5f, 1), new Vector2(-50, 155), new Vector2(0, -260));
-            Image parkBg = parkSectionRoot.AddComponent<Image>();
-            parkBg.color = new Color(0.12f, 0.24f, 0.16f, 0.95f);
-
-            TextMeshProUGUI parkTitle = CreateTextMesh("ParkTitle", parkSectionRoot.transform, "GRAND PARK VISITOR ADMISSION FEES", 13, FontStyles.Bold, TextAlignmentOptions.Left, new Color(0.35f, 0.92f, 0.55f));
-            RectTransform pktRt = parkTitle.GetComponent<RectTransform>();
-            pktRt.anchorMin = new Vector2(0, 1);
-            pktRt.anchorMax = new Vector2(1, 1);
-            pktRt.pivot = new Vector2(0, 1);
-            pktRt.anchoredPosition = new Vector2(15, -10);
-            pktRt.sizeDelta = new Vector2(-30, 22);
-
-            parkStatusText = CreateTextMesh("ParkStatus", parkSectionRoot.transform, "Scenic city park. Strolling citizens pay admission entry fees periodically.", 11, FontStyles.Normal, TextAlignmentOptions.Left, new Color(0.85f, 0.95f, 0.88f));
-            RectTransform pksRt = parkStatusText.GetComponent<RectTransform>();
-            pksRt.anchorMin = new Vector2(0, 1);
-            pksRt.anchorMax = new Vector2(1, 1);
-            pksRt.pivot = new Vector2(0, 1);
-            pksRt.anchoredPosition = new Vector2(15, -34);
-            pksRt.sizeDelta = new Vector2(-30, 34);
-
-            GameObject parkBtnObj = CreateUIElement("CollectParkButton", parkSectionRoot.transform, new Vector2(0, 0), new Vector2(1, 0), new Vector2(0.5f, 0), new Vector2(-30, 44), new Vector2(0, 10));
-            collectParkButtonBg = parkBtnObj.AddComponent<Image>();
-            collectParkButtonBg.color = new Color(0.15f, 0.72f, 0.40f, 1f);
-            collectParkButton = parkBtnObj.AddComponent<Button>();
-            collectParkButtonText = CreateTextMesh("Text", parkBtnObj.transform, "COLLECT PARK ENTRY FEES", 13, FontStyles.Bold, TextAlignmentOptions.Center, Color.white);
-            RectTransform pkbTextRt = collectParkButtonText.GetComponent<RectTransform>();
-            pkbTextRt.anchorMin = Vector2.zero;
-            pkbTextRt.anchorMax = Vector2.one;
-            pkbTextRt.sizeDelta = Vector2.zero;
+            CreateParkSection(card.transform);
 
             // 8h. Building Maintenance Alert Section (Positioned at bottom of section slot)
-            maintenanceSectionRoot = CreateUIElement("MaintenanceSection", card.transform, new Vector2(0, 0), new Vector2(1, 0), new Vector2(0.5f, 0), new Vector2(-50, 72), new Vector2(0, 136));
-            Image maintBg = maintenanceSectionRoot.AddComponent<Image>();
-            maintBg.color = new Color(0.32f, 0.12f, 0.12f, 0.95f);
-
-            maintenanceReasonText = CreateTextMesh("MaintenanceReason", maintenanceSectionRoot.transform, "⚠️ MAINTENANCE REQUIRED: -$0", 11, FontStyles.Bold, TextAlignmentOptions.Left, new Color(1f, 0.75f, 0.75f));
-            RectTransform mrRt = maintenanceReasonText.GetComponent<RectTransform>();
-            mrRt.anchorMin = new Vector2(0, 0.5f);
-            mrRt.anchorMax = new Vector2(0.55f, 1);
-            mrRt.pivot = new Vector2(0, 0.5f);
-            mrRt.anchoredPosition = new Vector2(10, 0);
-            mrRt.sizeDelta = new Vector2(-15, 0);
-
-            GameObject payMaintBtnObj = CreateUIElement("PayMaintenanceButton", maintenanceSectionRoot.transform, new Vector2(0.55f, 0.1f), new Vector2(0.98f, 0.9f), new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
-            payMaintenanceButtonBg = payMaintBtnObj.AddComponent<Image>();
-            payMaintenanceButtonBg.color = new Color(0.90f, 0.35f, 0.15f, 1f);
-            payMaintenanceButton = payMaintBtnObj.AddComponent<Button>();
-            payMaintenanceButtonText = CreateTextMesh("Text", payMaintBtnObj.transform, "PAY MAINTENANCE", 11, FontStyles.Bold, TextAlignmentOptions.Center, Color.white);
-            RectTransform pmbTextRt = payMaintenanceButtonText.GetComponent<RectTransform>();
-            pmbTextRt.anchorMin = Vector2.zero;
-            pmbTextRt.anchorMax = Vector2.one;
-            pmbTextRt.sizeDelta = Vector2.zero;
-            maintenanceSectionRoot.SetActive(false);
+            CreateMaintenanceSection(card.transform);
 
             // 9. Collect Rent Button
             GameObject collectBtnObj = CreateUIElement("CollectRentButton", card.transform, new Vector2(0, 0), new Vector2(1, 0), new Vector2(0.5f, 0), new Vector2(-50, 48), new Vector2(0, 78));
@@ -1770,6 +1687,172 @@ namespace EmpireBuilder.UI
             tmp.color = color;
             tmp.raycastTarget = false;
             return tmp;
+        }
+
+        private void CreateHospitalSection(Transform card)
+        {
+            if (card == null) return;
+            hospitalSectionRoot = CreateUIElement("HospitalSection", card, new Vector2(0, 1), new Vector2(1, 1), new Vector2(0.5f, 1), new Vector2(-50, 165), new Vector2(0, -260));
+            Image hospBg = hospitalSectionRoot.AddComponent<Image>();
+            hospBg.color = new Color(0.12f, 0.16f, 0.22f, 0.98f);
+            if (roundedBoxSprite != null)
+            {
+                hospBg.sprite = roundedBoxSprite;
+                hospBg.type = Image.Type.Sliced;
+            }
+
+            // Title
+            TextMeshProUGUI hospTitle = CreateTextMesh("HospTitle", hospitalSectionRoot.transform, "🏥 MEDICAL HEALTHCARE & EMERGENCY TREATMENT", 13, FontStyles.Bold, TextAlignmentOptions.Left, new Color(1f, 0.42f, 0.46f));
+            RectTransform htRt = hospTitle.GetComponent<RectTransform>();
+            htRt.anchorMin = new Vector2(0, 1);
+            htRt.anchorMax = new Vector2(1, 1);
+            htRt.pivot = new Vector2(0, 1);
+            htRt.anchoredPosition = new Vector2(15, -10);
+            htRt.sizeDelta = new Vector2(-30, 22);
+
+            // Status text
+            hospitalStatusText = CreateTextMesh("HospitalStatus", hospitalSectionRoot.transform, "Visit for medical treatment when sick or exhausted.", 11, FontStyles.Normal, TextAlignmentOptions.Left, new Color(0.92f, 0.92f, 0.94f));
+            RectTransform hsRt = hospitalStatusText.GetComponent<RectTransform>();
+            hsRt.anchorMin = new Vector2(0, 1);
+            hsRt.anchorMax = new Vector2(1, 1);
+            hsRt.pivot = new Vector2(0, 1);
+            hsRt.anchoredPosition = new Vector2(15, -34);
+            hsRt.sizeDelta = new Vector2(-30, 60);
+
+            // Dedicated Treatment Button
+            GameObject treatBtnObj = CreateUIElement("TreatmentButton", hospitalSectionRoot.transform, new Vector2(0, 0), new Vector2(1, 0), new Vector2(0.5f, 0), new Vector2(-30, 48), new Vector2(0, 12));
+            treatmentButtonBg = treatBtnObj.AddComponent<Image>();
+            treatmentButtonBg.color = new Color(0.12f, 0.78f, 0.38f, 1f);
+            if (roundedBoxSprite != null)
+            {
+                treatmentButtonBg.sprite = roundedBoxSprite;
+                treatmentButtonBg.type = Image.Type.Sliced;
+            }
+            treatmentButton = treatBtnObj.AddComponent<Button>();
+            treatmentButtonText = CreateTextMesh("Text", treatBtnObj.transform, "🏥 RECEIVE TREATMENT (RESTORE 100 HP)", 13, FontStyles.Bold, TextAlignmentOptions.Center, Color.white);
+            RectTransform tbTextRt = treatmentButtonText.GetComponent<RectTransform>();
+            tbTextRt.anchorMin = Vector2.zero;
+            tbTextRt.anchorMax = Vector2.one;
+            tbTextRt.sizeDelta = Vector2.zero;
+
+            treatmentButton.onClick.RemoveAllListeners();
+            treatmentButton.onClick.AddListener(OnTreatmentClicked);
+        }
+
+        private void CreateFactorySection(Transform card)
+        {
+            if (card == null) return;
+            factorySectionRoot = CreateUIElement("FactorySection", card, new Vector2(0, 1), new Vector2(1, 1), new Vector2(0.5f, 1), new Vector2(-50, 155), new Vector2(0, -260));
+            Image factBg = factorySectionRoot.AddComponent<Image>();
+            factBg.color = new Color(0.15f, 0.18f, 0.24f, 0.95f);
+            if (roundedBoxSprite != null) { factBg.sprite = roundedBoxSprite; factBg.type = Image.Type.Sliced; }
+
+            TextMeshProUGUI factTitle = CreateTextMesh("FactTitle", factorySectionRoot.transform, "INDUSTRIAL MANUFACTURING PRODUCTION", 13, FontStyles.Bold, TextAlignmentOptions.Left, new Color(0.45f, 0.75f, 1f));
+            RectTransform ftRt = factTitle.GetComponent<RectTransform>();
+            ftRt.anchorMin = new Vector2(0, 1); ftRt.anchorMax = new Vector2(1, 1); ftRt.pivot = new Vector2(0, 1);
+            ftRt.anchoredPosition = new Vector2(15, -10); ftRt.sizeDelta = new Vector2(-30, 22);
+
+            factoryStatusText = CreateTextMesh("FactoryStatus", factorySectionRoot.transform, "Heavy manufacturing plant. Completes production runs with large payout revenues.", 11, FontStyles.Normal, TextAlignmentOptions.Left, new Color(0.85f, 0.88f, 0.92f));
+            RectTransform fsRt = factoryStatusText.GetComponent<RectTransform>();
+            fsRt.anchorMin = new Vector2(0, 1); fsRt.anchorMax = new Vector2(1, 1); fsRt.pivot = new Vector2(0, 1);
+            fsRt.anchoredPosition = new Vector2(15, -34); fsRt.sizeDelta = new Vector2(-30, 34);
+
+            GameObject prodBtnObj = CreateUIElement("CollectProductionButton", factorySectionRoot.transform, new Vector2(0, 0), new Vector2(1, 0), new Vector2(0.5f, 0), new Vector2(-30, 44), new Vector2(0, 10));
+            collectProductionButtonBg = prodBtnObj.AddComponent<Image>();
+            collectProductionButtonBg.color = new Color(0.18f, 0.65f, 0.92f, 1f);
+            if (roundedBoxSprite != null) { collectProductionButtonBg.sprite = roundedBoxSprite; collectProductionButtonBg.type = Image.Type.Sliced; }
+            collectProductionButton = prodBtnObj.AddComponent<Button>();
+            collectProductionButtonText = CreateTextMesh("Text", prodBtnObj.transform, "COLLECT PRODUCTION REVENUE", 13, FontStyles.Bold, TextAlignmentOptions.Center, Color.white);
+            RectTransform pbTextRt = collectProductionButtonText.GetComponent<RectTransform>();
+            pbTextRt.anchorMin = Vector2.zero; pbTextRt.anchorMax = Vector2.one; pbTextRt.sizeDelta = Vector2.zero;
+            collectProductionButton.onClick.RemoveAllListeners();
+            collectProductionButton.onClick.AddListener(OnCollectProductionClicked);
+        }
+
+        private void CreateOilSection(Transform card)
+        {
+            if (card == null) return;
+            oilSectionRoot = CreateUIElement("OilSection", card, new Vector2(0, 1), new Vector2(1, 1), new Vector2(0.5f, 1), new Vector2(-50, 155), new Vector2(0, -260));
+            Image oilBg = oilSectionRoot.AddComponent<Image>();
+            oilBg.color = new Color(0.22f, 0.18f, 0.12f, 0.95f);
+            if (roundedBoxSprite != null) { oilBg.sprite = roundedBoxSprite; oilBg.type = Image.Type.Sliced; }
+
+            TextMeshProUGUI oilTitle = CreateTextMesh("OilTitle", oilSectionRoot.transform, "OIL & FUEL DISTRIBUTION SALES", 13, FontStyles.Bold, TextAlignmentOptions.Left, new Color(1f, 0.82f, 0.25f));
+            RectTransform otRt = oilTitle.GetComponent<RectTransform>();
+            otRt.anchorMin = new Vector2(0, 1); otRt.anchorMax = new Vector2(1, 1); otRt.pivot = new Vector2(0, 1);
+            otRt.anchoredPosition = new Vector2(15, -10); otRt.sizeDelta = new Vector2(-30, 22);
+
+            oilStatusText = CreateTextMesh("OilStatus", oilSectionRoot.transform, "Automotive refueling center. Earns regular revenue payouts from vehicle traffic.", 11, FontStyles.Normal, TextAlignmentOptions.Left, new Color(0.92f, 0.90f, 0.85f));
+            RectTransform osRt = oilStatusText.GetComponent<RectTransform>();
+            osRt.anchorMin = new Vector2(0, 1); osRt.anchorMax = new Vector2(1, 1); osRt.pivot = new Vector2(0, 1);
+            osRt.anchoredPosition = new Vector2(15, -34); osRt.sizeDelta = new Vector2(-30, 34);
+
+            GameObject oilBtnObj = CreateUIElement("CollectOilButton", oilSectionRoot.transform, new Vector2(0, 0), new Vector2(1, 0), new Vector2(0.5f, 0), new Vector2(-30, 44), new Vector2(0, 10));
+            collectOilButtonBg = oilBtnObj.AddComponent<Image>();
+            collectOilButtonBg.color = new Color(0.95f, 0.65f, 0.15f, 1f);
+            if (roundedBoxSprite != null) { collectOilButtonBg.sprite = roundedBoxSprite; collectOilButtonBg.type = Image.Type.Sliced; }
+            collectOilButton = oilBtnObj.AddComponent<Button>();
+            collectOilButtonText = CreateTextMesh("Text", oilBtnObj.transform, "COLLECT OIL REVENUE", 13, FontStyles.Bold, TextAlignmentOptions.Center, Color.black);
+            RectTransform obTextRt = collectOilButtonText.GetComponent<RectTransform>();
+            obTextRt.anchorMin = Vector2.zero; obTextRt.anchorMax = Vector2.one; obTextRt.sizeDelta = Vector2.zero;
+            collectOilButton.onClick.RemoveAllListeners();
+            collectOilButton.onClick.AddListener(OnCollectOilClicked);
+        }
+
+        private void CreateParkSection(Transform card)
+        {
+            if (card == null) return;
+            parkSectionRoot = CreateUIElement("ParkSection", card, new Vector2(0, 1), new Vector2(1, 1), new Vector2(0.5f, 1), new Vector2(-50, 155), new Vector2(0, -260));
+            Image parkBg = parkSectionRoot.AddComponent<Image>();
+            parkBg.color = new Color(0.12f, 0.24f, 0.16f, 0.95f);
+            if (roundedBoxSprite != null) { parkBg.sprite = roundedBoxSprite; parkBg.type = Image.Type.Sliced; }
+
+            TextMeshProUGUI parkTitle = CreateTextMesh("ParkTitle", parkSectionRoot.transform, "GRAND PARK VISITOR ADMISSION FEES", 13, FontStyles.Bold, TextAlignmentOptions.Left, new Color(0.35f, 0.92f, 0.55f));
+            RectTransform pktRt = parkTitle.GetComponent<RectTransform>();
+            pktRt.anchorMin = new Vector2(0, 1); pktRt.anchorMax = new Vector2(1, 1); pktRt.pivot = new Vector2(0, 1);
+            pktRt.anchoredPosition = new Vector2(15, -10); pktRt.sizeDelta = new Vector2(-30, 22);
+
+            parkStatusText = CreateTextMesh("ParkStatus", parkSectionRoot.transform, "Scenic city park. Strolling citizens pay admission entry fees periodically.", 11, FontStyles.Normal, TextAlignmentOptions.Left, new Color(0.85f, 0.95f, 0.88f));
+            RectTransform pksRt = parkStatusText.GetComponent<RectTransform>();
+            pksRt.anchorMin = new Vector2(0, 1); pksRt.anchorMax = new Vector2(1, 1); pksRt.pivot = new Vector2(0, 1);
+            pksRt.anchoredPosition = new Vector2(15, -34); pksRt.sizeDelta = new Vector2(-30, 34);
+
+            GameObject parkBtnObj = CreateUIElement("CollectParkButton", parkSectionRoot.transform, new Vector2(0, 0), new Vector2(1, 0), new Vector2(0.5f, 0), new Vector2(-30, 44), new Vector2(0, 10));
+            collectParkButtonBg = parkBtnObj.AddComponent<Image>();
+            collectParkButtonBg.color = new Color(0.15f, 0.72f, 0.40f, 1f);
+            if (roundedBoxSprite != null) { collectParkButtonBg.sprite = roundedBoxSprite; collectParkButtonBg.type = Image.Type.Sliced; }
+            collectParkButton = parkBtnObj.AddComponent<Button>();
+            collectParkButtonText = CreateTextMesh("Text", parkBtnObj.transform, "COLLECT PARK ENTRY FEES", 13, FontStyles.Bold, TextAlignmentOptions.Center, Color.white);
+            RectTransform pkbTextRt = collectParkButtonText.GetComponent<RectTransform>();
+            pkbTextRt.anchorMin = Vector2.zero; pkbTextRt.anchorMax = Vector2.one; pkbTextRt.sizeDelta = Vector2.zero;
+            collectParkButton.onClick.RemoveAllListeners();
+            collectParkButton.onClick.AddListener(OnCollectParkRevenueClicked);
+        }
+
+        private void CreateMaintenanceSection(Transform card)
+        {
+            if (card == null) return;
+            maintenanceSectionRoot = CreateUIElement("MaintenanceSection", card, new Vector2(0, 0), new Vector2(1, 0), new Vector2(0.5f, 0), new Vector2(-50, 72), new Vector2(0, 136));
+            Image maintBg = maintenanceSectionRoot.AddComponent<Image>();
+            maintBg.color = new Color(0.32f, 0.12f, 0.12f, 0.95f);
+            if (roundedBoxSprite != null) { maintBg.sprite = roundedBoxSprite; maintBg.type = Image.Type.Sliced; }
+
+            maintenanceReasonText = CreateTextMesh("MaintenanceReason", maintenanceSectionRoot.transform, "⚠️ MAINTENANCE REQUIRED: -$0", 11, FontStyles.Bold, TextAlignmentOptions.Left, new Color(1f, 0.75f, 0.75f));
+            RectTransform mrRt = maintenanceReasonText.GetComponent<RectTransform>();
+            mrRt.anchorMin = new Vector2(0, 0.5f); mrRt.anchorMax = new Vector2(0.55f, 1); mrRt.pivot = new Vector2(0, 0.5f);
+            mrRt.anchoredPosition = new Vector2(10, 0); mrRt.sizeDelta = new Vector2(-15, 0);
+
+            GameObject payMaintBtnObj = CreateUIElement("PayMaintenanceButton", maintenanceSectionRoot.transform, new Vector2(0.55f, 0.1f), new Vector2(0.98f, 0.9f), new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
+            payMaintenanceButtonBg = payMaintBtnObj.AddComponent<Image>();
+            payMaintenanceButtonBg.color = new Color(0.90f, 0.35f, 0.15f, 1f);
+            if (roundedBoxSprite != null) { payMaintenanceButtonBg.sprite = roundedBoxSprite; payMaintenanceButtonBg.type = Image.Type.Sliced; }
+            payMaintenanceButton = payMaintBtnObj.AddComponent<Button>();
+            payMaintenanceButtonText = CreateTextMesh("Text", payMaintBtnObj.transform, "PAY MAINTENANCE", 11, FontStyles.Bold, TextAlignmentOptions.Center, Color.white);
+            RectTransform pmbTextRt = payMaintenanceButtonText.GetComponent<RectTransform>();
+            pmbTextRt.anchorMin = Vector2.zero; pmbTextRt.anchorMax = Vector2.one; pmbTextRt.sizeDelta = Vector2.zero;
+            payMaintenanceButton.onClick.RemoveAllListeners();
+            payMaintenanceButton.onClick.AddListener(OnPayMaintenanceClicked);
+            maintenanceSectionRoot.SetActive(false);
         }
         #endregion
     }
