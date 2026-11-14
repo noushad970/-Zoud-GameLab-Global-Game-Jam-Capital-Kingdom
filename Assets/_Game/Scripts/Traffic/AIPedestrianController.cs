@@ -34,15 +34,15 @@ namespace EmpireBuilder.Traffic
         [Header("Locomotion Settings")]
         [SerializeField] private float walkSpeed = 1.6f;
         [SerializeField] private float turnSpeed = 240f;
-        [SerializeField] private float arrivalThreshold = 0.6f;
+        [SerializeField] private float arrivalThreshold = 0.85f;
 
         [Header("Idle & Social Timing")]
-        [SerializeField] private float idleChance = 0.35f;
+        [SerializeField] private float idleChance = 0f;
         [SerializeField] private float minWalkDuration = 14f;
         [SerializeField] private float maxWalkDuration = 28f;
-        [SerializeField] private float minIdleDuration = 2.5f;
-        [SerializeField] private float maxIdleDuration = 6.0f;
-        [SerializeField] private float hotspotGatherDuration = 24f;
+        [SerializeField] private float minIdleDuration = 0f;
+        [SerializeField] private float maxIdleDuration = 0f;
+        [SerializeField] private float hotspotGatherDuration = 0f;
 
         [Header("Obstacle & Road Avoidance")]
         [SerializeField] private float obstacleDetectionDistance = 2.2f;
@@ -321,69 +321,74 @@ namespace EmpireBuilder.Traffic
 
         private void Update()
         {
-            switch (currentState)
-            {
-                case PedestrianState.Walking:
-                    UpdateWalking();
-                    break;
-
-                case PedestrianState.Idle:
-                    UpdateIdle();
-                    break;
-
-                case PedestrianState.Gathering:
-                    UpdateGathering();
-                    break;
-
-                case PedestrianState.AvoidingObstacle:
-                    UpdateAvoidingObstacle();
-                    break;
-
-                case PedestrianState.YieldingToCar:
-                    UpdateYieldingToCar();
-                    break;
-            }
+            // Unstoppable Citizens: continuously maintain Walking locomotion
+            currentState = PedestrianState.Walking;
+            UpdateWalking();
         }
 
         private void UpdateWalking()
         {
             UpdateAnimation(true);
 
-            // Periodic chance to enter idle state (take a breath, check phone/watch)
+            // Unstoppable citizens: walkCycleTimer cycles without idle pauses
             walkCycleTimer -= Time.deltaTime;
             if (walkCycleTimer <= 0f)
             {
                 walkCycleTimer = Random.Range(minWalkDuration, maxWalkDuration);
-                if (Random.value < idleChance)
-                {
-                    EnterIdleState(Random.Range(minIdleDuration, maxIdleDuration));
-                    return;
-                }
             }
 
-            // Stuck detection & recovery watchdog
+            // Rapid stuck detection & continuous walking recovery watchdog
             stuckCheckTimer += Time.deltaTime;
-            if (stuckCheckTimer >= 2.0f)
+            if (stuckCheckTimer >= 1.2f)
             {
                 stuckCheckTimer = 0f;
                 float distMoved = Vector3.Distance(transform.position, lastStuckCheckPosition);
                 lastStuckCheckPosition = transform.position;
 
-                if (distMoved < 0.25f && currentState == PedestrianState.Walking)
+                if (distMoved < 0.22f)
                 {
                     stuckCounter++;
-                    if (stuckCounter >= 2) // Stuck for > 4 seconds
+                    if (stuckCounter >= 1)
                     {
                         stuckCounter = 0;
-                        if (CityPedestrianManager.Instance != null)
+                        if (currentWaypointNode != null)
                         {
-                            var nextNode = CityPedestrianManager.Instance.FindNextAvailableWaypointNode(currentWaypointNode, previousWaypointNode);
+                            var nextNode = currentWaypointNode.GetRandomNextNode(previousWaypointNode);
+                            if (nextNode == null && CityPedestrianManager.Instance != null)
+                            {
+                                nextNode = CityPedestrianManager.Instance.FindNextAvailableWaypointNode(currentWaypointNode, previousWaypointNode);
+                            }
+
                             if (nextNode != null)
                             {
                                 previousWaypointNode = currentWaypointNode;
                                 currentWaypointNode = nextNode;
                                 currentTargetPosition = nextNode.Position;
                             }
+                            else if (previousWaypointNode != null)
+                            {
+                                var swap = currentWaypointNode;
+                                currentWaypointNode = previousWaypointNode;
+                                previousWaypointNode = swap;
+                                currentTargetPosition = currentWaypointNode.Position;
+                            }
+                            else if (CityPedestrianManager.Instance != null)
+                            {
+                                currentWaypointNode = CityPedestrianManager.Instance.FindClosestCharacterWaypointNode(transform.position);
+                                if (currentWaypointNode != null) currentTargetPosition = currentWaypointNode.Position;
+                            }
+                        }
+                        else if (CityPedestrianManager.Instance != null)
+                        {
+                            currentWaypointNode = CityPedestrianManager.Instance.FindClosestCharacterWaypointNode(transform.position);
+                            if (currentWaypointNode != null) currentTargetPosition = currentWaypointNode.Position;
+                        }
+
+                        // Immediate physics unstick nudge
+                        Vector3 nudge = (transform.forward + transform.right * Random.Range(-0.8f, 0.8f)).normalized * 0.45f;
+                        if (characterController != null && characterController.enabled)
+                        {
+                            characterController.Move(nudge);
                         }
                     }
                 }
@@ -405,13 +410,7 @@ namespace EmpireBuilder.Traffic
 
                 if (nodeDist <= arrivalThreshold || passedWaypoint)
                 {
-                    // Waypoint pause/idle check
-                    if (currentWaypointNode.pauseDuration > 0f)
-                    {
-                        EnterIdleState(currentWaypointNode.pauseDuration);
-                    }
-
-                    // Pick next connected waypoint node
+                    // Pick next connected waypoint node (unstoppable: no pauses)
                     PedestrianWaypointNode next = currentWaypointNode.GetRandomNextNode(previousWaypointNode);
                     if (next == null && CityPedestrianManager.Instance != null)
                     {
@@ -455,7 +454,7 @@ namespace EmpireBuilder.Traffic
 
                 if (steerDirNode == Vector3.zero)
                 {
-                    return;
+                    steerDirNode = (transform.forward + transform.right * 0.5f).normalized;
                 }
 
                 if (steerDirNode.sqrMagnitude > 0.001f)
@@ -495,23 +494,7 @@ namespace EmpireBuilder.Traffic
                 pathIndex++;
                 if (pathIndex >= currentPath.Count)
                 {
-                    // Reached path destination! Check if it's a hotspot
-                    if (isGatheringAtHotspot)
-                    {
-                        EnterGatheringState();
-                    }
-                    else
-                    {
-                        // Check if we should now visit a hotspot or continue wandering
-                        if (Random.value < 0.45f && CityPedestrianManager.Instance != null)
-                        {
-                            RequestPathToRandomHotspot();
-                        }
-                        else
-                        {
-                            RequestNewSidewalkPath();
-                        }
-                    }
+                    RequestNewSidewalkPath();
                     return;
                 }
                 currentTargetPosition = currentPath[pathIndex];
@@ -524,8 +507,7 @@ namespace EmpireBuilder.Traffic
 
             if (steerDir == Vector3.zero)
             {
-                // Obstacle blocking forward path
-                return;
+                steerDir = (transform.forward + transform.right * 0.5f).normalized;
             }
 
             // Smooth rotation
@@ -623,37 +605,19 @@ namespace EmpireBuilder.Traffic
 
             if (centerBlocked && hit.collider != null)
             {
-                // Check if obstacle is an oncoming vehicle
-                if (hit.collider.GetComponentInParent<AICarController>() != null)
-                {
-                    currentState = PedestrianState.YieldingToCar;
-                    stateTimer = 1.2f;
-                    UpdateAnimation(false);
-                    return Vector3.zero;
-                }
-
-                bool isDynamicObstacle = hit.collider.CompareTag("Player") ||
-                                         hit.collider.GetComponentInParent<AIPedestrianController>() != null;
-
-                // Steer left or right to bypass
+                // Steer decisively left or right to bypass dynamic or static obstacles smoothly without stopping
                 if (!rightBlocked)
                 {
-                    steering += right * 1.6f;
+                    steering += right * 2.0f;
                 }
                 else if (!leftBlocked)
                 {
-                    steering -= right * 1.6f;
-                }
-                else if (isDynamicObstacle)
-                {
-                    // Dynamic obstacle blocked -> switch to brief idle to let them pass
-                    EnterIdleState(Random.Range(1.0f, 2.0f));
-                    return Vector3.zero;
+                    steering -= right * 2.0f;
                 }
                 else
                 {
-                    // Static obstacle -> slide along tangent
-                    steering += right * 1.2f;
+                    // Hemmed in: slide dynamically along side tangent
+                    steering += (Random.value < 0.5f ? right : -right) * 1.8f;
                 }
             }
             else
@@ -673,94 +637,50 @@ namespace EmpireBuilder.Traffic
             }
 
             steering.y = 0f;
+            if (steering.sqrMagnitude < 0.001f)
+            {
+                steering = (forward + right * 0.5f).normalized;
+            }
             cachedSteeringResult = steering.normalized;
             return cachedSteeringResult;
         }
 
         private void EnterIdleState(float duration)
         {
-            currentState = PedestrianState.Idle;
-            stateTimer = duration;
-            UpdateAnimation(false);
+            // Unstoppable citizens: continuously maintain walking
+            currentState = PedestrianState.Walking;
+            UpdateAnimation(true);
         }
 
         private void UpdateIdle()
         {
-            stateTimer -= Time.deltaTime;
-            UpdateAnimation(false);
-
-            if (stateTimer <= 0f)
-            {
-                currentState = PedestrianState.Walking;
-                UpdateAnimation(true);
-            }
+            currentState = PedestrianState.Walking;
+            UpdateWalking();
         }
 
         private void EnterGatheringState()
         {
-            currentState = PedestrianState.Gathering;
-            stateTimer = hotspotGatherDuration + Random.Range(-5f, 8f);
-            UpdateAnimation(false);
-
-            // Look for a companion to chat with at the gathering hotspot
-            if (CityPedestrianManager.Instance != null)
-            {
-                socialPartner = CityPedestrianManager.Instance.FindNearbyGatheringPartner(this, 3.2f);
-            }
+            // Unstoppable citizens: continuously maintain walking
+            currentState = PedestrianState.Walking;
+            RequestNewSidewalkPath();
         }
 
         private void UpdateGathering()
         {
-            stateTimer -= Time.deltaTime;
-            UpdateAnimation(false);
-
-            if (socialPartner == null && CityPedestrianManager.Instance != null && Random.value < 0.05f)
-            {
-                socialPartner = CityPedestrianManager.Instance.FindNearbyGatheringPartner(this, 3.2f);
-            }
-
-            if (socialPartner != null)
-            {
-                // Face conversation partner
-                Vector3 toPartner = socialPartner.transform.position - transform.position;
-                toPartner.y = 0f;
-                if (toPartner.sqrMagnitude > 0.05f)
-                {
-                    Quaternion targetRot = Quaternion.LookRotation(toPartner, Vector3.up);
-                    transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRot, 70f * Time.deltaTime);
-                }
-            }
-
-            if (stateTimer <= 0f)
-            {
-                isGatheringAtHotspot = false;
-                currentHotspotName = "";
-                socialPartner = null;
-                currentState = PedestrianState.Walking;
-                RequestNewSidewalkPath();
-            }
+            currentState = PedestrianState.Walking;
+            UpdateWalking();
         }
 
         private void UpdateAvoidingObstacle()
         {
-            stateTimer -= Time.deltaTime;
-            if (stateTimer <= 0f)
-            {
-                currentState = PedestrianState.Walking;
-                UpdateAnimation(true);
-            }
+            currentState = PedestrianState.Walking;
+            UpdateWalking();
         }
 
         private void UpdateYieldingToCar()
         {
-            stateTimer -= Time.deltaTime;
-            UpdateAnimation(false);
-
-            if (stateTimer <= 0f)
-            {
-                currentState = PedestrianState.Walking;
-                UpdateAnimation(true);
-            }
+            currentState = PedestrianState.Walking;
+            UpdateWalking();
         }
 
         public void SetPath(List<Vector3> path, bool isHotspot = false, string hotspotName = "")

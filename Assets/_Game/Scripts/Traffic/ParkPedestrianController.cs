@@ -30,14 +30,16 @@ namespace EmpireBuilder.Traffic
         [SerializeField] private float gravity = 15f;
 
         [Header("Park Leisure Behavior")]
-        [SerializeField] [Range(0f, 1f)] private float pauseChanceAtWaypoint = 0.16f;
-        [SerializeField] private float minPauseDuration = 2.0f;
-        [SerializeField] private float maxPauseDuration = 4.5f;
+        [SerializeField] [Range(0f, 1f)] private float pauseChanceAtWaypoint = 0f;
+        [SerializeField] private float minPauseDuration = 0f;
+        [SerializeField] private float maxPauseDuration = 0f;
 
         [Header("Runtime State")]
         [SerializeField] private bool isPausing = false;
         [SerializeField] private float pauseTimer = 0f;
         [SerializeField] private Vector3 currentDestination;
+        private float stuckWatchdogTimer = 0f;
+        private Vector3 lastWatchdogPos;
 
         // Components
         private CharacterController characterController;
@@ -218,20 +220,26 @@ namespace EmpireBuilder.Traffic
         {
             if (waypoints == null || waypoints.Count == 0) return;
 
-            // Handle leisure waypoint pause
-            if (isPausing)
+            // Unstoppable Park Visitors: strictly maintain walking mode without pausing
+            isPausing = false;
+            pauseTimer = 0f;
+
+            // Stuck watchdog: unstick immediately if obstructed
+            stuckWatchdogTimer += Time.deltaTime;
+            if (stuckWatchdogTimer >= 1.2f)
             {
-                pauseTimer -= Time.deltaTime;
-                if (pauseTimer <= 0f)
+                stuckWatchdogTimer = 0f;
+                float distMoved = Vector3.Distance(transform.position, lastWatchdogPos);
+                lastWatchdogPos = transform.position;
+
+                if (distMoved < 0.22f)
                 {
-                    isPausing = false;
                     AdvanceToNextWaypoint();
-                }
-                else
-                {
-                    ApplyGravity();
-                    UpdateAnimationState(false);
-                    return;
+                    Vector3 nudge = (transform.forward + transform.right * Random.Range(-0.8f, 0.8f)).normalized * 0.45f;
+                    if (characterController != null && characterController.enabled)
+                    {
+                        characterController.Move(nudge);
+                    }
                 }
             }
 
@@ -252,16 +260,7 @@ namespace EmpireBuilder.Traffic
 
             if (distToTarget <= arrivalDistance)
             {
-                // Reached target waypoint
-                if (Random.value < pauseChanceAtWaypoint)
-                {
-                    // Leisurely stop and enjoy the park atmosphere
-                    isPausing = true;
-                    pauseTimer = Random.Range(minPauseDuration, maxPauseDuration);
-                    UpdateAnimationState(false);
-                    return;
-                }
-
+                // Advance immediately to next waypoint
                 AdvanceToNextWaypoint();
                 return;
             }

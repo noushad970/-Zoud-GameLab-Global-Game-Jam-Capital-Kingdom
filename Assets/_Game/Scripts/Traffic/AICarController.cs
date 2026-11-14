@@ -168,6 +168,7 @@ namespace EmpireBuilder.Traffic
         private float stuckTimer = 0f;
         private float streetLevelY = 0f;
         private TrafficWaypointNode reservedIntersection = null;
+        private float intersectionWaitTimer = 0f;
 
         public AICarState CurrentState => currentState;
         [Header("Rented Taxi Status")]
@@ -326,7 +327,7 @@ namespace EmpireBuilder.Traffic
             }
 
             previousWaypoint = currentWaypoint;
-            TrafficWaypointNode next = currentWaypoint != null ? currentWaypoint.GetRandomNextNode() : null;
+            TrafficWaypointNode next = currentWaypoint != null ? currentWaypoint.GetRandomNextNode(previousWaypoint) : null;
             if (next == null && CityTrafficManager.Instance != null)
             {
                 // Seamless route loop: find next nearest continuing waypoint on this car's assigned road network
@@ -497,48 +498,35 @@ namespace EmpireBuilder.Traffic
 
                 if (isOncoming)
                 {
-                    // Check whether right side or left side is open for oncoming passing
-                    bool rightOpen = CheckLateralClearance(transform.right, rightSideEvasionOffset);
-                    bool leftOpen = CheckLateralClearance(-transform.right, rightSideEvasionOffset);
+                    // Deterministic right-of-way resolution based on HashCode: breaks symmetry and avoids head-on freezing
+                    bool hasRightOfWay = this.GetHashCode() > carAhead.GetHashCode();
 
-                    if (rightOpen)
-                    {
-                        targetEvasionOffset = rightSideEvasionOffset;
-                    }
-                    else if (leftOpen)
-                    {
-                        targetEvasionOffset = -rightSideEvasionOffset;
-                    }
-                    else
-                    {
-                        targetEvasionOffset = rightSideEvasionOffset;
-                    }
+                    // Both cars shift firmly to their respective right sides (standard driving convention)
+                    targetEvasionOffset = rightSideEvasionOffset * 1.35f;
 
-                    // If lateral evasion offset has provided clear bypass margin
-                    if (Mathf.Abs(currentEvasionOffset) > 1.3f && distanceToCarAhead > fullStopDistance * 0.7f)
+                    if (hasRightOfWay)
                     {
-                        targetSpeed = passingSpeed;
+                        // Higher priority vehicle continues forward at safe passing speed
+                        targetSpeed = Mathf.Max(4.5f, passingSpeed);
                         isBraking = false;
                         currentState = AICarState.PassingOncoming;
                     }
-                    else if (distanceToCarAhead <= fullStopDistance)
-                    {
-                        targetSpeed = 0f;
-                        isBraking = true;
-                        currentState = AICarState.Stopped;
-                    }
-                    else if (distanceToCarAhead <= cautionDistance)
-                    {
-                        float t = (distanceToCarAhead - fullStopDistance) / Mathf.Max(0.01f, (cautionDistance - fullStopDistance));
-                        targetSpeed = Mathf.Lerp(2.0f, passingSpeed, t);
-                        isBraking = (currentSpeed > targetSpeed);
-                        currentState = AICarState.PassingOncoming;
-                    }
                     else
                     {
-                        targetSpeed = passingSpeed;
-                        isBraking = (currentSpeed > targetSpeed);
-                        currentState = AICarState.PassingOncoming;
+                        // Yielding vehicle shifts slightly further right and slows down to let oncoming car clear
+                        targetEvasionOffset = rightSideEvasionOffset * 1.6f;
+                        if (distanceToCarAhead <= fullStopDistance * 0.85f)
+                        {
+                            targetSpeed = 0f;
+                            isBraking = true;
+                            currentState = AICarState.Stopped;
+                        }
+                        else
+                        {
+                            targetSpeed = 2.5f;
+                            isBraking = (currentSpeed > targetSpeed);
+                            currentState = AICarState.PassingOncoming;
+                        }
                     }
                 }
                 else
@@ -628,7 +616,11 @@ namespace EmpireBuilder.Traffic
         private void UpdateIntersectionYielding()
         {
             if (isReversing) return;
-            if (currentWaypoint == null || !currentWaypoint.isIntersection) return;
+            if (currentWaypoint == null || !currentWaypoint.isIntersection)
+            {
+                intersectionWaitTimer = 0f;
+                return;
+            }
 
             float distToIntersection = Vector3.Distance(transform.position, currentWaypoint.Position);
             if (distToIntersection <= currentWaypoint.intersectionRadius + 2.0f)
@@ -636,11 +628,29 @@ namespace EmpireBuilder.Traffic
                 bool canEnter = currentWaypoint.TryReserveIntersection(this);
                 if (!canEnter)
                 {
-                    // Intersection is occupied, yield and stop at line
-                    targetSpeed = 0f;
-                    isBraking = true;
-                    currentState = AICarState.YieldingIntersection;
+                    intersectionWaitTimer += Time.deltaTime;
+                    if (intersectionWaitTimer > 2.0f)
+                    {
+                        // Yield timeout expired: cautiously cross to prevent city-wide gridlock
+                        targetSpeed = 3.5f;
+                        isBraking = false;
+                        currentState = AICarState.Turning;
+                    }
+                    else
+                    {
+                        targetSpeed = 0f;
+                        isBraking = true;
+                        currentState = AICarState.YieldingIntersection;
+                    }
                 }
+                else
+                {
+                    intersectionWaitTimer = 0f;
+                }
+            }
+            else
+            {
+                intersectionWaitTimer = 0f;
             }
         }
         #endregion
@@ -774,14 +784,14 @@ namespace EmpireBuilder.Traffic
             float distToAdjustedTarget = toAdjusted.magnitude;
 
             // Check if car reached waypoint, reached adjusted target, or passed the waypoint plane
-            bool hasPassedWaypoint = Vector3.Dot(toBaseTarget, transform.forward) < 0f && distToBaseWaypoint < 4.2f;
+            bool hasPassedWaypoint = Vector3.Dot(toBaseTarget, transform.forward) < 0f && distToBaseWaypoint < 8.0f;
             bool arrivedAtAdjusted = distToAdjustedTarget <= waypointArrivalDistance;
-            bool arrivedAtBase = distToBaseWaypoint <= Mathf.Max(waypointArrivalDistance, Mathf.Abs(currentEvasionOffset) + 0.6f);
+            bool arrivedAtBase = distToBaseWaypoint <= Mathf.Max(3.2f, Mathf.Abs(currentEvasionOffset) + 0.8f);
 
             if (arrivedAtAdjusted || arrivedAtBase || hasPassedWaypoint)
             {
                 // Smoothly pull evasion offset back towards lane center when reaching a waypoint
-                currentEvasionOffset = Mathf.MoveTowards(currentEvasionOffset, 0f, 1.8f);
+                currentEvasionOffset = Mathf.MoveTowards(currentEvasionOffset, 0f, 2.5f);
                 targetEvasionOffset = 0f;
                 AdvanceWaypoint();
             }
@@ -842,15 +852,24 @@ namespace EmpireBuilder.Traffic
 
         private void UpdateWatchdog()
         {
-            // If car has been motionless for too long, execute unjam maneuver to clear gridlock
+            // If car has been motionless for too long, execute progressive unjam maneuvers to clear gridlock
             if (Mathf.Abs(currentSpeed) < 0.25f && !isReversing)
             {
                 stuckTimer += Time.deltaTime;
-                if (stuckTimer > 3.0f && stuckTimer < 6.5f)
+                if (stuckTimer >= 1.5f && stuckTimer < 3.0f)
                 {
                     ExecuteTrafficClearanceManeuver();
                 }
-                else if (stuckTimer >= 6.5f)
+                else if (stuckTimer >= 3.0f && stuckTimer < 4.8f)
+                {
+                    // Proactive bypass: advance waypoint, shift laterally, and accelerate forward
+                    AdvanceWaypoint();
+                    targetEvasionOffset = (Random.value > 0.5f ? maxLateralBypassOffset : -maxLateralBypassOffset);
+                    currentSpeed = cruisingSpeed * 0.55f;
+                    isBraking = false;
+                    currentState = AICarState.Cruising;
+                }
+                else if (stuckTimer >= 4.8f)
                 {
                     // Full recovery: snap back cleanly to nearest road waypoint in lane
                     RecoverToNearestLaneWaypoint();
