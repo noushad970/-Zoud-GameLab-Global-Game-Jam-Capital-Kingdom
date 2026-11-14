@@ -20,7 +20,8 @@ public class UITransitionController : MonoBehaviour
             Debug.LogError("Please assign both UI Images!");
             return;
         }
-
+        downImage.gameObject.SetActive(true);
+        upImage.gameObject.SetActive(true);
         // Set initial positions
         SetY(downImage, startY);
         SetY(upImage, endY);
