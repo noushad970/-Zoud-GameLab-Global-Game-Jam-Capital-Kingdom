@@ -282,7 +282,9 @@ namespace EmpireBuilder.Traffic
             if (l == null) l = obj.AddComponent<Light>();
 
             l.type = LightType.Spot;
+#if UNITY_EDITOR
             l.lightmapBakeType = LightmapBakeType.Realtime;
+#endif
             l.renderMode = LightRenderMode.Auto;
             l.color = col;
             l.intensity = intensity;
@@ -306,7 +308,9 @@ namespace EmpireBuilder.Traffic
             if (l == null) l = obj.AddComponent<Light>();
 
             l.type = LightType.Point;
+#if UNITY_EDITOR
             l.lightmapBakeType = LightmapBakeType.Realtime;
+#endif
             l.renderMode = LightRenderMode.Auto;
             l.color = col;
             l.intensity = intensity;
