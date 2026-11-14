@@ -99,7 +99,7 @@ namespace EmpireBuilder.Core
                 if (IsMobileDevice)
                 {
                     cam.farClipPlane = mobileFarClipPlane;
-                    cam.allowHDR = false;
+                    cam.allowHDR = true; // Preserves emissive bloom and night lighting
                     cam.allowMSAA = false;
                 }
             }

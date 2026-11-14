@@ -198,6 +198,8 @@ namespace EmpireBuilder.World
                 {
                     // Ensure spotlight properties
                     lightComp.type = LightType.Spot;
+                    lightComp.lightmapBakeType = LightmapBakeType.Realtime;
+                    lightComp.renderMode = LightRenderMode.Auto;
                     lightComp.color = streetlightColor;
                     lightComp.intensity = streetlightIntensity;
                     lightComp.range = streetlightRange;
@@ -214,6 +216,8 @@ namespace EmpireBuilder.World
                 if (lightComp != null)
                 {
                     lightComp.type = LightType.Point;
+                    lightComp.lightmapBakeType = LightmapBakeType.Realtime;
+                    lightComp.renderMode = LightRenderMode.Auto;
                     lightComp.color = streetlightColor;
                     lightComp.intensity = streetlightIntensity * 0.75f;
                     lightComp.range = streetlightRange * 0.85f;
@@ -225,9 +229,7 @@ namespace EmpireBuilder.World
                 bulbLocalPos = new Vector3(0f, 0.35f, 0f);
                 bulbScale = 0.22f;
 
-                // If no light exists, add a downward spot light (skip on mobile devices to preserve high 60 FPS)
-                bool isMobile = Application.isMobilePlatform || SystemInfo.deviceType == DeviceType.Handheld;
-                if (lightComp == null && !isMobile)
+                if (lightComp == null)
                 {
                     GameObject lightGo = new GameObject("StreetLamp_Light");
                     lightGo.transform.SetParent(tr, false);
@@ -236,12 +238,17 @@ namespace EmpireBuilder.World
 
                     lightComp = lightGo.AddComponent<Light>();
                     lightComp.type = LightType.Spot;
+                    lightComp.lightmapBakeType = LightmapBakeType.Realtime;
                     lightComp.color = streetlightColor;
                     lightComp.intensity = streetlightIntensity * 0.8f;
                     lightComp.range = streetlightRange * 0.75f;
                     lightComp.spotAngle = spotAngle;
                     lightComp.innerSpotAngle = spotAngle * 0.65f;
                     lightComp.shadows = LightShadows.None;
+                }
+                else
+                {
+                    lightComp.lightmapBakeType = LightmapBakeType.Realtime;
                 }
             }
 
@@ -328,7 +335,8 @@ namespace EmpireBuilder.World
             sharedBulbMaterial.name = "StreetLight_Glowing_Bulb_Mat";
             sharedBulbMaterial.EnableKeyword("_EMISSION");
             sharedBulbMaterial.SetColor("_BaseColor", new Color(1.0f, 0.98f, 0.88f, 1.0f));
-            sharedBulbMaterial.SetColor("_EmissionColor", new Color(3.8f, 3.5f, 2.4f, 1.0f));
+            sharedBulbMaterial.SetColor("_EmissionColor", new Color(4.0f, 3.6f, 2.4f, 1.0f));
+            sharedBulbMaterial.globalIlluminationFlags = MaterialGlobalIlluminationFlags.RealtimeEmissive;
             return sharedBulbMaterial;
         }
     }

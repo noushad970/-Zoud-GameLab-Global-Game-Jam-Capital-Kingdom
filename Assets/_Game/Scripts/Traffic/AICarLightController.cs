@@ -222,57 +222,49 @@ namespace EmpireBuilder.Traffic
 
             // 1. Setup Headlights
             Transform hlTr = transform.Find("Car_Headlight_L");
-            if (hlTr == null)
+            if (hlTr == null || hlTr.GetComponent<Light>() == null)
             {
                 headlightLeft = CreateSpotlight("Car_Headlight_L", new Vector3(-halfWidth, heightY, frontZ + 0.05f), Quaternion.Euler(8f, -1.5f, 0f), headlightColor, headlightIntensity, headlightRange, headlightSpotAngle, headlightInnerAngle);
-                lensHeadlightL = CreateGlowLens("Lens_HL_L", headlightLeft.transform, Vector3.zero, 0.18f, headMat);
             }
             else
             {
                 headlightLeft = hlTr.GetComponent<Light>();
-                var lens = hlTr.Find("Lens_HL_L");
-                if (lens != null) lensHeadlightL = lens.gameObject;
             }
+            lensHeadlightL = CreateGlowLens("Lens_HL_L", headlightLeft != null ? headlightLeft.transform : transform, Vector3.zero, 0.18f, headMat);
 
             Transform hrTr = transform.Find("Car_Headlight_R");
-            if (hrTr == null)
+            if (hrTr == null || hrTr.GetComponent<Light>() == null)
             {
                 headlightRight = CreateSpotlight("Car_Headlight_R", new Vector3(halfWidth, heightY, frontZ + 0.05f), Quaternion.Euler(8f, 1.5f, 0f), headlightColor, headlightIntensity, headlightRange, headlightSpotAngle, headlightInnerAngle);
-                lensHeadlightR = CreateGlowLens("Lens_HL_R", headlightRight.transform, Vector3.zero, 0.18f, headMat);
             }
             else
             {
                 headlightRight = hrTr.GetComponent<Light>();
-                var lens = hrTr.Find("Lens_HL_R");
-                if (lens != null) lensHeadlightR = lens.gameObject;
             }
+            lensHeadlightR = CreateGlowLens("Lens_HL_R", headlightRight != null ? headlightRight.transform : transform, Vector3.zero, 0.18f, headMat);
 
             // 2. Setup Taillights
             Transform tlTr = transform.Find("Car_Taillight_L");
-            if (tlTr == null)
+            if (tlTr == null || tlTr.GetComponent<Light>() == null)
             {
                 taillightLeft = CreatePointlight("Car_Taillight_L", new Vector3(-halfWidth, heightY, rearZ - 0.05f), taillightColor, taillightNightIntensity, taillightRange);
-                lensTaillightL = CreateGlowLens("Lens_TL_L", taillightLeft.transform, Vector3.zero, 0.16f, tailMat);
             }
             else
             {
                 taillightLeft = tlTr.GetComponent<Light>();
-                var lens = tlTr.Find("Lens_TL_L");
-                if (lens != null) lensTaillightL = lens.gameObject;
             }
+            lensTaillightL = CreateGlowLens("Lens_TL_L", taillightLeft != null ? taillightLeft.transform : transform, Vector3.zero, 0.16f, tailMat);
 
             Transform trTr = transform.Find("Car_Taillight_R");
-            if (trTr == null)
+            if (trTr == null || trTr.GetComponent<Light>() == null)
             {
                 taillightRight = CreatePointlight("Car_Taillight_R", new Vector3(halfWidth, heightY, rearZ - 0.05f), taillightColor, taillightNightIntensity, taillightRange);
-                lensTaillightR = CreateGlowLens("Lens_TL_R", taillightRight.transform, Vector3.zero, 0.16f, tailMat);
             }
             else
             {
                 taillightRight = trTr.GetComponent<Light>();
-                var lens = trTr.Find("Lens_TL_R");
-                if (lens != null) lensTaillightR = lens.gameObject;
             }
+            lensTaillightR = CreateGlowLens("Lens_TL_R", taillightRight != null ? taillightRight.transform : transform, Vector3.zero, 0.16f, tailMat);
 
             lightsInitialized = true;
             ApplyLightState();
@@ -280,21 +272,18 @@ namespace EmpireBuilder.Traffic
 
         private Light CreateSpotlight(string name, Vector3 localPos, Quaternion localRot, Color col, float intensity, float range, float spotAngle, float innerAngle)
         {
-            GameObject obj = new GameObject(name);
+            Transform existing = transform.Find(name);
+            GameObject obj = existing != null ? existing.gameObject : new GameObject(name);
             obj.transform.SetParent(transform, false);
             obj.transform.localPosition = localPos;
             obj.transform.localRotation = localRot;
 
-            // On mobile / handheld devices or Mobile quality tier, skip dynamic Unity Light component
-            // to avoid rendering 60-80 real-time dynamic lights. The glowing lens spheres provide the 3D night glow.
-            bool isMobile = Application.isMobilePlatform || SystemInfo.deviceType == DeviceType.Handheld || QualitySettings.GetQualityLevel() == 0;
-            if (isMobile)
-            {
-                return null;
-            }
+            Light l = obj.GetComponent<Light>();
+            if (l == null) l = obj.AddComponent<Light>();
 
-            Light l = obj.AddComponent<Light>();
             l.type = LightType.Spot;
+            l.lightmapBakeType = LightmapBakeType.Realtime;
+            l.renderMode = LightRenderMode.Auto;
             l.color = col;
             l.intensity = intensity;
             l.range = range;
@@ -307,19 +296,18 @@ namespace EmpireBuilder.Traffic
 
         private Light CreatePointlight(string name, Vector3 localPos, Color col, float intensity, float range)
         {
-            GameObject obj = new GameObject(name);
+            Transform existing = transform.Find(name);
+            GameObject obj = existing != null ? existing.gameObject : new GameObject(name);
             obj.transform.SetParent(transform, false);
             obj.transform.localPosition = localPos;
             obj.transform.localRotation = Quaternion.identity;
 
-            bool isMobile = Application.isMobilePlatform || SystemInfo.deviceType == DeviceType.Handheld || QualitySettings.GetQualityLevel() == 0;
-            if (isMobile)
-            {
-                return null;
-            }
+            Light l = obj.GetComponent<Light>();
+            if (l == null) l = obj.AddComponent<Light>();
 
-            Light l = obj.AddComponent<Light>();
             l.type = LightType.Point;
+            l.lightmapBakeType = LightmapBakeType.Realtime;
+            l.renderMode = LightRenderMode.Auto;
             l.color = col;
             l.intensity = intensity;
             l.range = range;
@@ -330,14 +318,20 @@ namespace EmpireBuilder.Traffic
 
         private GameObject CreateGlowLens(string name, Transform parent, Vector3 localPos, float scale, Material mat)
         {
-            GameObject lens = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            if (parent == null) parent = transform;
+            Transform existing = parent.Find(name);
+            GameObject lens = existing != null ? existing.gameObject : GameObject.CreatePrimitive(PrimitiveType.Sphere);
             lens.name = name;
             lens.transform.SetParent(parent, false);
             lens.transform.localPosition = localPos;
             lens.transform.localScale = Vector3.one * scale;
 
             Collider c = lens.GetComponent<Collider>();
-            if (c != null) DestroyImmediate(c);
+            if (c != null)
+            {
+                if (Application.isPlaying) Destroy(c);
+                else DestroyImmediate(c);
+            }
 
             MeshRenderer mr = lens.GetComponent<MeshRenderer>();
             if (mr != null)
@@ -360,7 +354,8 @@ namespace EmpireBuilder.Traffic
             cachedHeadlightMat.name = "Dynamic_Car_Headlight_Glow";
             cachedHeadlightMat.EnableKeyword("_EMISSION");
             cachedHeadlightMat.SetColor("_BaseColor", new Color(1.0f, 0.98f, 0.92f, 1f));
-            cachedHeadlightMat.SetColor("_EmissionColor", new Color(3.2f, 3.1f, 2.7f, 1f));
+            cachedHeadlightMat.SetColor("_EmissionColor", new Color(3.5f, 3.2f, 2.7f, 1f));
+            cachedHeadlightMat.globalIlluminationFlags = MaterialGlobalIlluminationFlags.RealtimeEmissive;
             return cachedHeadlightMat;
         }
 
@@ -373,7 +368,8 @@ namespace EmpireBuilder.Traffic
             cachedTaillightMat.name = "Dynamic_Car_Taillight_Glow";
             cachedTaillightMat.EnableKeyword("_EMISSION");
             cachedTaillightMat.SetColor("_BaseColor", new Color(1.0f, 0.15f, 0.05f, 1f));
-            cachedTaillightMat.SetColor("_EmissionColor", new Color(2.8f, 0.20f, 0.08f, 1f));
+            cachedTaillightMat.SetColor("_EmissionColor", new Color(3.2f, 0.25f, 0.10f, 1f));
+            cachedTaillightMat.globalIlluminationFlags = MaterialGlobalIlluminationFlags.RealtimeEmissive;
             return cachedTaillightMat;
         }
     }
