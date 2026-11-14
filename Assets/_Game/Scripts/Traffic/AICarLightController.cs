@@ -6,45 +6,47 @@ namespace EmpireBuilder.Traffic
 {
     /// <summary>
     /// Autonomous vehicle lighting system.
-    /// Manages dual forward headlights (shining on the road), dual rear taillights,
-    /// glowing emissive lamp lenses, and dynamic brake light flares.
-    /// Automatically turns on at night and syncs with the Day/Night cycle.
+    /// - Controls ultra-efficient volumetric fake light cones ("V Cone LiT") without heavy dynamic Unity spotlights.
+    /// - Auto-initialization of real-time Spotlight headlights is removed to guarantee 60 FPS lag-free mobile gameplay.
+    /// - Precision rear bumper alignment for taillights and dynamic brake lights (measured directly from vehicle body mesh).
+    /// - Automatically syncs with the Day/Night cycle and vehicle braking status.
     /// </summary>
     [DisallowMultipleComponent]
     public class AICarLightController : MonoBehaviour
     {
-        [Header("Headlight Configuration")]
-        [SerializeField] private Color headlightColor = new Color(1.0f, 0.98f, 0.92f);
-        [SerializeField] private float headlightIntensity = 28.0f;
-        [SerializeField] private float headlightRange = 19.0f;
-        [SerializeField] private float headlightSpotAngle = 58.0f;
-        [SerializeField] private float headlightInnerAngle = 38.0f;
+        [Header("Volumetric Headlights (V Cone LiT)")]
+        [Tooltip("References to V Cone LiT volumetric light objects attached to this car.")]
+        [SerializeField] private List<GameObject> volumetricHeadlightCones = new List<GameObject>();
 
-        [Header("Taillight Configuration")]
+        [Tooltip("If true, disables any real-time Light component inside V Cone LiT so only the lightweight volumetric mesh renders on mobile.")]
+        [SerializeField] private bool disableInternalConeSpotlights = true;
+
+        [Header("Taillight & Brake Light Appearance")]
         [SerializeField] private Color taillightColor = new Color(1.0f, 0.12f, 0.05f);
-        [SerializeField] private float taillightNightIntensity = 3.5f;
-        [SerializeField] private float taillightBrakeIntensity = 14.0f;
-        [SerializeField] private float taillightRange = 4.8f;
+        [SerializeField] private float taillightNightIntensity = 1.0f;
+        [SerializeField] private float taillightBrakeIntensity = 4.0f;
+        [SerializeField] private float taillightRange = 2.2f;
+
+        [Tooltip("Enable dynamic point lights at rear. Kept false by default on mobile for optimal FPS.")]
+        [SerializeField] private bool useDynamicPointlights = false;
+
+        [Header("Taillight Alignment Overrides (0 = Auto-detect from mesh)")]
+        [SerializeField] private float rearZOverride = 0f;
+        [SerializeField] private float taillightHeightOverride = 0f;
+        [SerializeField] private float taillightWidthOverride = 0f;
 
         [Header("State (Read-Only)")]
         [SerializeField] private bool isNight = false;
         [SerializeField] private bool isBraking = false;
         [SerializeField] private bool lightsInitialized = false;
 
-        // References to light components
-        private Light headlightLeft;
-        private Light headlightRight;
+        // Taillights & Brake Lights
         private Light taillightLeft;
         private Light taillightRight;
-
-        // Glowing visual bulb/lens meshes
-        private GameObject lensHeadlightL;
-        private GameObject lensHeadlightR;
         private GameObject lensTaillightL;
         private GameObject lensTaillightR;
 
-        // Shared materials
-        private static Material cachedHeadlightMat;
+        // Shared material
         private static Material cachedTaillightMat;
 
         private AICarController aiCar;
@@ -129,13 +131,16 @@ namespace EmpireBuilder.Traffic
 
         private void ApplyLightState()
         {
-            // Headlights are active during night
-            bool enableHeadlights = isNight;
-            if (headlightLeft != null) headlightLeft.enabled = enableHeadlights;
-            if (headlightRight != null) headlightRight.enabled = enableHeadlights;
-            if (lensHeadlightL != null) lensHeadlightL.SetActive(enableHeadlights);
-            if (lensHeadlightR != null) lensHeadlightR.SetActive(enableHeadlights);
+            // 1. Volumetric Headlights ("V Cone LiT") are active strictly during night
+            for (int i = 0; i < volumetricHeadlightCones.Count; i++)
+            {
+                if (volumetricHeadlightCones[i] != null)
+                {
+                    volumetricHeadlightCones[i].SetActive(isNight);
+                }
+            }
 
+            // 2. Taillights & brake lights
             ApplyBrakeLights();
         }
 
@@ -143,181 +148,256 @@ namespace EmpireBuilder.Traffic
         {
             // Taillights are active if it's night OR if car is braking
             bool enableTaillights = isNight || isBraking;
-            float targetIntensity = isBraking ? taillightBrakeIntensity : (isNight ? taillightNightIntensity : 0f);
-
-            if (taillightLeft != null)
-            {
-                taillightLeft.enabled = enableTaillights;
-                taillightLeft.intensity = targetIntensity;
-            }
-
-            if (taillightRight != null)
-            {
-                taillightRight.enabled = enableTaillights;
-                taillightRight.intensity = targetIntensity;
-            }
+            float targetScale = isBraking ? 0.22f : 0.15f;
 
             if (lensTaillightL != null)
             {
                 lensTaillightL.SetActive(enableTaillights);
-                lensTaillightL.transform.localScale = Vector3.one * (isBraking ? 0.22f : 0.16f);
+                lensTaillightL.transform.localScale = Vector3.one * targetScale;
             }
 
             if (lensTaillightR != null)
             {
                 lensTaillightR.SetActive(enableTaillights);
-                lensTaillightR.transform.localScale = Vector3.one * (isBraking ? 0.22f : 0.16f);
+                lensTaillightR.transform.localScale = Vector3.one * targetScale;
+            }
+
+            if (useDynamicPointlights)
+            {
+                float targetIntensity = isBraking ? taillightBrakeIntensity : (isNight ? taillightNightIntensity : 0f);
+
+                if (taillightLeft != null)
+                {
+                    taillightLeft.enabled = enableTaillights;
+                    taillightLeft.intensity = targetIntensity;
+                }
+
+                if (taillightRight != null)
+                {
+                    taillightRight.enabled = enableTaillights;
+                    taillightRight.intensity = targetIntensity;
+                }
+            }
+            else
+            {
+                if (taillightLeft != null && taillightLeft.enabled) taillightLeft.enabled = false;
+                if (taillightRight != null && taillightRight.enabled) taillightRight.enabled = false;
             }
         }
 
         /// <summary>
-        /// Ensures all headlights, taillights, and emissive lens meshes are created and positioned.
+        /// Discovers volumetric "V Cone LiT" headlights, eliminates any legacy real-time spotlights,
+        /// and positions brake lights flush on the vehicle rear bumper.
         /// </summary>
         public void EnsureLightsSetup()
         {
-            if (lightsInitialized && headlightLeft != null && headlightRight != null) return;
-
-            // Determine car bounding box dimensions
-            BoxCollider col = GetComponent<BoxCollider>();
-            float frontZ = 1.8f;
-            float rearZ = -1.8f;
-            float halfWidth = 0.65f;
-            float heightY = 0.58f;
-
-            if (col != null)
-            {
-                frontZ = col.center.z + col.size.z * 0.5f;
-                rearZ = col.center.z - col.size.z * 0.5f;
-                halfWidth = Mathf.Clamp(col.size.x * 0.38f, 0.45f, 0.85f);
-                heightY = Mathf.Clamp(col.center.y * 0.82f, 0.45f, 0.80f);
-            }
-            else
-            {
-                // Fallback estimate from renderers
-                Renderer[] rends = GetComponentsInChildren<Renderer>();
-                if (rends.Length > 0)
-                {
-                    Bounds b = rends[0].bounds;
-                    for (int i = 1; i < rends.Length; i++) b.Encapsulate(rends[i].bounds);
-                    frontZ = b.extents.z * 0.95f;
-                    rearZ = -b.extents.z * 0.95f;
-                    halfWidth = Mathf.Clamp(b.extents.x * 0.75f, 0.45f, 0.85f);
-                    heightY = Mathf.Clamp(b.extents.y * 0.70f, 0.45f, 0.80f);
-                }
-            }
-
-            // Cleanup or disable any misplaced existing spot lights that were inside the car body
-            Light[] existingLights = GetComponentsInChildren<Light>(true);
-            foreach (var el in existingLights)
-            {
-                if (el.gameObject.name.Contains("Spot Light"))
-                {
-                    // Repurpose or disable legacy misplaced lights
-                    el.enabled = false;
-                }
-            }
-
-            Material headMat = GetOrCreateHeadlightMaterial();
-            Material tailMat = GetOrCreateTaillightMaterial();
-
-            // 1. Setup Headlights
-            Transform hlTr = transform.Find("Car_Headlight_L");
-            if (hlTr == null || hlTr.GetComponent<Light>() == null)
-            {
-                headlightLeft = CreateSpotlight("Car_Headlight_L", new Vector3(-halfWidth, heightY, frontZ + 0.05f), Quaternion.Euler(8f, -1.5f, 0f), headlightColor, headlightIntensity, headlightRange, headlightSpotAngle, headlightInnerAngle);
-            }
-            else
-            {
-                headlightLeft = hlTr.GetComponent<Light>();
-            }
-            lensHeadlightL = CreateGlowLens("Lens_HL_L", headlightLeft != null ? headlightLeft.transform : transform, Vector3.zero, 0.18f, headMat);
-
-            Transform hrTr = transform.Find("Car_Headlight_R");
-            if (hrTr == null || hrTr.GetComponent<Light>() == null)
-            {
-                headlightRight = CreateSpotlight("Car_Headlight_R", new Vector3(halfWidth, heightY, frontZ + 0.05f), Quaternion.Euler(8f, 1.5f, 0f), headlightColor, headlightIntensity, headlightRange, headlightSpotAngle, headlightInnerAngle);
-            }
-            else
-            {
-                headlightRight = hrTr.GetComponent<Light>();
-            }
-            lensHeadlightR = CreateGlowLens("Lens_HL_R", headlightRight != null ? headlightRight.transform : transform, Vector3.zero, 0.18f, headMat);
-
-            // 2. Setup Taillights
-            Transform tlTr = transform.Find("Car_Taillight_L");
-            if (tlTr == null || tlTr.GetComponent<Light>() == null)
-            {
-                taillightLeft = CreatePointlight("Car_Taillight_L", new Vector3(-halfWidth, heightY, rearZ - 0.05f), taillightColor, taillightNightIntensity, taillightRange);
-            }
-            else
-            {
-                taillightLeft = tlTr.GetComponent<Light>();
-            }
-            lensTaillightL = CreateGlowLens("Lens_TL_L", taillightLeft != null ? taillightLeft.transform : transform, Vector3.zero, 0.16f, tailMat);
-
-            Transform trTr = transform.Find("Car_Taillight_R");
-            if (trTr == null || trTr.GetComponent<Light>() == null)
-            {
-                taillightRight = CreatePointlight("Car_Taillight_R", new Vector3(halfWidth, heightY, rearZ - 0.05f), taillightColor, taillightNightIntensity, taillightRange);
-            }
-            else
-            {
-                taillightRight = trTr.GetComponent<Light>();
-            }
-            lensTaillightR = CreateGlowLens("Lens_TL_R", taillightRight != null ? taillightRight.transform : transform, Vector3.zero, 0.16f, tailMat);
+            CleanUpLegacyHeadlights();
+            DiscoverVolumetricCones();
+            SetupBrakeAndTaillights();
 
             lightsInitialized = true;
             ApplyLightState();
         }
 
-        private Light CreateSpotlight(string name, Vector3 localPos, Quaternion localRot, Color col, float intensity, float range, float spotAngle, float innerAngle)
+        /// <summary>
+        /// Removes or disables any legacy auto-generated real-time Spotlight headlights.
+        /// Prevents dynamic lighting calculation overhead on mobile and WebGL.
+        /// </summary>
+        private void CleanUpLegacyHeadlights()
         {
-            Transform existing = transform.Find(name);
-            GameObject obj = existing != null ? existing.gameObject : new GameObject(name);
-            obj.transform.SetParent(transform, false);
-            obj.transform.localPosition = localPos;
-            obj.transform.localRotation = localRot;
+            string[] legacyNames = new string[]
+            {
+                "Car_Headlight_L",
+                "Car_Headlight_R",
+                "Lens_HL_L",
+                "Lens_HL_R"
+            };
 
-            Light l = obj.GetComponent<Light>();
-            if (l == null) l = obj.AddComponent<Light>();
-
-            l.type = LightType.Spot;
-#if UNITY_EDITOR
-            l.lightmapBakeType = LightmapBakeType.Realtime;
-#endif
-            l.renderMode = LightRenderMode.Auto;
-            l.color = col;
-            l.intensity = intensity;
-            l.range = range;
-            l.spotAngle = spotAngle;
-            l.innerSpotAngle = innerAngle;
-            l.shadows = LightShadows.None;
-            l.enabled = false;
-            return l;
+            for (int i = 0; i < legacyNames.Length; i++)
+            {
+                Transform oldObj = transform.Find(legacyNames[i]);
+                if (oldObj != null)
+                {
+                    if (Application.isPlaying) Destroy(oldObj.gameObject);
+                    else DestroyImmediate(oldObj.gameObject);
+                }
+            }
         }
 
-        private Light CreatePointlight(string name, Vector3 localPos, Color col, float intensity, float range)
+        /// <summary>
+        /// Finds all "V Cone LiT" volumetric cone meshes on the vehicle.
+        /// Disables internal per-pixel dynamic lights inside the cone for 60 FPS mobile performance.
+        /// </summary>
+        private void DiscoverVolumetricCones()
         {
-            Transform existing = transform.Find(name);
-            GameObject obj = existing != null ? existing.gameObject : new GameObject(name);
-            obj.transform.SetParent(transform, false);
-            obj.transform.localPosition = localPos;
-            obj.transform.localRotation = Quaternion.identity;
+            volumetricHeadlightCones.Clear();
 
-            Light l = obj.GetComponent<Light>();
-            if (l == null) l = obj.AddComponent<Light>();
+            Transform[] allChildren = GetComponentsInChildren<Transform>(true);
+            foreach (Transform child in allChildren)
+            {
+                if (child == transform) continue;
+                string lower = child.name.ToLower();
 
-            l.type = LightType.Point;
-#if UNITY_EDITOR
-            l.lightmapBakeType = LightmapBakeType.Realtime;
-#endif
-            l.renderMode = LightRenderMode.Auto;
-            l.color = col;
-            l.intensity = intensity;
-            l.range = range;
-            l.shadows = LightShadows.None;
-            l.enabled = false;
-            return l;
+                if (lower.Contains("v cone") || lower.Contains("cone lit") || lower.Contains("volumetric cone") || lower.Contains("light cone"))
+                {
+                    if (!volumetricHeadlightCones.Contains(child.gameObject))
+                    {
+                        volumetricHeadlightCones.Add(child.gameObject);
+
+                        if (disableInternalConeSpotlights)
+                        {
+                            Light[] internalLights = child.GetComponentsInChildren<Light>(true);
+                            for (int l = 0; l < internalLights.Length; l++)
+                            {
+                                internalLights[l].enabled = false;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Sync initial visibility
+            for (int i = 0; i < volumetricHeadlightCones.Count; i++)
+            {
+                if (volumetricHeadlightCones[i] != null)
+                {
+                    volumetricHeadlightCones[i].SetActive(isNight);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Measures the car's physical body mesh bounds to position brake lights
+        /// exactly on the rear bumper housing instead of floating in the air.
+        /// </summary>
+        private void SetupBrakeAndTaillights()
+        {
+            // Default realistic dimensions for city vehicles
+            float rearZ = -1.65f;
+            float halfWidth = 0.52f;
+            float heightY = 0.44f;
+
+            // 1. Discover rear wheels if present
+            Transform rearWheel = null;
+            Transform[] allChildren = GetComponentsInChildren<Transform>(true);
+            foreach (Transform ch in allChildren)
+            {
+                string n = ch.name.ToLower();
+                if (n.Contains("wheel") && n.Contains("rear"))
+                {
+                    rearWheel = ch;
+                    break;
+                }
+            }
+
+            // 2. Measure actual body mesh bounds in local car space (ignoring wheels, cones, lights)
+            Bounds bodyBounds = new Bounds(Vector3.zero, Vector3.zero);
+            bool hasBodyBounds = false;
+            MeshFilter[] meshFilters = GetComponentsInChildren<MeshFilter>(true);
+
+            for (int i = 0; i < meshFilters.Length; i++)
+            {
+                if (meshFilters[i].sharedMesh == null) continue;
+                string mfName = meshFilters[i].name.ToLower();
+                if (mfName.Contains("wheel") || mfName.Contains("cone") || mfName.Contains("lens") || mfName.Contains("bulb") || mfName.Contains("light")) continue;
+
+                Bounds mb = meshFilters[i].sharedMesh.bounds;
+                Transform mfTr = meshFilters[i].transform;
+
+                Vector3[] corners = new Vector3[8]
+                {
+                    transform.InverseTransformPoint(mfTr.TransformPoint(new Vector3(mb.min.x, mb.min.y, mb.min.z))),
+                    transform.InverseTransformPoint(mfTr.TransformPoint(new Vector3(mb.max.x, mb.min.y, mb.min.z))),
+                    transform.InverseTransformPoint(mfTr.TransformPoint(new Vector3(mb.min.x, mb.max.y, mb.min.z))),
+                    transform.InverseTransformPoint(mfTr.TransformPoint(new Vector3(mb.max.x, mb.max.y, mb.min.z))),
+                    transform.InverseTransformPoint(mfTr.TransformPoint(new Vector3(mb.min.x, mb.min.y, mb.max.z))),
+                    transform.InverseTransformPoint(mfTr.TransformPoint(new Vector3(mb.max.x, mb.min.y, mb.max.z))),
+                    transform.InverseTransformPoint(mfTr.TransformPoint(new Vector3(mb.min.x, mb.max.y, mb.max.z))),
+                    transform.InverseTransformPoint(mfTr.TransformPoint(new Vector3(mb.max.x, mb.max.y, mb.max.z)))
+                };
+
+                for (int c = 0; c < 8; c++)
+                {
+                    if (!hasBodyBounds)
+                    {
+                        bodyBounds = new Bounds(corners[c], Vector3.zero);
+                        hasBodyBounds = true;
+                    }
+                    else
+                    {
+                        bodyBounds.Encapsulate(corners[c]);
+                    }
+                }
+            }
+
+            if (hasBodyBounds)
+            {
+                // Align flush right on the rear surface of the car
+                rearZ = bodyBounds.min.z + 0.02f;
+                halfWidth = Mathf.Clamp(bodyBounds.extents.x * 0.68f, 0.40f, 0.72f);
+                heightY = Mathf.Clamp(bodyBounds.min.y + bodyBounds.size.y * 0.38f, 0.38f, 0.58f);
+            }
+            else if (rearWheel != null)
+            {
+                rearZ = rearWheel.localPosition.z - 0.54f;
+                halfWidth = Mathf.Abs(rearWheel.localPosition.x) * 0.65f;
+                heightY = rearWheel.localPosition.y + 0.08f;
+            }
+
+            // Apply manual overrides if set in Inspector
+            if (rearZOverride != 0f) rearZ = rearZOverride;
+            if (taillightHeightOverride != 0f) heightY = taillightHeightOverride;
+            if (taillightWidthOverride != 0f) halfWidth = taillightWidthOverride;
+
+            Material tailMat = GetOrCreateTaillightMaterial();
+
+            // Setup Left Taillight
+            Vector3 posL = new Vector3(-halfWidth, heightY, rearZ);
+            Transform tlTr = transform.Find("Car_Taillight_L");
+            if (tlTr == null)
+            {
+                GameObject goL = new GameObject("Car_Taillight_L");
+                goL.transform.SetParent(transform, false);
+                tlTr = goL.transform;
+            }
+            tlTr.localPosition = posL;
+
+            if (useDynamicPointlights)
+            {
+                taillightLeft = tlTr.GetComponent<Light>();
+                if (taillightLeft == null) taillightLeft = tlTr.gameObject.AddComponent<Light>();
+                taillightLeft.type = LightType.Point;
+                taillightLeft.color = taillightColor;
+                taillightLeft.range = taillightRange;
+                taillightLeft.shadows = LightShadows.None;
+                taillightLeft.renderMode = LightRenderMode.Auto;
+                taillightLeft.enabled = false;
+            }
+            lensTaillightL = CreateGlowLens("Lens_TL_L", tlTr, Vector3.zero, 0.16f, tailMat);
+
+            // Setup Right Taillight
+            Vector3 posR = new Vector3(halfWidth, heightY, rearZ);
+            Transform trTr = transform.Find("Car_Taillight_R");
+            if (trTr == null)
+            {
+                GameObject goR = new GameObject("Car_Taillight_R");
+                goR.transform.SetParent(transform, false);
+                trTr = goR.transform;
+            }
+            trTr.localPosition = posR;
+
+            if (useDynamicPointlights)
+            {
+                taillightRight = trTr.GetComponent<Light>();
+                if (taillightRight == null) taillightRight = trTr.gameObject.AddComponent<Light>();
+                taillightRight.type = LightType.Point;
+                taillightRight.color = taillightColor;
+                taillightRight.range = taillightRange;
+                taillightRight.shadows = LightShadows.None;
+                taillightRight.renderMode = LightRenderMode.Auto;
+                taillightRight.enabled = false;
+            }
+            lensTaillightR = CreateGlowLens("Lens_TL_R", trTr, Vector3.zero, 0.16f, tailMat);
         }
 
         private GameObject CreateGlowLens(string name, Transform parent, Vector3 localPos, float scale, Material mat)
@@ -349,20 +429,6 @@ namespace EmpireBuilder.Traffic
             return lens;
         }
 
-        public static Material GetOrCreateHeadlightMaterial()
-        {
-            if (cachedHeadlightMat != null) return cachedHeadlightMat;
-
-            Shader s = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Standard");
-            cachedHeadlightMat = new Material(s);
-            cachedHeadlightMat.name = "Dynamic_Car_Headlight_Glow";
-            cachedHeadlightMat.EnableKeyword("_EMISSION");
-            cachedHeadlightMat.SetColor("_BaseColor", new Color(1.0f, 0.98f, 0.92f, 1f));
-            cachedHeadlightMat.SetColor("_EmissionColor", new Color(3.5f, 3.2f, 2.7f, 1f));
-            cachedHeadlightMat.globalIlluminationFlags = MaterialGlobalIlluminationFlags.RealtimeEmissive;
-            return cachedHeadlightMat;
-        }
-
         public static Material GetOrCreateTaillightMaterial()
         {
             if (cachedTaillightMat != null) return cachedTaillightMat;
@@ -378,4 +444,3 @@ namespace EmpireBuilder.Traffic
         }
     }
 }
-
