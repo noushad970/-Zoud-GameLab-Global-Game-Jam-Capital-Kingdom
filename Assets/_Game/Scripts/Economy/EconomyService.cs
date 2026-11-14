@@ -9,7 +9,7 @@ namespace EmpireBuilder.Economy
     public class EconomyService : MonoBehaviour
     {
         [Header("Starting Economy")]
-        [SerializeField] private double defaultStartingCash = 10000.0; // Appendix A: $10,000
+        [SerializeField] private double defaultStartingCash = 5000.0; // $5,000 starting cash
 
         private double currentCash;
         private double currentNetWorth;

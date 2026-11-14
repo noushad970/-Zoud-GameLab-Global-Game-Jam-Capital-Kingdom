@@ -131,7 +131,7 @@ namespace EmpireBuilder.UI
         {
             if (moneyText == null) return;
 
-            double displayCash = 10000.0; // Default starting capital
+            double displayCash = 5000.0; // Default starting capital
             if (SaveService.HasSaveFile())
             {
                 var save = new SaveService().LoadGame();
@@ -142,7 +142,7 @@ namespace EmpireBuilder.UI
             }
             else
             {
-                PlayerPrefs.SetFloat("SavedPlayerCash", 20000f);
+                PlayerPrefs.SetFloat("SavedPlayerCash", 5000f);
             }
 
             moneyText.text = $"${displayCash:N0}";
@@ -186,15 +186,15 @@ namespace EmpireBuilder.UI
         {
             HideWarningDialog();
 
-            // Thoroughly wipe existing save data and start fresh with $10,000
+            // Thoroughly wipe existing save data and start fresh with $5,000
             SaveService.DeleteSave();
             WebGLSaveManager.ClearSaveData();
-            PlayerPrefs.SetFloat("SavedPlayerCash", 10000f);
+            PlayerPrefs.SetFloat("SavedPlayerCash", 5000f);
             PlayerPrefs.SetInt("CurrentDay", 1);
             PlayerPrefs.SetInt("LoadOnStart", 0);
             PlayerPrefs.Save();
 
-            Debug.Log("[MainMenuUI] Starting brand new game with 10,000 coins.");
+            Debug.Log("[MainMenuUI] Starting brand new game with 5,000 coins.");
             SceneManager.LoadScene(gamePlaySceneName);
         }
 

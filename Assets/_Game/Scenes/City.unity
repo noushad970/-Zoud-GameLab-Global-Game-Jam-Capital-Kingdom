@@ -6326,7 +6326,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a9ed03e432caa044a8889c34ea7dfe44, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EmpireBuilder.Economy.EconomyService
-  defaultStartingCash: 10000
+  defaultStartingCash: 5000
 --- !u!114 &1560802949
 MonoBehaviour:
   m_ObjectHideFlags: 0

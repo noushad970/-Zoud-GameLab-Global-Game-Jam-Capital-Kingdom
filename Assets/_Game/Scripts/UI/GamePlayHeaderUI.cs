@@ -397,7 +397,7 @@ namespace EmpireBuilder.UI
         {
             if (moneyText == null) return;
 
-            double cash = 10000.0;
+            double cash = 5000.0;
             if (GameManager.Instance != null && GameManager.Instance.Economy != null)
             {
                 cash = GameManager.Instance.Economy.Cash;

@@ -11,7 +11,7 @@ namespace EmpireBuilder.SaveLoad
     public class SaveData
     {
         public int currentDay = 1;
-        public double cash = 10000.0;
+        public double cash = 5000.0;
         public List<OwnedAsset> ownedAssets = new List<OwnedAsset>();
         public List<Transaction> transactions = new List<Transaction>();
         public string savedTimestamp;
@@ -41,7 +41,7 @@ namespace EmpireBuilder.SaveLoad
             WebGLSaveManager.ClearSaveData();
             PlayerPrefs.DeleteKey("EmpireBuilder_SaveService_Json");
             PlayerPrefs.DeleteKey("CurrentDay");
-            PlayerPrefs.SetFloat("SavedPlayerCash", 10000f);
+            PlayerPrefs.SetFloat("SavedPlayerCash", 5000f);
             PlayerPrefs.Save();
 
             try

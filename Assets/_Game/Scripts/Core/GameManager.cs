@@ -114,14 +114,14 @@ namespace EmpireBuilder.Core
 
         public void StartNewGame()
         {
-            economyService.Initialize(10000.0); // $10,000 starting cash (Appendix A)
-            PlayerPrefs.SetFloat("SavedPlayerCash", 10000f);
+            economyService.Initialize(5000.0); // $5,000 starting cash
+            PlayerPrefs.SetFloat("SavedPlayerCash", 5000f);
             PlayerPrefs.SetInt("LoadOnStart", 0);
             assetManager.LoadOwnedAssets(new List<OwnedAsset>());
             simulationService.Initialize(1);
             economyService.RecalculateNetWorth(new List<OwnedAsset>());
             PlayerPrefs.Save();
-            Debug.Log("[GameManager] New game started with $10,000 on Day 1.");
+            Debug.Log("[GameManager] New game started with $5,000 on Day 1.");
         }
 
         public bool LoadExistingGame()

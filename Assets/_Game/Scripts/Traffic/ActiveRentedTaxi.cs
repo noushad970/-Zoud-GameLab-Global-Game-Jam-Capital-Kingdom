@@ -327,7 +327,7 @@ namespace EmpireBuilder.Traffic
                 }
                 else
                 {
-                    float savedCash = PlayerPrefs.GetFloat("SavedPlayerCash", 10000f);
+                    float savedCash = PlayerPrefs.GetFloat("SavedPlayerCash", 5000f);
                     savedCash += (float)fare;
                     PlayerPrefs.SetFloat("SavedPlayerCash", savedCash);
                     PlayerPrefs.Save();

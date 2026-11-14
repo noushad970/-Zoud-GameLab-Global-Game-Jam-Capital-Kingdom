@@ -1266,7 +1266,7 @@ namespace EmpireBuilder.UI
             {
                 return GameManager.Instance.Economy.Cash;
             }
-            return PlayerPrefs.GetFloat("SavedPlayerCash", 10000f);
+            return PlayerPrefs.GetFloat("SavedPlayerCash", 5000f);
         }
 
         private Color GetCategoryColor(PropertyType type)

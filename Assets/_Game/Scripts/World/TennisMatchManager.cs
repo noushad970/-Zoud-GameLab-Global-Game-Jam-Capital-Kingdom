@@ -220,7 +220,7 @@ namespace EmpireBuilder.World
             }
             else
             {
-                float savedCash = PlayerPrefs.GetFloat("SavedPlayerCash", 10000f);
+                float savedCash = PlayerPrefs.GetFloat("SavedPlayerCash", 5000f);
                 savedCash += (float)rentOffer;
                 PlayerPrefs.SetFloat("SavedPlayerCash", savedCash);
                 PlayerPrefs.Save();

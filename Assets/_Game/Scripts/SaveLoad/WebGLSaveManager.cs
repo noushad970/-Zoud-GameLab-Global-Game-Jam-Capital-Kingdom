@@ -41,7 +41,7 @@ namespace EmpireBuilder.SaveLoad
     public class WebGLGameSaveData
     {
         public int currentDay = 1;
-        public double cash = 10000.0;
+        public double cash = 5000.0;
         public float health = 100f;
         public bool isIll = false;
         public string illnessReason = "";
@@ -149,7 +149,7 @@ namespace EmpireBuilder.SaveLoad
             PlayerPrefs.DeleteKey("SavedPlayerIsIll");
             PlayerPrefs.DeleteKey("SavedPlayerIllnessReason");
             PlayerPrefs.SetInt("LoadOnStart", 0);
-            PlayerPrefs.SetFloat("SavedPlayerCash", 10000f);
+            PlayerPrefs.SetFloat("SavedPlayerCash", 5000f);
             PlayerPrefs.Save();
 
 #if !UNITY_WEBGL
@@ -209,7 +209,7 @@ namespace EmpireBuilder.SaveLoad
                 }
                 else
                 {
-                    data.cash = PlayerPrefs.GetFloat("SavedPlayerCash", 10000f);
+                    data.cash = PlayerPrefs.GetFloat("SavedPlayerCash", 5000f);
                 }
                 PlayerPrefs.SetFloat("SavedPlayerCash", (float)data.cash);
 

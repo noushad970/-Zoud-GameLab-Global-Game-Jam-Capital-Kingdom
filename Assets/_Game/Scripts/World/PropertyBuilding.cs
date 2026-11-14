@@ -1570,7 +1570,7 @@ namespace EmpireBuilder.World
             {
                 return GameManager.Instance.Economy.Cash;
             }
-            return PlayerPrefs.GetFloat("SavedPlayerCash", 10000f);
+            return PlayerPrefs.GetFloat("SavedPlayerCash", 5000f);
         }
 
         private void DeductPlayerCashFallback(double amount)
