@@ -170,7 +170,7 @@ namespace EmpireBuilder.World
 
             registeredFixtureCount = registeredFixtures.Count;
             hasInitialized = true;
-            Debug.Log($"[CityNightLightingManager] Configured {registeredFixtureCount} streetlights with downward lighting and HDR emissive glow bulbs.");
+            Debug.Log($"[CityNightLightingManager] Configured {registeredFixtureCount} streetlights with downward lighting.");
 
             // Apply current cycle state
             SyncNightState(true);
@@ -262,45 +262,15 @@ namespace EmpireBuilder.World
 
             fixture.fixtureLight = lightComp;
 
-            // 2. Setup Glowing Bulb Lens Mesh
+            // 2. Clean up any auto-generated NightGlowBulb instances
             Transform bulbTr = tr.Find("NightGlowBulb");
-            GameObject bulbGo = null;
-
-            if (bulbTr == null)
+            if (bulbTr != null)
             {
-                bulbGo = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-                bulbGo.name = "NightGlowBulb";
-                bulbGo.transform.SetParent(tr, false);
-                bulbGo.transform.localPosition = bulbLocalPos;
-                bulbGo.transform.localScale = Vector3.one * bulbScale;
-
-                // Remove collider to eliminate physics overhead
-                Collider col = bulbGo.GetComponent<Collider>();
-                if (col != null)
-                {
-                    if (Application.isPlaying) Destroy(col);
-                    else DestroyImmediate(col);
-                }
-
-                MeshRenderer mr = bulbGo.GetComponent<MeshRenderer>();
-                if (mr != null)
-                {
-                    mr.sharedMaterial = bulbMat;
-                    mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-                    mr.receiveShadows = false;
-                }
+                if (Application.isPlaying) Destroy(bulbTr.gameObject);
+                else DestroyImmediate(bulbTr.gameObject);
             }
-            else
-            {
-                bulbGo = bulbTr.gameObject;
-                MeshRenderer mr = bulbGo.GetComponent<MeshRenderer>();
-                if (mr != null && bulbMat != null)
-                {
-                    mr.sharedMaterial = bulbMat;
-                }
-            }
+            fixture.glowingBulb = null;
 
-            fixture.glowingBulb = bulbGo;
             return fixture;
         }
 
