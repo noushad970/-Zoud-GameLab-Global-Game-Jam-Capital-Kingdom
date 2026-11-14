@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 7832842501242593187}
   - component: {fileID: 2209220479492839032}
   - component: {fileID: 4915667722692964893}
-  m_Layer: 1
+  m_Layer: 0
   m_Name: Second Light Cone
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -101,7 +101,7 @@ GameObject:
   - component: {fileID: 2876169244489714965}
   - component: {fileID: 3298960470395988846}
   - component: {fileID: 4664540274794575245}
-  m_Layer: 1
+  m_Layer: 0
   m_Name: V Cone LiT
   m_TagString: Untagged
   m_Icon: {fileID: 0}

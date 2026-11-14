@@ -18,6 +18,9 @@ namespace EmpireBuilder.Traffic
         [Tooltip("References to V Cone LiT volumetric light objects attached to this car.")]
         [SerializeField] private List<GameObject> volumetricHeadlightCones = new List<GameObject>();
 
+        [Tooltip("Keep volumetric headlights visible at all times (day and night). Crucial for WebGL/itch.io so vehicles always show their lights.")]
+        [SerializeField] private bool alwaysShowHeadlights = true;
+
         [Tooltip("If true, disables any real-time Light component inside V Cone LiT so only the lightweight volumetric mesh renders on mobile.")]
         [SerializeField] private bool disableInternalConeSpotlights = true;
 
@@ -131,12 +134,13 @@ namespace EmpireBuilder.Traffic
 
         private void ApplyLightState()
         {
-            // 1. Volumetric Headlights ("V Cone LiT") are active strictly during night
+            // 1. Volumetric Headlights ("V Cone LiT") - visible in WebGL & mobile (boosted at night)
+            bool showHeadlights = alwaysShowHeadlights || isNight;
             for (int i = 0; i < volumetricHeadlightCones.Count; i++)
             {
                 if (volumetricHeadlightCones[i] != null)
                 {
-                    volumetricHeadlightCones[i].SetActive(isNight);
+                    volumetricHeadlightCones[i].SetActive(showHeadlights);
                 }
             }
 
@@ -227,6 +231,7 @@ namespace EmpireBuilder.Traffic
         /// <summary>
         /// Finds all "V Cone LiT" volumetric cone meshes on the vehicle.
         /// Disables internal per-pixel dynamic lights inside the cone for 60 FPS mobile performance.
+        /// Guarantees that every vehicle has visible forward volumetric light cones.
         /// </summary>
         private void DiscoverVolumetricCones()
         {
@@ -240,7 +245,18 @@ namespace EmpireBuilder.Traffic
 
                 if (lower.Contains("v cone") || lower.Contains("cone lit") || lower.Contains("volumetric cone") || lower.Contains("light cone"))
                 {
-                    if (!volumetricHeadlightCones.Contains(child.gameObject))
+                    // Avoid duplicating inner child cones of an already-added cone root
+                    bool isInnerChild = false;
+                    for (int k = 0; k < volumetricHeadlightCones.Count; k++)
+                    {
+                        if (volumetricHeadlightCones[k] != null && child.IsChildOf(volumetricHeadlightCones[k].transform))
+                        {
+                            isInnerChild = true;
+                            break;
+                        }
+                    }
+
+                    if (!isInnerChild && !volumetricHeadlightCones.Contains(child.gameObject))
                     {
                         volumetricHeadlightCones.Add(child.gameObject);
 
@@ -252,18 +268,120 @@ namespace EmpireBuilder.Traffic
                                 internalLights[l].enabled = false;
                             }
                         }
+
+                        // Ensure renderers on the cone are active and visible
+                        MeshRenderer[] renderers = child.GetComponentsInChildren<MeshRenderer>(true);
+                        for (int r = 0; r < renderers.Length; r++)
+                        {
+                            renderers[r].enabled = true;
+                            renderers[r].shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                        }
                     }
                 }
             }
 
+            // Fallback: If no volumetric cone is attached to this vehicle (e.g. dynamic rented taxi or custom vehicle),
+            // auto-attach dual forward "V Cone LiT" headlights from Resources.
+            if (volumetricHeadlightCones.Count == 0)
+            {
+                AttachFallbackVolumetricCones();
+            }
+
             // Sync initial visibility
+            bool showHeadlights = alwaysShowHeadlights || isNight;
             for (int i = 0; i < volumetricHeadlightCones.Count; i++)
             {
                 if (volumetricHeadlightCones[i] != null)
                 {
-                    volumetricHeadlightCones[i].SetActive(isNight);
+                    volumetricHeadlightCones[i].SetActive(showHeadlights);
                 }
             }
+        }
+
+        /// <summary>
+        /// Automatically instantiates and aligns dual "V Cone LiT" headlight beams
+        /// on vehicles that do not already have them attached in their prefab hierarchy.
+        /// </summary>
+        private void AttachFallbackVolumetricCones()
+        {
+            GameObject prefab = Resources.Load<GameObject>("V Cone LiT");
+            if (prefab == null) return;
+
+            // Measure front bumper position from vehicle mesh bounds
+            float frontZ = 1.60f;
+            float halfWidth = 0.52f;
+            float heightY = 0.42f;
+
+            MeshFilter[] meshFilters = GetComponentsInChildren<MeshFilter>(true);
+            bool hasBodyBounds = false;
+            Bounds bodyBounds = new Bounds(Vector3.zero, Vector3.zero);
+
+            for (int i = 0; i < meshFilters.Length; i++)
+            {
+                if (meshFilters[i].sharedMesh == null) continue;
+                string mfName = meshFilters[i].name.ToLower();
+                if (mfName.Contains("wheel") || mfName.Contains("cone") || mfName.Contains("lens") || mfName.Contains("bulb") || mfName.Contains("light")) continue;
+
+                Bounds mb = meshFilters[i].sharedMesh.bounds;
+                Transform mfTr = meshFilters[i].transform;
+
+                Vector3[] corners = new Vector3[8]
+                {
+                    transform.InverseTransformPoint(mfTr.TransformPoint(new Vector3(mb.min.x, mb.min.y, mb.min.z))),
+                    transform.InverseTransformPoint(mfTr.TransformPoint(new Vector3(mb.max.x, mb.min.y, mb.min.z))),
+                    transform.InverseTransformPoint(mfTr.TransformPoint(new Vector3(mb.min.x, mb.max.y, mb.min.z))),
+                    transform.InverseTransformPoint(mfTr.TransformPoint(new Vector3(mb.max.x, mb.max.y, mb.min.z))),
+                    transform.InverseTransformPoint(mfTr.TransformPoint(new Vector3(mb.min.x, mb.min.y, mb.max.z))),
+                    transform.InverseTransformPoint(mfTr.TransformPoint(new Vector3(mb.max.x, mb.min.y, mb.max.z))),
+                    transform.InverseTransformPoint(mfTr.TransformPoint(new Vector3(mb.min.x, mb.max.y, mb.max.z))),
+                    transform.InverseTransformPoint(mfTr.TransformPoint(new Vector3(mb.max.x, mb.max.y, mb.max.z)))
+                };
+
+                for (int c = 0; c < 8; c++)
+                {
+                    if (!hasBodyBounds)
+                    {
+                        bodyBounds = new Bounds(corners[c], Vector3.zero);
+                        hasBodyBounds = true;
+                    }
+                    else
+                    {
+                        bodyBounds.Encapsulate(corners[c]);
+                    }
+                }
+            }
+
+            if (hasBodyBounds)
+            {
+                frontZ = bodyBounds.max.z + 0.05f;
+                halfWidth = Mathf.Clamp(bodyBounds.extents.x * 0.65f, 0.40f, 0.72f);
+                heightY = Mathf.Clamp(bodyBounds.min.y + bodyBounds.size.y * 0.38f, 0.35f, 0.58f);
+            }
+
+            // Left headlight cone
+            GameObject leftCone = Instantiate(prefab, transform);
+            leftCone.name = "V Cone LiT_L";
+            leftCone.transform.localPosition = new Vector3(-halfWidth, heightY, frontZ);
+            leftCone.transform.localRotation = Quaternion.Euler(-90f, 0f, 0f);
+            leftCone.transform.localScale = new Vector3(1f, 3.5f, 1f);
+
+            // Right headlight cone
+            GameObject rightCone = Instantiate(prefab, transform);
+            rightCone.name = "V Cone LiT_R";
+            rightCone.transform.localPosition = new Vector3(halfWidth, heightY, frontZ);
+            rightCone.transform.localRotation = Quaternion.Euler(-90f, 0f, 0f);
+            rightCone.transform.localScale = new Vector3(1f, 3.5f, 1f);
+
+            if (disableInternalConeSpotlights)
+            {
+                Light[] lLights = leftCone.GetComponentsInChildren<Light>(true);
+                for (int l = 0; l < lLights.Length; l++) lLights[l].enabled = false;
+                Light[] rLights = rightCone.GetComponentsInChildren<Light>(true);
+                for (int l = 0; l < rLights.Length; l++) rLights[l].enabled = false;
+            }
+
+            volumetricHeadlightCones.Add(leftCone);
+            volumetricHeadlightCones.Add(rightCone);
         }
 
         /// <summary>
