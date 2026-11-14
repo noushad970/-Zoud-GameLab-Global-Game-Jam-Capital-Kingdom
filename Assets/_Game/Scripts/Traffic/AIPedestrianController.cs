@@ -48,6 +48,8 @@ namespace EmpireBuilder.Traffic
         [SerializeField] private float obstacleDetectionDistance = 2.2f;
         [SerializeField] private float personalSpaceRadius = 0.45f;
         [SerializeField] private LayerMask obstacleLayers = ~0;
+        private float steeringRaycastTimer = 0f;
+        private Vector3 cachedSteeringResult = Vector3.forward;
         [SerializeField] private float roadAvoidanceDistance = 2.4f;
 
         [Header("Current Runtime State")]
@@ -551,6 +553,14 @@ namespace EmpireBuilder.Traffic
 
         private Vector3 CalculateSteering(Vector3 desiredMoveDir)
         {
+            // Rate-limit physics raycasting across all pedestrians to eliminate CPU spikes on mobile
+            steeringRaycastTimer -= Time.deltaTime;
+            if (steeringRaycastTimer > 0f)
+            {
+                return Vector3.Slerp(cachedSteeringResult, desiredMoveDir, 0.35f);
+            }
+            steeringRaycastTimer = Random.Range(0.09f, 0.15f);
+
             Vector3 steering = desiredMoveDir;
 
             // 1. Raycast / Spherecast forward for obstacles (cars, pedestrians, props)
@@ -663,7 +673,8 @@ namespace EmpireBuilder.Traffic
             }
 
             steering.y = 0f;
-            return steering.normalized;
+            cachedSteeringResult = steering.normalized;
+            return cachedSteeringResult;
         }
 
         private void EnterIdleState(float duration)

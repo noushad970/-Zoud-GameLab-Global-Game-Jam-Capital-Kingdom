@@ -142,7 +142,7 @@ namespace EmpireBuilder.UI
             }
             else
             {
-                PlayerPrefs.SetFloat("SavedPlayerCash", 10000f);
+                PlayerPrefs.SetFloat("SavedPlayerCash", 20000f);
             }
 
             moneyText.text = $"${displayCash:N0}";

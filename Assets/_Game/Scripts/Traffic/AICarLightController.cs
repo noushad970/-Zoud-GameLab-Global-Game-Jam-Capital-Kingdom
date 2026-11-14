@@ -285,6 +285,14 @@ namespace EmpireBuilder.Traffic
             obj.transform.localPosition = localPos;
             obj.transform.localRotation = localRot;
 
+            // On mobile / handheld devices or Mobile quality tier, skip dynamic Unity Light component
+            // to avoid rendering 60-80 real-time dynamic lights. The glowing lens spheres provide the 3D night glow.
+            bool isMobile = Application.isMobilePlatform || SystemInfo.deviceType == DeviceType.Handheld || QualitySettings.GetQualityLevel() == 0;
+            if (isMobile)
+            {
+                return null;
+            }
+
             Light l = obj.AddComponent<Light>();
             l.type = LightType.Spot;
             l.color = col;
@@ -303,6 +311,12 @@ namespace EmpireBuilder.Traffic
             obj.transform.SetParent(transform, false);
             obj.transform.localPosition = localPos;
             obj.transform.localRotation = Quaternion.identity;
+
+            bool isMobile = Application.isMobilePlatform || SystemInfo.deviceType == DeviceType.Handheld || QualitySettings.GetQualityLevel() == 0;
+            if (isMobile)
+            {
+                return null;
+            }
 
             Light l = obj.AddComponent<Light>();
             l.type = LightType.Point;

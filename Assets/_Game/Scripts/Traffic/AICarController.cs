@@ -109,6 +109,10 @@ namespace EmpireBuilder.Traffic
         [SerializeField] private bool isBraking = false;
         [SerializeField] private AICarController carAhead = null;
 
+        // Static non-alloc buffers to prevent GC allocation stutter on mobile/WebGL
+        private static readonly RaycastHit[] staticHitsBuffer = new RaycastHit[24];
+        private static readonly Collider[] staticOverlapBuffer = new Collider[16];
+
         [Header("Player & Pedestrian Detection")]
         [Tooltip("Maximum forward distance to detect a player/pedestrian.")]
         [SerializeField] private float playerDetectionDistance = 8.5f;
@@ -357,8 +361,7 @@ namespace EmpireBuilder.Traffic
             Vector3 origin = transform.position + Vector3.up * sensorHeight + transform.forward * frontBumperOffset;
             Vector3 direction = transform.forward;
 
-            // RaycastHit[] hits = Physics.SphereCastAll(origin, sensorRadius, direction, maxDetectionDistance, detectionLayerMask, QueryTriggerInteraction.Ignore);
-            RaycastHit[] hits = Physics.SphereCastAll(origin, sensorRadius, direction, maxDetectionDistance, detectionLayerMask, QueryTriggerInteraction.Collide);
+            int hitCount = Physics.SphereCastNonAlloc(origin, sensorRadius, direction, staticHitsBuffer, maxDetectionDistance, detectionLayerMask, QueryTriggerInteraction.Collide);
 
             float closestDistance = float.MaxValue;
             AICarController detectedCar = null;
@@ -367,9 +370,9 @@ namespace EmpireBuilder.Traffic
             float closestPlayerDist = float.MaxValue;
             GameObject detectedPlayer = null;
 
-            for (int i = 0; i < hits.Length; i++)
+            for (int i = 0; i < hitCount; i++)
             {
-                var hit = hits[i];
+                var hit = staticHitsBuffer[i];
                 if (hit.collider == null) continue;
                 if (hit.transform == transform || hit.transform.IsChildOf(transform)) continue;
 
@@ -412,10 +415,10 @@ namespace EmpireBuilder.Traffic
             // Close proximity check at bumper for standing/crossing player
             if (detectedPlayer == null)
             {
-                Collider[] closeCols = Physics.OverlapSphere(origin, sensorRadius + 0.4f, detectionLayerMask, QueryTriggerInteraction.Collide);
-                for (int c = 0; c < closeCols.Length; c++)
+                int colCount = Physics.OverlapSphereNonAlloc(origin, sensorRadius + 0.4f, staticOverlapBuffer, detectionLayerMask, QueryTriggerInteraction.Collide);
+                for (int c = 0; c < colCount; c++)
                 {
-                    var col = closeCols[c];
+                    var col = staticOverlapBuffer[c];
                     if (col == null || col.transform == transform || col.transform.IsChildOf(transform)) continue;
                     if (col.CompareTag("Player") || (playerLayer != -1 && col.gameObject.layer == playerLayer) || col.GetComponentInParent<AIPedestrianController>() != null)
                     {

@@ -225,8 +225,9 @@ namespace EmpireBuilder.World
                 bulbLocalPos = new Vector3(0f, 0.35f, 0f);
                 bulbScale = 0.22f;
 
-                // If no light exists, add a downward spot light
-                if (lightComp == null)
+                // If no light exists, add a downward spot light (skip on mobile devices to preserve high 60 FPS)
+                bool isMobile = Application.isMobilePlatform || SystemInfo.deviceType == DeviceType.Handheld;
+                if (lightComp == null && !isMobile)
                 {
                     GameObject lightGo = new GameObject("StreetLamp_Light");
                     lightGo.transform.SetParent(tr, false);
