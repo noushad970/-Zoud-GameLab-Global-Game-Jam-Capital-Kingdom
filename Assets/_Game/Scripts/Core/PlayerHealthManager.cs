@@ -255,9 +255,9 @@ namespace EmpireBuilder.Core
             illnessReason = string.IsNullOrEmpty(reason) ? "Severe Starvation & Malnutrition" : reason;
             OnIllnessStateChanged?.Invoke(true, illnessReason);
 
-            string alertMsg = $"🤒 ILLNESS CONTRACTED! You have fallen ill from starvation ({illnessReason})! Visit Capital General Hospital for medical treatment ($150)!";
+            string alertMsg = $"ILLNESS CONTRACTED! You have fallen ill from starvation ({illnessReason})! Visit Capital General Hospital for medical treatment ($150)!";
             CityNoticeBarUI.Instance?.PostNotice(
-                "🤒 ILLNESS DETECTED",
+                "ILLNESS DETECTED",
                 alertMsg,
                 NoticeType.Hospital,
                 null,
@@ -280,9 +280,9 @@ namespace EmpireBuilder.Core
             illnessReason = "";
             OnIllnessStateChanged?.Invoke(false, "");
 
-            string healMsg = "❤️ FULLY CURED! Hospital medical treatment has cured your illness and restored full vitality!";
+            string healMsg = "FULLY CURED! Hospital medical treatment has cured your illness and restored full vitality!";
             CityNoticeBarUI.Instance?.PostNotice(
-                "❤️ HEALTH RESTORED",
+                "HEALTH RESTORED",
                 healMsg,
                 NoticeType.General,
                 null,
@@ -303,19 +303,19 @@ namespace EmpireBuilder.Core
 
             if (isIll)
             {
-                message = $"🤒 SICK & WEAK ({currentHealth:F0}/{maxHealth:F0})! Illness: {illnessReason}! Visit Capital General Hospital for medical treatment!";
+                message = $"SICK & WEAK ({currentHealth:F0}/{maxHealth:F0})! Illness: {illnessReason}! Visit Capital General Hospital for medical treatment!";
             }
             else if (IsExhausted)
             {
-                message = "💀 CRITICAL EXHAUSTION! Your health is empty! Visit a Restaurant or Cafe immediately to eat or drink!";
+                message = "CRITICAL EXHAUSTION! Your health is empty! Visit a Restaurant or Cafe immediately to eat or drink!";
             }
             else if (isCritical)
             {
-                message = $"🚨 CRITICAL HEALTH ({currentHealth:F0}/{maxHealth:F0})! Starving and weak! Visit a Restaurant or Cafe to eat or drink!";
+                message = $"CRITICAL HEALTH ({currentHealth:F0}/{maxHealth:F0})! Starving and weak! Visit a Restaurant or Cafe to eat or drink!";
             }
             else
             {
-                message = $"⚠️ LOW HEALTH WARNING ({currentHealth:F0}/{maxHealth:F0})! Feeling hungry & tired! Grab food or coffee at a Restaurant or Cafe!";
+                message = $"LOW HEALTH WARNING ({currentHealth:F0}/{maxHealth:F0})! Feeling hungry & tired! Grab food or coffee at a Restaurant or Cafe!";
             }
 
             OnWarningTriggered?.Invoke(message, isCritical);

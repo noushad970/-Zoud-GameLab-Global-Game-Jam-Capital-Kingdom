@@ -456,7 +456,7 @@ namespace EmpireBuilder.Editor
             if (panelSprite != null) { hintImg.sprite = panelSprite; hintImg.type = Image.Type.Sliced; }
             hintImg.color = new Color(0.1f, 0.12f, 0.18f, 0.88f);
 
-            CreateTMPText("HintText", hintObj.transform, "👆 Swipe/Drag screen to scroll city • Pinch to zoom", new Vector2(0, 0), new Vector2(560, 46), 20, fontAsset, TextAlignmentOptions.Center);
+            CreateTMPText("HintText", hintObj.transform, "Swipe/Drag screen to scroll city • Pinch to zoom", new Vector2(0, 0), new Vector2(560, 46), 20, fontAsset, TextAlignmentOptions.Center);
 
             EditorSceneManager.SaveScene(scene, GamePlayScenePath);
             AssetDatabase.SaveAssets();
@@ -799,7 +799,7 @@ namespace EmpireBuilder.Editor
             closeBtnImg.color = new Color(0.85f, 0.25f, 0.25f, 0.95f);
             if (btnDark != null) { closeBtnImg.sprite = btnDark; closeBtnImg.type = Image.Type.Sliced; }
             var closeBtn = closeBtnObj.AddComponent<Button>();
-            var closeX = CreateTMPText("X", closeBtnObj.transform, "✕", Vector2.zero, Vector2.zero, 20, fontAsset, TextAlignmentOptions.Center);
+            var closeX = CreateTMPText("X", closeBtnObj.transform, "X", Vector2.zero, Vector2.zero, 20, fontAsset, TextAlignmentOptions.Center);
             closeX.fontStyle = FontStyles.Bold;
             SetStretch(closeX.rectTransform);
 
@@ -1102,7 +1102,7 @@ namespace EmpireBuilder.Editor
             maintImg.color = new Color(0.32f, 0.12f, 0.12f, 0.95f);
             if (panelSprite != null) { maintImg.sprite = panelSprite; maintImg.type = Image.Type.Sliced; }
 
-            var maintReasonText = CreateTMPText("MaintenanceReason", maintSection.transform, "⚠️ MAINTENANCE REQUIRED: -$0", new Vector2(12, 0), new Vector2(-15, 0), 11, fontAsset, TextAlignmentOptions.Left);
+            var maintReasonText = CreateTMPText("MaintenanceReason", maintSection.transform, "MAINTENANCE REQUIRED: -$0", new Vector2(12, 0), new Vector2(-15, 0), 11, fontAsset, TextAlignmentOptions.Left);
             maintReasonText.fontStyle = FontStyles.Bold;
             maintReasonText.color = new Color(1f, 0.75f, 0.75f);
             maintReasonText.rectTransform.anchorMin = new Vector2(0, 0.5f);
@@ -1701,7 +1701,7 @@ namespace EmpireBuilder.Editor
                 var existingGuideBtn = topHeader.Find("GuideButton");
                 if (existingGuideBtn == null)
                 {
-                    var guideBtnObj = CreateCartoonButton("GuideButton", topHeader, "GUIDE 💡", new Vector2(-260, 0), new Vector2(130, 52), btnBlue, fontAsset);
+                    var guideBtnObj = CreateCartoonButton("GuideButton", topHeader, "GUIDE", new Vector2(-260, 0), new Vector2(130, 52), btnBlue, fontAsset);
                     var gBtn = guideBtnObj.GetComponent<Button>();
                     UnityEditor.Events.UnityEventTools.AddVoidPersistentListener(gBtn.onClick, () =>
                     {
@@ -1807,7 +1807,7 @@ namespace EmpireBuilder.Editor
             cardImg.color = new Color(0.11f, 0.15f, 0.22f, 0.98f);
 
             // Close X
-            var closeXBtnObj = CreateCartoonButton("CloseXButton", tutCard.transform, "✕", new Vector2(280, 210), new Vector2(36, 36), btnDark, fontAsset);
+            var closeXBtnObj = CreateCartoonButton("CloseXButton", tutCard.transform, "X", new Vector2(280, 210), new Vector2(36, 36), btnDark, fontAsset);
 
             // Icon Badge
             var badgeObj = CreateUIElement("IconBadge", tutCard.transform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), new Vector2(54, 54), new Vector2(24, -20));
@@ -1815,7 +1815,7 @@ namespace EmpireBuilder.Editor
             if (roundedSprite != null) { bImg.sprite = roundedSprite; bImg.type = Image.Type.Sliced; }
             bImg.color = new Color(0.18f, 0.52f, 0.95f);
 
-            var emojiText = CreateTMPText("Emoji", badgeObj.transform, "👑", Vector2.zero, Vector2.zero, 28, fontAsset, TextAlignmentOptions.Center);
+            var emojiText = CreateTMPText("Emoji", badgeObj.transform, "1", Vector2.zero, Vector2.zero, 24, fontAsset, TextAlignmentOptions.Center);
             SetStretch(emojiText.rectTransform);
 
             // Step counter
@@ -1843,9 +1843,9 @@ namespace EmpireBuilder.Editor
 
             // Bottom Navigation Bar
             var bottomBar = CreateUIElement("BottomBar", tutCard.transform, new Vector2(0, 0), new Vector2(1, 0), new Vector2(0.5f, 0), new Vector2(-48, 56), new Vector2(0, 16));
-            var backBtnObj = CreateCartoonButton("BackButton", bottomBar.transform, "◀ BACK", new Vector2(-190, 0), new Vector2(130, 48), btnDark, fontAsset);
+            var backBtnObj = CreateCartoonButton("BackButton", bottomBar.transform, "BACK", new Vector2(-190, 0), new Vector2(130, 48), btnDark, fontAsset);
             var skipBtnObj = CreateCartoonButton("SkipButton", bottomBar.transform, "SKIP GUIDE", new Vector2(-30, 0), new Vector2(140, 44), btnDark, fontAsset);
-            var nextBtnObj = CreateCartoonButton("NextButton", bottomBar.transform, "NEXT ➔", new Vector2(175, 0), new Vector2(170, 50), btnGreen, fontAsset);
+            var nextBtnObj = CreateCartoonButton("NextButton", bottomBar.transform, "NEXT", new Vector2(175, 0), new Vector2(170, 50), btnGreen, fontAsset);
 
             var nextTmp = nextBtnObj.GetComponentInChildren<TextMeshProUGUI>();
 

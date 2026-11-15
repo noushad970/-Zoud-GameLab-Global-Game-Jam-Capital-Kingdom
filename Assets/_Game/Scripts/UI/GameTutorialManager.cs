@@ -152,7 +152,7 @@ namespace EmpireBuilder.UI
             // Step 1: Welcome
             steps.Add(new TutorialStepData
             {
-                iconEmoji = "👑",
+                iconEmoji = "1",
                 title = LocalizationManager.Get("tut_welcome_title"),
                 description = LocalizationManager.Get("tut_welcome_desc"),
                 accentColor = new Color(0.18f, 0.52f, 0.95f)
@@ -161,7 +161,7 @@ namespace EmpireBuilder.UI
             // Step 2: Camera Controls
             steps.Add(new TutorialStepData
             {
-                iconEmoji = "🎮",
+                iconEmoji = "2",
                 title = LocalizationManager.Get("tut_camera_title"),
                 description = LocalizationManager.Get("tut_camera_desc"),
                 accentColor = new Color(0.20f, 0.75f, 0.55f)
@@ -170,7 +170,7 @@ namespace EmpireBuilder.UI
             // Step 3: Buying Buildings & Flats
             steps.Add(new TutorialStepData
             {
-                iconEmoji = "🏢",
+                iconEmoji = "3",
                 title = LocalizationManager.Get("tut_properties_title"),
                 description = LocalizationManager.Get("tut_properties_desc"),
                 accentColor = new Color(0.92f, 0.65f, 0.15f)
@@ -179,7 +179,7 @@ namespace EmpireBuilder.UI
             // Step 4: National Bank & Compound Savings
             steps.Add(new TutorialStepData
             {
-                iconEmoji = "🏛️",
+                iconEmoji = "4",
                 title = LocalizationManager.Get("tut_bank_title"),
                 description = LocalizationManager.Get("tut_bank_desc"),
                 accentColor = new Color(0.95f, 0.75f, 0.10f)
@@ -188,7 +188,7 @@ namespace EmpireBuilder.UI
             // Step 5: Residential Flats & Upgrades
             steps.Add(new TutorialStepData
             {
-                iconEmoji = "🔑",
+                iconEmoji = "5",
                 title = LocalizationManager.Get("tut_flats_title"),
                 description = LocalizationManager.Get("tut_flats_desc"),
                 accentColor = new Color(0.15f, 0.70f, 0.95f)
@@ -197,7 +197,7 @@ namespace EmpireBuilder.UI
             // Step 6: Industrial Plants & Oil Refineries
             steps.Add(new TutorialStepData
             {
-                iconEmoji = "🏭",
+                iconEmoji = "6",
                 title = LocalizationManager.Get("tut_industry_title"),
                 description = LocalizationManager.Get("tut_industry_desc"),
                 accentColor = new Color(0.92f, 0.45f, 0.15f)
@@ -206,7 +206,7 @@ namespace EmpireBuilder.UI
             // Step 7: City Taxi Fleet & Logistics
             steps.Add(new TutorialStepData
             {
-                iconEmoji = "🚕",
+                iconEmoji = "7",
                 title = LocalizationManager.Get("tut_taxi_title"),
                 description = LocalizationManager.Get("tut_taxi_desc"),
                 accentColor = new Color(0.95f, 0.75f, 0.10f)
@@ -215,7 +215,7 @@ namespace EmpireBuilder.UI
             // Step 8: Health, Hunger & Hospital Care
             steps.Add(new TutorialStepData
             {
-                iconEmoji = "🏥",
+                iconEmoji = "8",
                 title = LocalizationManager.Get("tut_health_title"),
                 description = LocalizationManager.Get("tut_health_desc"),
                 accentColor = new Color(0.92f, 0.25f, 0.35f)
@@ -224,7 +224,7 @@ namespace EmpireBuilder.UI
             // Step 9: Notice Bar & Maintenance
             steps.Add(new TutorialStepData
             {
-                iconEmoji = "🔧",
+                iconEmoji = "9",
                 title = LocalizationManager.Get("tut_alerts_title"),
                 description = LocalizationManager.Get("tut_alerts_desc"),
                 accentColor = new Color(0.85f, 0.35f, 0.15f)
@@ -233,7 +233,7 @@ namespace EmpireBuilder.UI
             // Step 10: Arena Tournaments & Matches
             steps.Add(new TutorialStepData
             {
-                iconEmoji = "🏆",
+                iconEmoji = "10",
                 title = LocalizationManager.Get("tut_stadium_title"),
                 description = LocalizationManager.Get("tut_stadium_desc"),
                 accentColor = new Color(0.18f, 0.80f, 0.44f)

@@ -73,7 +73,7 @@ namespace EmpireBuilder.UI
 
             if (endingCashText != null) endingCashText.text = $"Cash on Hand: ${report.endingCash:N0}";
             if (netWorthText != null) netWorthText.text = $"Total Net Worth: ${report.endingNetWorth:N0}";
-            if (financialLessonText != null) financialLessonText.text = $"💡 Lesson: {report.financialLesson}";
+            if (financialLessonText != null) financialLessonText.text = $"Lesson: {report.financialLesson}";
 
             if (modalRoot != null)
             {

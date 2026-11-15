@@ -114,7 +114,7 @@ namespace EmpireBuilder.World
                 // Play alert sound & show toast
                 GameSoundManager.Instance?.PlayError(target.transform.position);
                 PropertyDetailModalUI.Instance?.ShowToast(
-                    $"🔧 Maintenance Needed for '{target.PropertyName}'! Cost: -${calculatedCost:N0} ({reason}). Tap building to service."
+                    $"Maintenance Needed for '{target.PropertyName}'! Cost: -${calculatedCost:N0} ({reason}). Tap building to service."
                 );
 
                 Debug.Log($"[BuildingMaintenanceManager] Generated maintenance order for '{target.PropertyName}': -${calculatedCost:N0} ({reason})");
@@ -167,7 +167,7 @@ namespace EmpireBuilder.World
 
                         GameSoundManager.Instance?.PlayCollect(b.transform.position);
                         PropertyDetailModalUI.Instance?.ShowToast(
-                            $"🏭 Factory Production Batch Completed at '{b.PropertyName}'! Revenue: +${batchEarnings:N0} ready to collect!"
+                            $"Factory Production Batch Completed at '{b.PropertyName}'! Revenue: +${batchEarnings:N0} ready to collect!"
                         );
                     }
                 }
@@ -193,7 +193,7 @@ namespace EmpireBuilder.World
 
                         GameSoundManager.Instance?.PlayCollect(b.transform.position);
                         PropertyDetailModalUI.Instance?.ShowToast(
-                            $"⛽ Oil & Fuel Sales Revenue at '{b.PropertyName}'! Sales: +${oilEarnings:N0} ready to collect!"
+                            $"Oil & Fuel Sales Revenue at '{b.PropertyName}'! Sales: +${oilEarnings:N0} ready to collect!"
                         );
                     }
                 }

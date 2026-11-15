@@ -336,7 +336,7 @@ namespace EmpireBuilder.Traffic
                 GamePlayHeaderUI.Instance?.UpdateMoneyDisplay();
 
                 // Display celebratory toast
-                PropertyDetailModalUI.Instance?.ShowToast($"🚖 Rented Taxi #{taxiNumber} picked up passenger! Fare: +${fare:N0}");
+                PropertyDetailModalUI.Instance?.ShowToast($"Rented Taxi #{taxiNumber} picked up passenger! Fare: +${fare:N0}");
 
                 EmpireBuilder.Audio.GameSoundManager.Instance?.PlayCollect(transform.position);
             }
@@ -361,7 +361,7 @@ namespace EmpireBuilder.Traffic
                 fareCoroutine = null;
             }
 
-            PropertyDetailModalUI.Instance?.ShowToast($"🚖 Rented Taxi #{taxiNumber}'s shift finished. Returning to station...");
+            PropertyDetailModalUI.Instance?.ShowToast($"Rented Taxi #{taxiNumber}'s shift finished. Returning to station...");
             Debug.Log($"[ActiveRentedTaxi] Taxi #{taxiNumber} daily rental period finished. Returning to station.");
 
             // Guide vehicle back to station
@@ -390,7 +390,7 @@ namespace EmpireBuilder.Traffic
             isActiveOnRoad = false;
 
             PropertyDetailModalUI.Instance?.ShowToast(
-                $"🚖 Taxi #{taxiNumber} returned to station! Total Shift Fares: +${totalFaresEarned:N0} ({tripsCompleted} trips)"
+                $"Taxi #{taxiNumber} returned to station! Total Shift Fares: +${totalFaresEarned:N0} ({tripsCompleted} trips)"
             );
 
             EmpireBuilder.Audio.GameSoundManager.Instance?.PlayVehicleHorn(transform.position);

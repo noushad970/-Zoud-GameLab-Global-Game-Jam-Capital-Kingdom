@@ -372,7 +372,7 @@ namespace EmpireBuilder.Traffic
             parkProperty.AddParkEntryFee(feeAmount);
 
             CityNoticeBarUI.Instance?.ShowNotice(
-                $"🎟️ Park Visitors: +${feeAmount:N0} entry fees accumulated at Grand Central Park!",
+                $"Park Visitors: +${feeAmount:N0} entry fees accumulated at Grand Central Park!",
                 NoticeType.RentReady,
                 5.5f
             );

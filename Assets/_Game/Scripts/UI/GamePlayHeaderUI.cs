@@ -188,12 +188,12 @@ namespace EmpireBuilder.UI
 
             if (languageButtonText != null)
             {
-                languageButtonText.text = LocalizationManager.CurrentLanguage == GameLanguage.Arabic ? "🌐 English" : "🌐 عربي";
+                languageButtonText.text = LocalizationManager.CurrentLanguage == GameLanguage.Arabic ? "English" : "عربي";
             }
             else if (languageButton != null)
             {
                 var txt = languageButton.GetComponentInChildren<TextMeshProUGUI>();
-                if (txt != null) txt.text = LocalizationManager.CurrentLanguage == GameLanguage.Arabic ? "🌐 English" : "🌐 عربي";
+                if (txt != null) txt.text = LocalizationManager.CurrentLanguage == GameLanguage.Arabic ? "English" : "عربي";
             }
         }
 
@@ -223,7 +223,7 @@ namespace EmpireBuilder.UI
                 languageButtonText = langObj.GetComponentInChildren<TextMeshProUGUI>();
                 if (languageButtonText != null)
                 {
-                    languageButtonText.text = LocalizationManager.CurrentLanguage == GameLanguage.Arabic ? "🌐 English" : "🌐 عربي";
+                    languageButtonText.text = LocalizationManager.CurrentLanguage == GameLanguage.Arabic ? "English" : "عربي";
                 }
 
                 var img = langObj.GetComponent<Image>();
@@ -265,7 +265,7 @@ namespace EmpireBuilder.UI
                 rt.sizeDelta = new Vector2(130, 52);
 
                 var txt = guideObj.GetComponentInChildren<TextMeshProUGUI>();
-                if (txt != null) txt.text = "GUIDE 💡";
+                if (txt != null) txt.text = "GUIDE";
 
                 var img = guideObj.GetComponent<Image>();
                 if (img != null) img.color = new Color(0.2f, 0.55f, 0.95f);
@@ -446,7 +446,7 @@ namespace EmpireBuilder.UI
                 xRt.anchoredPosition = new Vector2(-14, -14);
                 xRt.sizeDelta = new Vector2(36, 36);
                 var xTmp = closeXBtn.GetComponentInChildren<TextMeshProUGUI>();
-                if (xTmp != null) xTmp.text = "✕";
+                if (xTmp != null) xTmp.text = "X";
             }
 
             // Icon Badge
@@ -464,8 +464,8 @@ namespace EmpireBuilder.UI
             var emojiObj = new GameObject("Emoji", typeof(RectTransform), typeof(TextMeshProUGUI));
             emojiObj.transform.SetParent(badgeObj.transform, false);
             var emojiTmp = emojiObj.GetComponent<TextMeshProUGUI>();
-            emojiTmp.text = "👑";
-            emojiTmp.fontSize = 28;
+            emojiTmp.text = "1";
+            emojiTmp.fontSize = 24;
             emojiTmp.alignment = TextAlignmentOptions.Center;
             var eRt = emojiTmp.rectTransform;
             eRt.anchorMin = Vector2.zero;
@@ -551,7 +551,7 @@ namespace EmpireBuilder.UI
                 bkRt.anchoredPosition = new Vector2(10, 0);
                 bkRt.sizeDelta = new Vector2(130, 48);
                 var bkTmp = backBtn.GetComponentInChildren<TextMeshProUGUI>();
-                if (bkTmp != null) bkTmp.text = "◀ BACK";
+                if (bkTmp != null) bkTmp.text = "BACK";
 
                 // Skip button
                 var skipBtn = Instantiate(backToMenuButton.gameObject, bottomBar.transform, false);
@@ -575,7 +575,7 @@ namespace EmpireBuilder.UI
                 nxtRt.anchoredPosition = new Vector2(-10, 0);
                 nxtRt.sizeDelta = new Vector2(170, 50);
                 var nxtTmp = nextBtn.GetComponentInChildren<TextMeshProUGUI>();
-                if (nxtTmp != null) nxtTmp.text = "NEXT ➔";
+                if (nxtTmp != null) nxtTmp.text = "NEXT";
                 var nxtImg = nextBtn.GetComponent<Image>();
                 if (nxtImg != null) nxtImg.color = new Color(0.18f, 0.80f, 0.44f);
             }

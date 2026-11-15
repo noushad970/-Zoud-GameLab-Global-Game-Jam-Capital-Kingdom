@@ -938,19 +938,19 @@ namespace EmpireBuilder.UI
                 {
                     if (!needsHeal)
                     {
-                        hospitalStatusText.text = "<color=#44FF88>✅ HEALTHY & FIT (100% HP)</color>\nVital signs optimal. Hospital emergency facilities standing by (No treatment needed).";
+                        hospitalStatusText.text = "<color=#44FF88>HEALTHY & FIT (100% HP)</color>\nVital signs optimal. Hospital emergency facilities standing by (No treatment needed).";
                     }
                     else if (currentBuilding.IsOwned)
                     {
-                        hospitalStatusText.text = $"<color={diag.hexColor}>🚨 CONDITION: {diag.severityBadge}</color>\n{diag.conditionName} (Health: {curHp:0}/{maxHp:0} HP).\n<color=#44FF88>★ As Hospital Owner, VIP emergency medical care is COMPLIMENTARY (FREE)!</color>";
+                        hospitalStatusText.text = $"<color={diag.hexColor}>CONDITION: {diag.severityBadge}</color>\n{diag.conditionName} (Health: {curHp:0}/{maxHp:0} HP).\n<color=#44FF88>As Hospital Owner, VIP emergency medical care is COMPLIMENTARY (FREE)!</color>";
                     }
                     else
                     {
                         string severityNote = (diag.severityBadge.Contains("CRITICAL") || diag.severityBadge.Contains("SERIOUS"))
-                            ? "<color=#FF6666>⚠️ Condition is serious! Requires intensive emergency medical care & IV medication.</color>"
-                            : "<color=#88DDFF>ℹ️ Condition is moderate/mild. Outpatient treatment & nutritional recovery available.</color>";
+                            ? "<color=#FF6666>Condition is serious! Requires intensive emergency medical care & IV medication.</color>"
+                            : "<color=#88DDFF>Condition is moderate/mild. Outpatient treatment & nutritional recovery available.</color>";
 
-                        hospitalStatusText.text = $"<color={diag.hexColor}>🚨 CONDITION: {diag.severityBadge}</color>\n{diag.conditionName} (Health: {curHp:0}/{maxHp:0} HP).\nTreatment Fee: <color=#FFDD44>${treatmentCost:N0}</color> | {severityNote}";
+                        hospitalStatusText.text = $"<color={diag.hexColor}>CONDITION: {diag.severityBadge}</color>\n{diag.conditionName} (Health: {curHp:0}/{maxHp:0} HP).\nTreatment Fee: <color=#FFDD44>${treatmentCost:N0}</color> | {severityNote}";
                     }
                 }
 
@@ -966,16 +966,16 @@ namespace EmpireBuilder.UI
                         else if (currentBuilding.IsOwned)
                         {
                             treatmentButtonText.text = isIll
-                                ? "🏥 CURE ILLNESS & RESTORE 100 HP (FREE - OWNER)"
-                                : "🏥 RESTORE 100 HP (FREE - OWNER)";
+                                ? "CURE ILLNESS & RESTORE 100 HP (FREE - OWNER)"
+                                : "RESTORE 100 HP (FREE - OWNER)";
                         }
                         else
                         {
                             if (canAffordTreatment)
                             {
                                 treatmentButtonText.text = isIll
-                                    ? $"🏥 CURE {diag.severityBadge} & RESTORE 100 HP (${treatmentCost:N0})"
-                                    : $"🏥 RECEIVE TREATMENT (RESTORE 100 HP, ${treatmentCost:N0})";
+                                    ? $"CURE {diag.severityBadge} & RESTORE 100 HP (${treatmentCost:N0})"
+                                    : $"RECEIVE TREATMENT (RESTORE 100 HP, ${treatmentCost:N0})";
                             }
                             else
                             {
@@ -1869,7 +1869,7 @@ namespace EmpireBuilder.UI
             }
 
             // Title
-            TextMeshProUGUI hospTitle = CreateTextMesh("HospTitle", hospitalSectionRoot.transform, "🏥 MEDICAL HEALTHCARE & EMERGENCY TREATMENT", 13, FontStyles.Bold, TextAlignmentOptions.Left, new Color(1f, 0.42f, 0.46f));
+            TextMeshProUGUI hospTitle = CreateTextMesh("HospTitle", hospitalSectionRoot.transform, "MEDICAL HEALTHCARE & EMERGENCY TREATMENT", 13, FontStyles.Bold, TextAlignmentOptions.Left, new Color(1f, 0.42f, 0.46f));
             RectTransform htRt = hospTitle.GetComponent<RectTransform>();
             htRt.anchorMin = new Vector2(0, 1);
             htRt.anchorMax = new Vector2(1, 1);
@@ -1896,7 +1896,7 @@ namespace EmpireBuilder.UI
                 treatmentButtonBg.type = Image.Type.Sliced;
             }
             treatmentButton = treatBtnObj.AddComponent<Button>();
-            treatmentButtonText = CreateTextMesh("Text", treatBtnObj.transform, "🏥 RECEIVE TREATMENT (RESTORE 100 HP)", 13, FontStyles.Bold, TextAlignmentOptions.Center, Color.white);
+            treatmentButtonText = CreateTextMesh("Text", treatBtnObj.transform, "RECEIVE TREATMENT (RESTORE 100 HP)", 13, FontStyles.Bold, TextAlignmentOptions.Center, Color.white);
             RectTransform tbTextRt = treatmentButtonText.GetComponent<RectTransform>();
             tbTextRt.anchorMin = Vector2.zero;
             tbTextRt.anchorMax = Vector2.one;
@@ -2004,7 +2004,7 @@ namespace EmpireBuilder.UI
             maintBg.color = new Color(0.32f, 0.12f, 0.12f, 0.95f);
             if (roundedBoxSprite != null) { maintBg.sprite = roundedBoxSprite; maintBg.type = Image.Type.Sliced; }
 
-            maintenanceReasonText = CreateTextMesh("MaintenanceReason", maintenanceSectionRoot.transform, "⚠️ MAINTENANCE REQUIRED: -$0", 11, FontStyles.Bold, TextAlignmentOptions.Left, new Color(1f, 0.75f, 0.75f));
+            maintenanceReasonText = CreateTextMesh("MaintenanceReason", maintenanceSectionRoot.transform, "MAINTENANCE REQUIRED: -$0", 11, FontStyles.Bold, TextAlignmentOptions.Left, new Color(1f, 0.75f, 0.75f));
             RectTransform mrRt = maintenanceReasonText.GetComponent<RectTransform>();
             mrRt.anchorMin = new Vector2(0, 0.5f); mrRt.anchorMax = new Vector2(0.55f, 1); mrRt.pivot = new Vector2(0, 0.5f);
             mrRt.anchoredPosition = new Vector2(10, 0); mrRt.sizeDelta = new Vector2(-15, 0);
@@ -2031,7 +2031,7 @@ namespace EmpireBuilder.UI
             if (roundedBoxSprite != null) { bankBg.sprite = roundedBoxSprite; bankBg.type = Image.Type.Sliced; }
 
             // Title
-            TextMeshProUGUI bTitle = CreateTextMesh("BankTitle", bankSectionRoot.transform, "🏛️ CAPITAL NATIONAL BANK & SAVINGS", 13, FontStyles.Bold, TextAlignmentOptions.Left, new Color(1f, 0.85f, 0.25f));
+            TextMeshProUGUI bTitle = CreateTextMesh("BankTitle", bankSectionRoot.transform, "CAPITAL NATIONAL BANK & SAVINGS", 13, FontStyles.Bold, TextAlignmentOptions.Left, new Color(1f, 0.85f, 0.25f));
             RectTransform btRt = bTitle.GetComponent<RectTransform>();
             btRt.anchorMin = new Vector2(0, 1); btRt.anchorMax = new Vector2(1, 1); btRt.pivot = new Vector2(0, 1);
             btRt.anchoredPosition = new Vector2(15, -10); btRt.sizeDelta = new Vector2(-30, 22);
@@ -2049,7 +2049,7 @@ namespace EmpireBuilder.UI
             openBankButtonBg.color = new Color(0.12f, 0.78f, 0.38f, 1f);
             if (roundedBoxSprite != null) { openBankButtonBg.sprite = roundedBoxSprite; openBankButtonBg.type = Image.Type.Sliced; }
             openBankButton = openBtnObj.AddComponent<Button>();
-            openBankButtonText = CreateTextMesh("Text", openBtnObj.transform, "🏦 OPEN BANK ACCOUNT (FEE: 100 COINS)", 13, FontStyles.Bold, TextAlignmentOptions.Center, Color.white);
+            openBankButtonText = CreateTextMesh("Text", openBtnObj.transform, "OPEN BANK ACCOUNT (FEE: 100 COINS)", 13, FontStyles.Bold, TextAlignmentOptions.Center, Color.white);
             RectTransform obTextRt = openBankButtonText.GetComponent<RectTransform>();
             obTextRt.anchorMin = Vector2.zero; obTextRt.anchorMax = Vector2.one; obTextRt.sizeDelta = Vector2.zero;
             openBankButton.onClick.RemoveAllListeners();
@@ -2074,7 +2074,7 @@ namespace EmpireBuilder.UI
             depositButtonBg.color = new Color(0.12f, 0.78f, 0.38f, 1f);
             if (roundedBoxSprite != null) { depositButtonBg.sprite = roundedBoxSprite; depositButtonBg.type = Image.Type.Sliced; }
             depositButton = depBtnObj.AddComponent<Button>();
-            depositButtonText = CreateTextMesh("Text", depBtnObj.transform, "📥 DEPOSIT", 12, FontStyles.Bold, TextAlignmentOptions.Center, Color.white);
+            depositButtonText = CreateTextMesh("Text", depBtnObj.transform, "DEPOSIT", 12, FontStyles.Bold, TextAlignmentOptions.Center, Color.white);
             RectTransform dbTextRt = depositButtonText.GetComponent<RectTransform>();
             dbTextRt.anchorMin = Vector2.zero; dbTextRt.anchorMax = Vector2.one; dbTextRt.sizeDelta = Vector2.zero;
             depositButton.onClick.RemoveAllListeners();
@@ -2086,7 +2086,7 @@ namespace EmpireBuilder.UI
             withdrawButtonBg.color = new Color(0.92f, 0.45f, 0.15f, 1f);
             if (roundedBoxSprite != null) { withdrawButtonBg.sprite = roundedBoxSprite; withdrawButtonBg.type = Image.Type.Sliced; }
             withdrawButton = wthBtnObj.AddComponent<Button>();
-            withdrawButtonText = CreateTextMesh("Text", wthBtnObj.transform, "📤 WITHDRAW", 12, FontStyles.Bold, TextAlignmentOptions.Center, Color.white);
+            withdrawButtonText = CreateTextMesh("Text", wthBtnObj.transform, "WITHDRAW", 12, FontStyles.Bold, TextAlignmentOptions.Center, Color.white);
             RectTransform wbTextRt = withdrawButtonText.GetComponent<RectTransform>();
             wbTextRt.anchorMin = Vector2.zero; wbTextRt.anchorMax = Vector2.one; wbTextRt.sizeDelta = Vector2.zero;
             withdrawButton.onClick.RemoveAllListeners();

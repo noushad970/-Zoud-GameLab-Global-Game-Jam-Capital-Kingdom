@@ -94,7 +94,7 @@ namespace EmpireBuilder.UI
         public void OpenRequest(string matchName, double rentOffer, Action onAccepted, Action onDeclined)
         {
             OpenRequest(
-                "⚽ STADIUM MATCH RENTAL REQUEST",
+                "STADIUM MATCH RENTAL REQUEST",
                 matchName,
                 rentOffer,
                 "A major sports association is offering to rent your facility for this high-profile match!",

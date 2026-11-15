@@ -253,7 +253,7 @@ namespace EmpireBuilder.Editor
             GameObject tObj = tTr != null ? tTr.gameObject : CreateUIElement("BankTitle", root.transform, new Vector2(0, 1), new Vector2(1, 1), new Vector2(0, 1), new Vector2(-30, 22), new Vector2(15, -10));
             TextMeshProUGUI bTitle = EnsureComponent<TextMeshProUGUI>(tObj);
             if (fontAsset != null) bTitle.font = fontAsset;
-            bTitle.text = "🏛️ CAPITAL NATIONAL BANK & SAVINGS";
+            bTitle.text = "CAPITAL NATIONAL BANK & SAVINGS";
             bTitle.fontSize = 13;
             bTitle.fontStyle = FontStyles.Bold;
             bTitle.alignment = TextAlignmentOptions.Left;
@@ -283,7 +283,7 @@ namespace EmpireBuilder.Editor
             GameObject opTextObj = opTextTr != null ? opTextTr.gameObject : CreateUIElement("Text", openBtnObj.transform, Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
             TextMeshProUGUI openBtnText = EnsureComponent<TextMeshProUGUI>(opTextObj);
             if (fontAsset != null) openBtnText.font = fontAsset;
-            openBtnText.text = "🏦 OPEN BANK ACCOUNT (FEE: 100 COINS)";
+            openBtnText.text = "OPEN BANK ACCOUNT (FEE: 100 COINS)";
             openBtnText.fontSize = 13;
             openBtnText.fontStyle = FontStyles.Bold;
             openBtnText.alignment = TextAlignmentOptions.Center;
@@ -316,7 +316,7 @@ namespace EmpireBuilder.Editor
             GameObject dpTextObj = dpTextTr != null ? dpTextTr.gameObject : CreateUIElement("Text", depBtnObj.transform, Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
             TextMeshProUGUI depText = EnsureComponent<TextMeshProUGUI>(dpTextObj);
             if (fontAsset != null) depText.font = fontAsset;
-            depText.text = "📥 DEPOSIT";
+            depText.text = "DEPOSIT";
             depText.fontSize = 12;
             depText.fontStyle = FontStyles.Bold;
             depText.alignment = TextAlignmentOptions.Center;
@@ -334,7 +334,7 @@ namespace EmpireBuilder.Editor
             GameObject wtTextObj = wtTextTr != null ? wtTextTr.gameObject : CreateUIElement("Text", wthBtnObj.transform, Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
             TextMeshProUGUI wthText = EnsureComponent<TextMeshProUGUI>(wtTextObj);
             if (fontAsset != null) wthText.font = fontAsset;
-            wthText.text = "📤 WITHDRAW";
+            wthText.text = "WITHDRAW";
             wthText.fontSize = 12;
             wthText.fontStyle = FontStyles.Bold;
             wthText.alignment = TextAlignmentOptions.Center;
@@ -394,7 +394,7 @@ namespace EmpireBuilder.Editor
             GameObject tObj = tTr != null ? tTr.gameObject : CreateUIElement("HospTitle", root.transform, new Vector2(0, 1), new Vector2(1, 1), new Vector2(0, 1), new Vector2(-30, 22), new Vector2(15, -10));
             TextMeshProUGUI title = EnsureComponent<TextMeshProUGUI>(tObj);
             if (fontAsset != null) title.font = fontAsset;
-            title.text = "🏥 MEDICAL HEALTHCARE & EMERGENCY TREATMENT";
+            title.text = "MEDICAL HEALTHCARE & EMERGENCY TREATMENT";
             title.fontSize = 13;
             title.fontStyle = FontStyles.Bold;
             title.color = new Color(1f, 0.42f, 0.46f);
@@ -417,7 +417,7 @@ namespace EmpireBuilder.Editor
             GameObject txtObj = txtTr != null ? txtTr.gameObject : CreateUIElement("Text", btnObj.transform, Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
             TextMeshProUGUI btnTxt = EnsureComponent<TextMeshProUGUI>(txtObj);
             if (fontAsset != null) btnTxt.font = fontAsset;
-            btnTxt.text = "🏥 RECEIVE TREATMENT (RESTORE 100 HP)";
+            btnTxt.text = "RECEIVE TREATMENT (RESTORE 100 HP)";
             btnTxt.fontSize = 13;
             btnTxt.fontStyle = FontStyles.Bold;
             btnTxt.alignment = TextAlignmentOptions.Center;
@@ -590,7 +590,7 @@ namespace EmpireBuilder.Editor
             GameObject rObj = rTr != null ? rTr.gameObject : CreateUIElement("MaintenanceReason", root.transform, new Vector2(0, 0.5f), new Vector2(0.55f, 1), new Vector2(0, 0.5f), new Vector2(-15, 0), new Vector2(10, 0));
             TextMeshProUGUI reason = EnsureComponent<TextMeshProUGUI>(rObj);
             if (fontAsset != null) reason.font = fontAsset;
-            reason.text = "⚠️ MAINTENANCE REQUIRED: -$0";
+            reason.text = "MAINTENANCE REQUIRED: -$0";
             reason.fontSize = 11;
             reason.fontStyle = FontStyles.Bold;
             reason.color = new Color(1f, 0.75f, 0.75f);

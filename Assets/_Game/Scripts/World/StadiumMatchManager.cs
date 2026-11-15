@@ -225,7 +225,7 @@ namespace EmpireBuilder.World
             GamePlayHeaderUI.Instance?.UpdateMoneyDisplay();
 
             PropertyDetailModalUI.Instance?.ShowToast(
-                $"⚽ Football Match Hosted! Received +${rentOffer:N0} Stadium Rent!"
+                $"Football Match Hosted! Received +${rentOffer:N0} Stadium Rent!"
             );
 
             Debug.Log($"[StadiumMatchManager] Player accepted football match '{matchName}' for +${rentOffer:N0}!");
@@ -241,7 +241,7 @@ namespace EmpireBuilder.World
 
             GameSoundManager.Instance?.PlayClick();
 
-            PropertyDetailModalUI.Instance?.ShowToast("⚽ Match rent request declined.");
+            PropertyDetailModalUI.Instance?.ShowToast("Match rent request declined.");
             Debug.Log("[StadiumMatchManager] Player declined match rent request.");
         }
     }

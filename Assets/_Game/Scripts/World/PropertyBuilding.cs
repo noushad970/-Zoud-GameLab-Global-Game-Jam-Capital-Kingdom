@@ -851,11 +851,11 @@ namespace EmpireBuilder.World
 
             if (isOwned)
             {
-                message = $"As the owner of {propertyName}, your {drinkName} is on the house! ☕✨{healthNote}";
+                message = $"As the owner of {propertyName}, your {drinkName} is on the house!{healthNote}";
             }
             else
             {
-                message = $"Enjoyed a refreshing {drinkName} for ${drinkPrice:N0}! ☕✨ Feeling energized!{healthNote}";
+                message = $"Enjoyed a refreshing {drinkName} for ${drinkPrice:N0}! Feeling energized!{healthNote}";
             }
 
             Debug.Log($"[PropertyBuilding] {message}");
@@ -909,11 +909,11 @@ namespace EmpireBuilder.World
 
             if (isOwned)
             {
-                message = $"As the proud owner of {propertyName}, your VIP meal ({foodName}) is complimentary! 🍽️✨{healthNote}";
+                message = $"As the proud owner of {propertyName}, your VIP meal ({foodName}) is complimentary!{healthNote}";
             }
             else
             {
-                message = $"Savored a gourmet {foodName} for ${foodPrice:N0}! 🍽️✨ Truly satisfying!{healthNote}";
+                message = $"Savored a gourmet {foodName} for ${foodPrice:N0}! Truly satisfying!{healthNote}";
             }
 
             Debug.Log($"[PropertyBuilding] {message}");
@@ -1272,11 +1272,11 @@ namespace EmpireBuilder.World
 
             if (isOwned)
             {
-                message = $"🏥 VIP Healthcare: As the owner of {propertyName}, your treatment for {diag.conditionName} is complimentary! Illness cured and health restored to 100 HP! ❤️";
+                message = $"VIP Healthcare: As the owner of {propertyName}, your treatment for {diag.conditionName} is complimentary! Illness cured and health restored to 100 HP!";
             }
             else
             {
-                message = $"🏥 Hospital Treatment Successful: Treated {diag.conditionName} ({diag.severityBadge}) for ${fee:N0}! Illness cured and health restored to 100 HP! ❤️";
+                message = $"Hospital Treatment Successful: Treated {diag.conditionName} ({diag.severityBadge}) for ${fee:N0}! Illness cured and health restored to 100 HP!";
             }
 
             GameSoundManager.Instance?.PlayCollect(transform.position);
@@ -1346,7 +1346,7 @@ namespace EmpireBuilder.World
             SaveState();
             NotifyStateChanged();
 
-            message = $"🔧 Maintenance completed for {propertyName}! Paid ${paid:N0} ({reason}). Property restored to pristine condition!";
+            message = $"Maintenance completed for {propertyName}! Paid ${paid:N0} ({reason}). Property restored to pristine condition!";
             GameSoundManager.Instance?.PlayBuy(transform.position);
             return true;
         }
@@ -1443,7 +1443,7 @@ namespace EmpireBuilder.World
             NotifyStateChanged();
 
             GameSoundManager.Instance?.PlayCollect(transform.position);
-            message = $"🎟️ Collected +${collectedAmount:N0} in visitor entry fees from {propertyName}!";
+            message = $"Collected +${collectedAmount:N0} in visitor entry fees from {propertyName}!";
             return true;
         }
         #endregion

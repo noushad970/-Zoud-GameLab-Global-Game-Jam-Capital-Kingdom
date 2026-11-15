@@ -238,7 +238,7 @@ namespace EmpireBuilder.World
             {
                 isCollectibleReady = true;
                 double offer = TennisMatchManager.Instance.CurrentPendingRentOffer;
-                string text = offer > 0 ? $"🎾 MATCH +${offer:N0}!" : "🎾 MATCH READY!";
+                string text = offer > 0 ? $"MATCH +${offer:N0}!" : "MATCH READY!";
                 SetVisuals(trophySprite ?? crownSprite ?? coinSprite, text, new Color(0.12f, 0.65f, 0.25f, 0.98f), Color.white);
                 return;
             }

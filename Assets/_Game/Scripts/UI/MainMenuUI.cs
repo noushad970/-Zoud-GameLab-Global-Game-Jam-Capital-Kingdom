@@ -226,7 +226,7 @@ namespace EmpireBuilder.UI
             // Update language toggle button
             if (quickLanguageText != null)
             {
-                quickLanguageText.text = LocalizationManager.CurrentLanguage == GameLanguage.Arabic ? "🌐 English" : "🌐 العربية";
+                quickLanguageText.text = LocalizationManager.CurrentLanguage == GameLanguage.Arabic ? "English" : "العربية";
             }
 
             UpdateLanguageButtonsHighlight();
@@ -274,7 +274,7 @@ namespace EmpireBuilder.UI
             txtRt.sizeDelta = Vector2.zero;
 
             quickLanguageText = txtObj.GetComponent<TextMeshProUGUI>();
-            quickLanguageText.text = LocalizationManager.CurrentLanguage == GameLanguage.Arabic ? "🌐 English" : "🌐 العربية";
+            quickLanguageText.text = LocalizationManager.CurrentLanguage == GameLanguage.Arabic ? "English" : "العربية";
             quickLanguageText.fontSize = 14;
             quickLanguageText.fontStyle = FontStyles.Bold;
             quickLanguageText.alignment = TextAlignmentOptions.Center;
@@ -353,7 +353,7 @@ namespace EmpireBuilder.UI
             enTxtRt.anchorMax = Vector2.one;
             enTxtRt.sizeDelta = Vector2.zero;
             optEnglishText = enTxtObj.GetComponent<TextMeshProUGUI>();
-            optEnglishText.text = "🇬🇧 English";
+            optEnglishText.text = "English";
             optEnglishText.fontSize = 14;
             optEnglishText.fontStyle = FontStyles.Bold;
             optEnglishText.alignment = TextAlignmentOptions.Center;
@@ -371,7 +371,7 @@ namespace EmpireBuilder.UI
             arTxtRt.anchorMax = Vector2.one;
             arTxtRt.sizeDelta = Vector2.zero;
             optArabicText = arTxtObj.GetComponent<TextMeshProUGUI>();
-            optArabicText.text = ArabicFixer.Fix("🇸🇦 العربية");
+            optArabicText.text = ArabicFixer.Fix("العربية");
             optArabicText.fontSize = 15;
             optArabicText.fontStyle = FontStyles.Bold;
             optArabicText.alignment = TextAlignmentOptions.Center;

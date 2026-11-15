@@ -233,11 +233,11 @@ namespace EmpireBuilder.Localization
             Add("menu_language", "LANGUAGE / اللغة", "اللغة / LANGUAGE");
             Add("menu_sound_volume", "SOUND VOLUME", "مستوى الصوت");
             Add("menu_close", "CLOSE", "إغلاق");
-            Add("menu_language_en", "English 🇬🇧", "الإنجليزية 🇬🇧");
-            Add("menu_language_ar", "العربية 🇸🇦", "العربية 🇸🇦");
+            Add("menu_language_en", "English", "الإنجليزية");
+            Add("menu_language_ar", "العربية", "العربية");
 
             // Reset Warning Modal
-            Add("modal_reset_title", "⚠️ START NEW GAME?", "⚠️ بدء لعبة جديدة؟");
+            Add("modal_reset_title", "START NEW GAME?", "بدء لعبة جديدة؟");
             Add("modal_reset_message", "<b>Previous saved city progress found!</b>\n\nStarting a new game will <color=#FF4444>permanently erase</color> your existing city data, buildings, and properties, resetting your balance to <b>$5,000 coins</b>.\n\nAre you sure you want to proceed?",
                                        "<b>تم العثور على تقدم سابق محفوظ!</b>\n\nبدء لعبة جديدة سيؤدي إلى <color=#FF4444>مسح بيانات مدينتك الحالية والمباني والممتلكات بشكل دائم</color>، وإعادة تعيين رصيدك إلى <b>5,000 عملة</b>.\n\nهل أنت متأكد أنك تريد المتابعة؟");
             Add("modal_reset_confirm", "YES, START OVER ($5,000)", "نعم، ابدأ من جديد (5,000$)");
@@ -248,9 +248,9 @@ namespace EmpireBuilder.Localization
             // ==========================================
             Add("header_day_badge", "<color=#FFD700>DAY {0} IN CITY</color>  <color=#556677>•</color>  <color=#FFFFFF>{1}</color>  <color=#556677>•</color>  <color=#70C5FF>{2}</color>",
                                     "<color=#FFD700>اليوم {0} في المدينة</color>  <color=#556677>•</color>  <color=#FFFFFF>{1}</color>  <color=#556677>•</color>  <color=#70C5FF>{2}</color>");
-            Add("header_menu_btn", "MENU ◀", "القائمة ◀");
-            Add("header_guide_btn", "GUIDE 💡", "الدليل 💡");
-            Add("header_lang_btn", "🌐 EN/عربي", "🌐 عربي/EN");
+            Add("header_menu_btn", "MENU", "القائمة");
+            Add("header_guide_btn", "GUIDE", "الدليل");
+            Add("header_lang_btn", "EN/AR", "عربي/EN");
             Add("header_notice_title", "CITY OCCURRENCES", "أحداث المدينة");
             Add("header_notice_alerts", "{0} ALERTS", "{0} تنبيهات");
             Add("header_notice_clear", "ALL CLEAR", "كل شيء هادئ");
@@ -286,12 +286,12 @@ namespace EmpireBuilder.Localization
             // ==========================================
             // 4. BANK SYSTEM SECTION
             // ==========================================
-            Add("bank_title", "🏛️ CAPITAL NATIONAL BANK & SAVINGS", "🏛️ بنك العاصمة الوطني والمدخرات");
-            Add("bank_notice_title", "🏦 BANK INTEREST", "🏦 فوائد البنك");
+            Add("bank_title", "CAPITAL NATIONAL BANK & SAVINGS", "بنك العاصمة الوطني والمدخرات");
+            Add("bank_notice_title", "BANK INTEREST", "فوائد البنك");
             Add("bank_status_closed", "Open a savings account to store coins and earn daily compound interest (0.33%/day).", "افتح حساب توفير لتخزين العملات وكسب فائدة مركبة يومية (0.33٪ يومياً).");
             Add("bank_status_active", "Account Active  •  Balance: <b><color=#70FF70>${0:N0}</color></b>  •  Total Interest: <color=#FFD700>+${1:N0}</color> (+0.33% Daily)",
                                       "الحساب نشط  •  الرصيد: <b><color=#70FF70>{0:N0}$</color></b>  •  إجمالي الأرباح: <color=#FFD700>+{1:N0}$</color> (+0.33٪ يومياً)");
-            Add("bank_open_account_btn", "🏦 OPEN BANK ACCOUNT (FEE: 100 COINS)", "🏦 فتح حساب بنكي (رسوم: 100 عملة)");
+            Add("bank_open_account_btn", "OPEN BANK ACCOUNT (FEE: 100 COINS)", "فتح حساب بنكي (رسوم: 100 عملة)");
             Add("bank_need_coins_open", "NEED 100 COINS TO OPEN ACCOUNT", "تحتاج 100 عملة لفتح الحساب");
             Add("bank_already_active", "You already have an active bank account with Capital National Bank!", "لديك بالفعل حساب بنكي نشط في بنك العاصمة الوطني!");
             Add("bank_need_account_first", "You must first open a bank account (100 coin fee) before banking!", "يجب عليك أولاً فتح حساب بنكي (رسوم 100 عملة)!");
@@ -300,8 +300,8 @@ namespace EmpireBuilder.Localization
             Add("bank_quick_1k", "+$1K", "+1 ألف$");
             Add("bank_quick_max", "MAX CASH", "أقصى نقد");
             Add("bank_input_placeholder", "Amount...", "المبلغ...");
-            Add("bank_deposit_btn", "📥 DEPOSIT", "📥 إيداع");
-            Add("bank_withdraw_btn", "📤 WITHDRAW", "📤 سحب");
+            Add("bank_deposit_btn", "DEPOSIT", "إيداع");
+            Add("bank_withdraw_btn", "WITHDRAW", "سحب");
             Add("bank_withdraw_all_btn", "WITHDRAW ALL TO POCKET CASH", "سحب كامل الرصيد إلى النقد");
 
             // Bank Toasts
@@ -318,47 +318,47 @@ namespace EmpireBuilder.Localization
             // 5. SPECIAL BUILDING SECTIONS
             // ==========================================
             // Hospital
-            Add("hosp_title", "🏥 CAPITAL CITY HOSPITAL & MEDICAL CENTER", "🏥 مستشفى ومركز العاصمة الطبي");
+            Add("hosp_title", "CAPITAL CITY HOSPITAL & MEDICAL CENTER", "مستشفى ومركز العاصمة الطبي");
             Add("hosp_status", "Emergency room open. Restores Mayor health to 100 HP.", "قسم الطوارئ مفتوح. استعد صحة العمدة كاملة 100 نقطة.");
-            Add("hosp_treat_btn", "🚑 RECEIVE TREATMENT (FREE)", "🚑 تلقي العلاج (مجاناً)");
+            Add("hosp_treat_btn", "RECEIVE TREATMENT (FREE)", "تلقي العلاج (مجاناً)");
             Add("hosp_already_healthy", "Mayor is in excellent health! No treatment needed.", "صحة العمدة ممتازة! لا حاجة للعلاج.");
             Add("hosp_treated_success", "Treatment complete! Health restored to 100 HP.", "اكتمل العلاج! تمت استعادة الصحة إلى 100 نقطة.");
 
             // Factory
-            Add("fact_title", "🏭 HEAVY INDUSTRIAL MANUFACTURING PLANT", "🏭 مصنع التصنيع الصناعي الثقيل");
+            Add("fact_title", "HEAVY INDUSTRIAL MANUFACTURING PLANT", "مصنع التصنيع الصناعي الثقيل");
             Add("fact_status", "Automated production line producing commercial goods.", "خط إنتاج آلي لإنتاج البضائع التجارية.");
-            Add("fact_collect_btn", "📦 COLLECT MANUFACTURED GOODS", "📦 تحصيل البضائع المصنعة");
+            Add("fact_collect_btn", "COLLECT MANUFACTURED GOODS", "تحصيل البضائع المصنعة");
 
             // Oil
-            Add("oil_title", "🛢️ OFFSHORE OIL DRILLING & REFINERY", "🛢️ منشأة استخراج وتكرير النفط");
+            Add("oil_title", "OFFSHORE OIL DRILLING & REFINERY", "منشأة استخراج وتكرير النفط");
             Add("oil_status", "High-capacity pumpjack extracting crude oil barrels.", "مضخات عالية الكفاءة لاستخراج براميل النفط الخام.");
-            Add("oil_collect_btn", "⛽ COLLECT OIL REVENUE", "⛽ تحصيل عائدات النفط");
+            Add("oil_collect_btn", "COLLECT OIL REVENUE", "تحصيل عائدات النفط");
 
             // Park
-            Add("park_title", "🌳 CENTRAL RECREATION PARK & BOTANICAL GARDENS", "🌳 حديقة الترفيه والحدائق النباتية المركزية");
+            Add("park_title", "CENTRAL RECREATION PARK & BOTANICAL GARDENS", "حديقة الترفيه والحدائق النباتية المركزية");
             Add("park_status", "Citizens enjoying green spaces and recreational trails.", "المواطنون يستمتعون بالمساحات الخضراء والمسارات الترفيهية.");
-            Add("park_collect_btn", "🌸 COLLECT PARK ADMISSION REVENUE", "🌸 تحصيل رسوم دخول الحديقة");
+            Add("park_collect_btn", "COLLECT PARK ADMISSION REVENUE", "تحصيل رسوم دخول الحديقة");
 
             // Taxi
-            Add("taxi_title", "🚕 CAPITAL TAXI FLEET HEADQUARTERS", "🚕 المقر الرئيسي لأسطول سيارات الأجرة");
+            Add("taxi_title", "CAPITAL TAXI FLEET HEADQUARTERS", "المقر الرئيسي لأسطول سيارات الأجرة");
             Add("taxi_status", "City taxi cab network running 24/7 transportation.", "شبكة سيارات أجرة المدينة تعمل على مدار الساعة.");
-            Add("taxi_deploy_btn", "🚖 DISPATCH RENTED TAXI", "🚖 إرسال سيارة أجرة");
+            Add("taxi_deploy_btn", "DISPATCH RENTED TAXI", "إرسال سيارة أجرة");
 
             // Flats
-            Add("flat_title", "🏢 LUXURY RESIDENTIAL APARTMENTS & SUITES", "🏢 شقق وأجنحة سكنية فاخرة");
+            Add("flat_title", "LUXURY RESIDENTIAL APARTMENTS & SUITES", "شقق وأجنحة سكنية فاخرة");
             Add("flat_stats", "Occupied Flats: <b>{0}</b> / {1}  •  Unit Rent: <b>+${2:N0}/day</b>", "الشقق المؤجرة: <b>{0}</b> / {1}  •  إيجار الوحدة: <b>+{2:N0}$/يوم</b>");
-            Add("flat_buy_btn", "🔑 PURCHASE FLAT (${0:N0})", "🔑 شراء شقة ({0:N0}$)");
-            Add("flat_collect_btn", "💵 COLLECT TENANT RENT", "💵 تحصيل إيجار السكان");
+            Add("flat_buy_btn", "PURCHASE FLAT (${0:N0})", "شراء شقة ({0:N0}$)");
+            Add("flat_collect_btn", "COLLECT TENANT RENT", "تحصيل إيجار السكان");
             Add("flat_all_owned", "ALL FLATS OWNED", "جميع الشقق مملوكة");
             Add("flat_buy_first", "BUY A FLAT FIRST", "اشترِ شقة أولاً");
             Add("flat_all_leased", "ALL FLATS LEASED", "جميع الشقق مؤجرة");
             Add("flat_rent_out_btn", "RENT OUT FLAT (+${0:N0}/day)", "تأجير شقة (+{0:N0}$/يوم)");
 
             // Maintenance
-            Add("maint_title", "🔧 PROPERTY MAINTENANCE & REPAIR", "🔧 صيانة وإصلاح الممتلكات");
+            Add("maint_title", "PROPERTY MAINTENANCE & REPAIR", "صيانة وإصلاح الممتلكات");
             Add("maint_status", "Building operational and structural integrity intact.", "سلامة المبنى التشغيلية والهيكلية في حالة ممتازة.");
-            Add("maint_pay_btn", "🔨 PERFORM STRUCTURAL REPAIRS", "🔨 إجراء إصلاحات هيكلية");
-            Add("maint_required_title", "⚠️ MAINTENANCE REQUIRED: -${0:N0}", "⚠️ يلزم إجراء صيانة: -{0:N0}$");
+            Add("maint_pay_btn", "PERFORM STRUCTURAL REPAIRS", "إجراء إصلاحات هيكلية");
+            Add("maint_required_title", "MAINTENANCE REQUIRED: -${0:N0}", "يلزم إجراء صيانة: -{0:N0}$");
             Add("maint_pay_button", "PAY MAINTENANCE (-${0:N0})", "دفع الصيانة (-{0:N0}$)");
             Add("maint_insufficient_funds", "INSUFFICIENT FUNDS (-${0:N0})", "رصيد غير كافٍ (-{0:N0}$)");
 
@@ -412,10 +412,10 @@ namespace EmpireBuilder.Localization
             Add("tut_alerts_desc", "Real estate structures suffer natural wear and tear! The City Notice Bar in the top-right corner will flag buildings requiring urgent structural repairs.\n\nPay maintenance orders promptly to protect building integrity and keep daily cashflows flowing. Smart investors always maintain an emergency reserve fund for unforeseen repair expenses.",
                                    "تتعرض المباني العقارية للاستهلاك الطبيعي بمرور الوقت! سينبهك شريط أحداث المدينة في الزاوية العلوية اليمنى بالمباني التي تحتاج لصيانة عاجلة.\n\nادفع تكاليف الصيانة فوراً للحفاظ على كفاءة المبنى واستمرار تدفق الإيجارات. المستثمر الذكي يحتفظ دائماً بصندوق طوارئ لتغطية نفقات الصيانة غير المتوقعة.");
 
-            Add("tut_btn_next", "NEXT ➔", "التالي ➔");
-            Add("tut_btn_back", "◀ BACK", "◀ السابق");
+            Add("tut_btn_next", "NEXT", "التالي");
+            Add("tut_btn_back", "BACK", "السابق");
             Add("tut_btn_skip", "SKIP GUIDE", "تخطي الدليل");
-            Add("tut_btn_finish", "START PLAYING 👑", "ابدأ اللعب 👑");
+            Add("tut_btn_finish", "START PLAYING", "ابدأ اللعب");
             Add("tut_step_count", "STEP {0} OF {1}", "الخطوة {0} من {1}");
         }
     }

@@ -162,7 +162,7 @@ namespace EmpireBuilder.World
             GameSoundManager.Instance?.PlayStadiumMatchRequestAlert(tennisCourtProperty != null ? tennisCourtProperty.transform.position : (Vector3?)null);
 
             CityNoticeBarUI.Instance?.ShowNotice(
-                $"🎾 Tennis Tournament Offer: {matchName} is offering +${rentOffer:N0} to host!",
+                $"Tennis Tournament Offer: {matchName} is offering +${rentOffer:N0} to host!",
                 NoticeType.StadiumMatch,
                 8f
             );
@@ -170,7 +170,7 @@ namespace EmpireBuilder.World
             if (StadiumMatchRequestModalUI.Instance != null)
             {
                 StadiumMatchRequestModalUI.Instance.OpenRequest(
-                    "🎾 TENNIS MATCH RENTAL REQUEST",
+                    "TENNIS MATCH RENTAL REQUEST",
                     matchName,
                     rentOffer,
                     "A professional tennis tour association is offering to rent your Championship Tennis Court for this match!",
@@ -234,11 +234,11 @@ namespace EmpireBuilder.World
             GamePlayHeaderUI.Instance?.UpdateMoneyDisplay();
 
             PropertyDetailModalUI.Instance?.ShowToast(
-                $"🎾 Tennis Tournament Hosted! Received +${rentOffer:N0} Court Rent!"
+                $"Tennis Tournament Hosted! Received +${rentOffer:N0} Court Rent!"
             );
 
             CityNoticeBarUI.Instance?.ShowNotice(
-                $"🎾 Match Complete! You earned +${rentOffer:N0} from {matchName}.",
+                $"Match Complete! You earned +${rentOffer:N0} from {matchName}.",
                 NoticeType.RentReady,
                 6f
             );
@@ -256,7 +256,7 @@ namespace EmpireBuilder.World
 
             GameSoundManager.Instance?.PlayClick();
 
-            PropertyDetailModalUI.Instance?.ShowToast("🎾 Tennis match request declined.");
+            PropertyDetailModalUI.Instance?.ShowToast("Tennis match request declined.");
             Debug.Log("[TennisMatchManager] Player declined tennis match request.");
         }
     }

@@ -296,7 +296,7 @@ namespace EmpireBuilder.UI
             var xTextObj = new GameObject("XText", typeof(RectTransform), typeof(TextMeshProUGUI));
             xTextObj.transform.SetParent(closeBtnObj.transform, false);
             var xTmp = xTextObj.GetComponent<TextMeshProUGUI>();
-            xTmp.text = "✕";
+            xTmp.text = "X";
             xTmp.fontSize = 12;
             xTmp.alignment = TextAlignmentOptions.Center;
             xTmp.color = Color.white;
@@ -396,13 +396,13 @@ namespace EmpireBuilder.UI
         {
             switch (type)
             {
-                case NoticeType.StadiumMatch: return "🏆";
-                case NoticeType.Maintenance: return "🔧";
-                case NoticeType.RentReady: return "💰";
-                case NoticeType.HealthWarning: return "❤️";
-                case NoticeType.Hospital: return "🏥";
-                case NoticeType.Taxi: return "🚕";
-                default: return "📢";
+                case NoticeType.StadiumMatch: return "!";
+                case NoticeType.Maintenance: return "!";
+                case NoticeType.RentReady: return "$";
+                case NoticeType.HealthWarning: return "!";
+                case NoticeType.Hospital: return "+";
+                case NoticeType.Taxi: return "T";
+                default: return "i";
             }
         }
 
@@ -443,7 +443,7 @@ namespace EmpireBuilder.UI
                     PropertyBuilding hosp = FindHospital();
                     string hospCost = hosp != null && hosp.IsOwned ? "FREE" : "$150";
                     PostNotice(
-                        "🤒 ILLNESS DETECTED",
+                        "ILLNESS DETECTED",
                         $"Starvation sickness ({PlayerHealthManager.Instance.IllnessReason})! Visit Hospital for treatment ({hospCost})!",
                         NoticeType.Hospital,
                         hosp,
@@ -453,7 +453,7 @@ namespace EmpireBuilder.UI
                 else if (PlayerHealthManager.Instance.IsExhausted)
                 {
                     PostNotice(
-                        "💀 EXHAUSTION WARNING",
+                        "EXHAUSTION WARNING",
                         "Health empty! Visit Capital General Hospital or eat immediately!",
                         NoticeType.Hospital,
                         FindHospital(),
@@ -463,7 +463,7 @@ namespace EmpireBuilder.UI
                 else if (PlayerHealthManager.Instance.IsCriticalHealth)
                 {
                     PostNotice(
-                        "🚨 CRITICAL HUNGER & HEALTH",
+                        "CRITICAL HUNGER & HEALTH",
                         $"Health {PlayerHealthManager.Instance.CurrentHealth:F0} HP! Eat at a Cafe/Restaurant or visit Hospital!",
                         NoticeType.HealthWarning,
                         null,
@@ -473,7 +473,7 @@ namespace EmpireBuilder.UI
                 else if (PlayerHealthManager.Instance.IsLowHealth)
                 {
                     PostNotice(
-                        "⚠️ HUNGER ALERT",
+                        "HUNGER ALERT",
                         $"Health dropping ({PlayerHealthManager.Instance.CurrentHealth:F0} HP). Grab food or coffee at a Cafe!",
                         NoticeType.HealthWarning,
                         null,
