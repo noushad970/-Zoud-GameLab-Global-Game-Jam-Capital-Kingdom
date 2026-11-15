@@ -106,6 +106,24 @@ namespace EmpireBuilder.UI
         [SerializeField] private TextMeshProUGUI collectParkButtonText;
         [SerializeField] private Image collectParkButtonBg;
 
+        [Header("Bank Operations Section (Special)")]
+        [SerializeField] private GameObject bankSectionRoot;
+        [SerializeField] private TextMeshProUGUI bankStatusText;
+        [SerializeField] private GameObject bankClosedRoot;
+        [SerializeField] private Button openBankButton;
+        [SerializeField] private TextMeshProUGUI openBankButtonText;
+        [SerializeField] private Image openBankButtonBg;
+        [SerializeField] private GameObject bankActiveRoot;
+        [SerializeField] private TMP_InputField bankDepositInputField;
+        [SerializeField] private Button depositButton;
+        [SerializeField] private TextMeshProUGUI depositButtonText;
+        [SerializeField] private Image depositButtonBg;
+        [SerializeField] private Button withdrawButton;
+        [SerializeField] private TextMeshProUGUI withdrawButtonText;
+        [SerializeField] private Image withdrawButtonBg;
+        [SerializeField] private Button withdrawAllButton;
+        [SerializeField] private TextMeshProUGUI withdrawAllButtonText;
+
         [Header("Building Maintenance Section")]
         [SerializeField] private GameObject maintenanceSectionRoot;
         [SerializeField] private TextMeshProUGUI maintenanceReasonText;
@@ -330,6 +348,73 @@ namespace EmpireBuilder.UI
                 {
                     collectParkButton.onClick.RemoveAllListeners();
                     collectParkButton.onClick.AddListener(OnCollectParkRevenueClicked);
+                }
+            }
+
+            if (bankSectionRoot == null && card != null)
+            {
+                var t = card.Find("BankSection");
+                if (t != null) bankSectionRoot = t.gameObject;
+                else CreateBankSection(card);
+            }
+            if (bankSectionRoot != null)
+            {
+                if (bankStatusText == null)
+                    bankStatusText = bankSectionRoot.transform.Find("BankStatus")?.GetComponent<TextMeshProUGUI>();
+                if (bankClosedRoot == null)
+                    bankClosedRoot = bankSectionRoot.transform.Find("BankClosedRoot")?.gameObject;
+                if (bankActiveRoot == null)
+                    bankActiveRoot = bankSectionRoot.transform.Find("BankActiveRoot")?.gameObject;
+
+                if (openBankButton == null && bankClosedRoot != null)
+                    openBankButton = bankClosedRoot.transform.Find("OpenBankButton")?.GetComponent<Button>();
+                if (openBankButton != null)
+                {
+                    if (openBankButtonText == null)
+                        openBankButtonText = openBankButton.transform.Find("Text")?.GetComponent<TextMeshProUGUI>();
+                    if (openBankButtonBg == null)
+                        openBankButtonBg = openBankButton.GetComponent<Image>();
+                    openBankButton.onClick.RemoveAllListeners();
+                    openBankButton.onClick.AddListener(OnOpenBankAccountClicked);
+                }
+
+                if (bankActiveRoot != null)
+                {
+                    if (bankDepositInputField == null)
+                        bankDepositInputField = bankActiveRoot.transform.Find("BankAmountInput")?.GetComponent<TMP_InputField>();
+                    if (depositButton == null)
+                        depositButton = bankActiveRoot.transform.Find("DepositButton")?.GetComponent<Button>();
+                    if (depositButton != null)
+                    {
+                        if (depositButtonText == null)
+                            depositButtonText = depositButton.transform.Find("Text")?.GetComponent<TextMeshProUGUI>();
+                        if (depositButtonBg == null)
+                            depositButtonBg = depositButton.GetComponent<Image>();
+                        depositButton.onClick.RemoveAllListeners();
+                        depositButton.onClick.AddListener(OnDepositClicked);
+                    }
+
+                    if (withdrawButton == null)
+                        withdrawButton = bankActiveRoot.transform.Find("WithdrawButton")?.GetComponent<Button>();
+                    if (withdrawButton != null)
+                    {
+                        if (withdrawButtonText == null)
+                            withdrawButtonText = withdrawButton.transform.Find("Text")?.GetComponent<TextMeshProUGUI>();
+                        if (withdrawButtonBg == null)
+                            withdrawButtonBg = withdrawButton.GetComponent<Image>();
+                        withdrawButton.onClick.RemoveAllListeners();
+                        withdrawButton.onClick.AddListener(OnWithdrawClicked);
+                    }
+
+                    if (withdrawAllButton == null)
+                        withdrawAllButton = bankActiveRoot.transform.Find("WithdrawAllButton")?.GetComponent<Button>();
+                    if (withdrawAllButton != null)
+                    {
+                        if (withdrawAllButtonText == null)
+                            withdrawAllButtonText = withdrawAllButton.transform.Find("Text")?.GetComponent<TextMeshProUGUI>();
+                        withdrawAllButton.onClick.RemoveAllListeners();
+                        withdrawAllButton.onClick.AddListener(OnWithdrawAllClicked);
+                    }
                 }
             }
 
@@ -996,6 +1081,74 @@ namespace EmpireBuilder.UI
                 }
             }
 
+            // 13c. Bank Operations Section
+            bool isBank = currentBuilding.PropertyType == PropertyType.Bank;
+            if (bankSectionRoot != null)
+            {
+                bankSectionRoot.SetActive(isBank);
+            }
+            if (isBank)
+            {
+                // Municipal bank cannot be purchased as private real estate and has no rental units
+                if (buyPropertyButton != null) buyPropertyButton.gameObject.SetActive(false);
+                if (collectRentButton != null) collectRentButton.gameObject.SetActive(false);
+                if (flatSectionRoot != null) flatSectionRoot.SetActive(false);
+
+                var bank = EmpireBuilder.Economy.BankService.Instance;
+                bool hasAccount = bank != null && bank.HasBankAccount;
+                double bankBal = bank != null ? bank.BankBalance : 0.0;
+                double totalInt = bank != null ? bank.TotalInterestEarned : 0.0;
+
+                if (bankClosedRoot != null) bankClosedRoot.SetActive(!hasAccount);
+                if (bankActiveRoot != null) bankActiveRoot.SetActive(hasAccount);
+
+                if (bankStatusText != null)
+                {
+                    if (!hasAccount)
+                    {
+                        bankStatusText.text = $"<color=#FFCC00>⚠️ NO ACTIVE BANK ACCOUNT</color>\n" +
+                            $"Open an official savings account for a one-time fee of <color=#44FF88>100 Coins</color>.\n" +
+                            $"Once opened, deposit funds anytime and earn <color=#FFDD44>(10/30)% compound interest daily</color>!";
+                    }
+                    else
+                    {
+                        bankStatusText.text = $"<color=#44FF88>★ ACTIVE SAVINGS ACCOUNT</color>  |  Balance: <color=#FFDD44>${bankBal:N2}</color>\n" +
+                            $"Daily Interest Rate: <color=#44FF88>(10/30)% (~0.333%)</color>  |  Total Interest Earned: <color=#70C5FF>${totalInt:N2}</color>";
+                    }
+                }
+
+                if (openBankButton != null)
+                {
+                    bool canAffordOpen = currentCash >= EmpireBuilder.Economy.BankService.AccountOpeningFee;
+                    openBankButton.interactable = canAffordOpen;
+                    if (openBankButtonText != null)
+                    {
+                        openBankButtonText.text = canAffordOpen
+                            ? "🏦 OPEN BANK ACCOUNT (FEE: 100 COINS)"
+                            : "NEED 100 COINS TO OPEN ACCOUNT";
+                    }
+                    if (openBankButtonBg != null)
+                    {
+                        openBankButtonBg.color = canAffordOpen
+                            ? new Color(0.12f, 0.78f, 0.38f, 1f)
+                            : new Color(0.45f, 0.45f, 0.50f, 0.8f);
+                    }
+                }
+
+                if (depositButton != null)
+                {
+                    depositButton.interactable = currentCash >= 1.0;
+                }
+                if (withdrawButton != null)
+                {
+                    withdrawButton.interactable = bankBal >= 1.0;
+                }
+                if (withdrawAllButton != null)
+                {
+                    withdrawAllButton.interactable = bankBal >= 0.01;
+                }
+            }
+
             // 14. Building Maintenance Alert Section
             bool hasMaint = currentBuilding.HasPendingMaintenance;
             if (maintenanceSectionRoot != null)
@@ -1625,6 +1778,9 @@ namespace EmpireBuilder.UI
             // 8g2. Park Visitor Entry Fee Section
             CreateParkSection(card.transform);
 
+            // 8g3. Bank Operations Section
+            CreateBankSection(card.transform);
+
             // 8h. Building Maintenance Alert Section (Positioned at bottom of section slot)
             CreateMaintenanceSection(card.transform);
 
@@ -1853,6 +2009,256 @@ namespace EmpireBuilder.UI
             payMaintenanceButton.onClick.RemoveAllListeners();
             payMaintenanceButton.onClick.AddListener(OnPayMaintenanceClicked);
             maintenanceSectionRoot.SetActive(false);
+        }
+
+        private void CreateBankSection(Transform card)
+        {
+            if (card == null) return;
+            bankSectionRoot = CreateUIElement("BankSection", card, new Vector2(0, 1), new Vector2(1, 1), new Vector2(0.5f, 1), new Vector2(-50, 195), new Vector2(0, -250));
+            Image bankBg = bankSectionRoot.AddComponent<Image>();
+            bankBg.color = new Color(0.10f, 0.14f, 0.22f, 0.98f);
+            if (roundedBoxSprite != null) { bankBg.sprite = roundedBoxSprite; bankBg.type = Image.Type.Sliced; }
+
+            // Title
+            TextMeshProUGUI bTitle = CreateTextMesh("BankTitle", bankSectionRoot.transform, "🏛️ CAPITAL NATIONAL BANK & SAVINGS", 13, FontStyles.Bold, TextAlignmentOptions.Left, new Color(1f, 0.85f, 0.25f));
+            RectTransform btRt = bTitle.GetComponent<RectTransform>();
+            btRt.anchorMin = new Vector2(0, 1); btRt.anchorMax = new Vector2(1, 1); btRt.pivot = new Vector2(0, 1);
+            btRt.anchoredPosition = new Vector2(15, -10); btRt.sizeDelta = new Vector2(-30, 22);
+
+            // Status Text
+            bankStatusText = CreateTextMesh("BankStatus", bankSectionRoot.transform, "Open a savings account to store coins and earn daily compound interest.", 11, FontStyles.Normal, TextAlignmentOptions.Left, new Color(0.90f, 0.92f, 0.96f));
+            RectTransform bsRt = bankStatusText.GetComponent<RectTransform>();
+            bsRt.anchorMin = new Vector2(0, 1); bsRt.anchorMax = new Vector2(1, 1); bsRt.pivot = new Vector2(0, 1);
+            bsRt.anchoredPosition = new Vector2(15, -34); bsRt.sizeDelta = new Vector2(-30, 48);
+
+            // 1. Account Closed Sub-Panel (For opening account)
+            bankClosedRoot = CreateUIElement("BankClosedRoot", bankSectionRoot.transform, new Vector2(0, 0), new Vector2(1, 1), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(0, -25));
+            GameObject openBtnObj = CreateUIElement("OpenBankButton", bankClosedRoot.transform, new Vector2(0, 0), new Vector2(1, 0), new Vector2(0.5f, 0), new Vector2(-30, 46), new Vector2(0, 15));
+            openBankButtonBg = openBtnObj.AddComponent<Image>();
+            openBankButtonBg.color = new Color(0.12f, 0.78f, 0.38f, 1f);
+            if (roundedBoxSprite != null) { openBankButtonBg.sprite = roundedBoxSprite; openBankButtonBg.type = Image.Type.Sliced; }
+            openBankButton = openBtnObj.AddComponent<Button>();
+            openBankButtonText = CreateTextMesh("Text", openBtnObj.transform, "🏦 OPEN BANK ACCOUNT (FEE: 100 COINS)", 13, FontStyles.Bold, TextAlignmentOptions.Center, Color.white);
+            RectTransform obTextRt = openBankButtonText.GetComponent<RectTransform>();
+            obTextRt.anchorMin = Vector2.zero; obTextRt.anchorMax = Vector2.one; obTextRt.sizeDelta = Vector2.zero;
+            openBankButton.onClick.RemoveAllListeners();
+            openBankButton.onClick.AddListener(OnOpenBankAccountClicked);
+
+            // 2. Account Active Sub-Panel (For deposits, withdrawals, and quick buttons)
+            bankActiveRoot = CreateUIElement("BankActiveRoot", bankSectionRoot.transform, new Vector2(0, 0), new Vector2(1, 0), new Vector2(0.5f, 0), new Vector2(0, 108), new Vector2(0, 6));
+
+            // Quick Amount Buttons Row
+            GameObject quickRow = CreateUIElement("QuickRow", bankActiveRoot.transform, new Vector2(0, 1), new Vector2(1, 1), new Vector2(0.5f, 1), new Vector2(-30, 26), new Vector2(0, 0));
+            CreateQuickButton("+$100", quickRow.transform, new Vector2(0, 0), new Vector2(0.23f, 1), () => OnQuickDepositClicked(100));
+            CreateQuickButton("+$500", quickRow.transform, new Vector2(0.25f, 0), new Vector2(0.48f, 1), () => OnQuickDepositClicked(500));
+            CreateQuickButton("+$1K", quickRow.transform, new Vector2(0.50f, 0), new Vector2(0.73f, 1), () => OnQuickDepositClicked(1000));
+            CreateQuickButton("MAX CASH", quickRow.transform, new Vector2(0.75f, 0), new Vector2(1f, 1), OnQuickDepositMaxCash);
+
+            // Input Field Row
+            bankDepositInputField = CreateInputField("BankAmountInput", bankActiveRoot.transform, new Vector2(0, 0), new Vector2(0.45f, 0), new Vector2(0, 0), new Vector2(0, 38), new Vector2(15, 34), "Amount...");
+
+            // Deposit Button
+            GameObject depBtnObj = CreateUIElement("DepositButton", bankActiveRoot.transform, new Vector2(0.48f, 0), new Vector2(0.73f, 0), new Vector2(0.5f, 0), new Vector2(0, 38), new Vector2(0, 34));
+            depositButtonBg = depBtnObj.AddComponent<Image>();
+            depositButtonBg.color = new Color(0.12f, 0.78f, 0.38f, 1f);
+            if (roundedBoxSprite != null) { depositButtonBg.sprite = roundedBoxSprite; depositButtonBg.type = Image.Type.Sliced; }
+            depositButton = depBtnObj.AddComponent<Button>();
+            depositButtonText = CreateTextMesh("Text", depBtnObj.transform, "📥 DEPOSIT", 12, FontStyles.Bold, TextAlignmentOptions.Center, Color.white);
+            RectTransform dbTextRt = depositButtonText.GetComponent<RectTransform>();
+            dbTextRt.anchorMin = Vector2.zero; dbTextRt.anchorMax = Vector2.one; dbTextRt.sizeDelta = Vector2.zero;
+            depositButton.onClick.RemoveAllListeners();
+            depositButton.onClick.AddListener(OnDepositClicked);
+
+            // Withdraw Button
+            GameObject wthBtnObj = CreateUIElement("WithdrawButton", bankActiveRoot.transform, new Vector2(0.75f, 0), new Vector2(1f, 0), new Vector2(0.5f, 0), new Vector2(-15, 38), new Vector2(0, 34));
+            withdrawButtonBg = wthBtnObj.AddComponent<Image>();
+            withdrawButtonBg.color = new Color(0.92f, 0.45f, 0.15f, 1f);
+            if (roundedBoxSprite != null) { withdrawButtonBg.sprite = roundedBoxSprite; withdrawButtonBg.type = Image.Type.Sliced; }
+            withdrawButton = wthBtnObj.AddComponent<Button>();
+            withdrawButtonText = CreateTextMesh("Text", wthBtnObj.transform, "📤 WITHDRAW", 12, FontStyles.Bold, TextAlignmentOptions.Center, Color.white);
+            RectTransform wbTextRt = withdrawButtonText.GetComponent<RectTransform>();
+            wbTextRt.anchorMin = Vector2.zero; wbTextRt.anchorMax = Vector2.one; wbTextRt.sizeDelta = Vector2.zero;
+            withdrawButton.onClick.RemoveAllListeners();
+            withdrawButton.onClick.AddListener(OnWithdrawClicked);
+
+            // Withdraw All Button (bottom compact row)
+            GameObject wAllBtnObj = CreateUIElement("WithdrawAllButton", bankActiveRoot.transform, new Vector2(0, 0), new Vector2(1, 0), new Vector2(0.5f, 0), new Vector2(-30, 24), new Vector2(0, 2));
+            Image wAllImg = wAllBtnObj.AddComponent<Image>();
+            wAllImg.color = new Color(0.24f, 0.30f, 0.40f, 0.90f);
+            if (roundedBoxSprite != null) { wAllImg.sprite = roundedBoxSprite; wAllImg.type = Image.Type.Sliced; }
+            withdrawAllButton = wAllBtnObj.AddComponent<Button>();
+            withdrawAllButtonText = CreateTextMesh("Text", wAllBtnObj.transform, "WITHDRAW ALL TO POCKET CASH", 11, FontStyles.Bold, TextAlignmentOptions.Center, new Color(0.95f, 0.95f, 0.95f));
+            RectTransform wabTextRt = withdrawAllButtonText.GetComponent<RectTransform>();
+            wabTextRt.anchorMin = Vector2.zero; wabTextRt.anchorMax = Vector2.one; wabTextRt.sizeDelta = Vector2.zero;
+            withdrawAllButton.onClick.RemoveAllListeners();
+            withdrawAllButton.onClick.AddListener(OnWithdrawAllClicked);
+
+            bankSectionRoot.SetActive(false);
+        }
+
+        private Button CreateQuickButton(string label, Transform parent, Vector2 anchorMin, Vector2 anchorMax, UnityEngine.Events.UnityAction action)
+        {
+            GameObject btnObj = CreateUIElement("QuickBtn_" + label, parent, anchorMin, anchorMax, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
+            Image bg = btnObj.AddComponent<Image>();
+            bg.color = new Color(0.18f, 0.24f, 0.35f, 0.95f);
+            if (roundedBoxSprite != null) { bg.sprite = roundedBoxSprite; bg.type = Image.Type.Sliced; }
+            Button btn = btnObj.AddComponent<Button>();
+            TextMeshProUGUI txt = CreateTextMesh("Text", btnObj.transform, label, 11, FontStyles.Bold, TextAlignmentOptions.Center, Color.white);
+            RectTransform trt = txt.rectTransform;
+            trt.anchorMin = Vector2.zero; trt.anchorMax = Vector2.one; trt.sizeDelta = Vector2.zero;
+            btn.onClick.AddListener(action);
+            return btn;
+        }
+
+        private TMP_InputField CreateInputField(string name, Transform parent, Vector2 anchorMin, Vector2 anchorMax, Vector2 pivot, Vector2 sizeDelta, Vector2 anchoredPos, string placeholderText)
+        {
+            GameObject root = CreateUIElement(name, parent, anchorMin, anchorMax, pivot, sizeDelta, anchoredPos);
+            Image bg = root.AddComponent<Image>();
+            bg.color = new Color(0.06f, 0.08f, 0.12f, 1f);
+            if (roundedBoxSprite != null)
+            {
+                bg.sprite = roundedBoxSprite;
+                bg.type = Image.Type.Sliced;
+            }
+
+            GameObject textArea = CreateUIElement("TextArea", root.transform, Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), new Vector2(-16, -6), Vector2.zero);
+            textArea.AddComponent<RectMask2D>();
+
+            TextMeshProUGUI placeholder = CreateTextMesh("Placeholder", textArea.transform, placeholderText, 12, FontStyles.Italic, TextAlignmentOptions.Left, new Color(0.55f, 0.60f, 0.70f, 0.7f));
+            RectTransform phRt = placeholder.rectTransform;
+            phRt.anchorMin = Vector2.zero;
+            phRt.anchorMax = Vector2.one;
+            phRt.sizeDelta = Vector2.zero;
+
+            TextMeshProUGUI text = CreateTextMesh("Text", textArea.transform, "", 13, FontStyles.Bold, TextAlignmentOptions.Left, Color.white);
+            RectTransform tRt = text.rectTransform;
+            tRt.anchorMin = Vector2.zero;
+            tRt.anchorMax = Vector2.one;
+            tRt.sizeDelta = Vector2.zero;
+
+            TMP_InputField inputField = root.AddComponent<TMP_InputField>();
+            inputField.textViewport = textArea.GetComponent<RectTransform>();
+            inputField.textComponent = text;
+            inputField.placeholder = placeholder;
+            inputField.contentType = TMP_InputField.ContentType.IntegerNumber;
+            inputField.characterLimit = 9;
+
+            return inputField;
+        }
+
+        private void OnOpenBankAccountClicked()
+        {
+            if (EmpireBuilder.Economy.BankService.Instance == null) return;
+            if (EmpireBuilder.Economy.BankService.Instance.TryOpenAccount(out string msg))
+            {
+                GameSoundManager.Instance?.PlayBuy(currentBuilding != null ? currentBuilding.transform.position : transform.position);
+                ShowToast(msg);
+                GamePlayHeaderUI.Instance?.UpdateMoneyDisplay();
+                RefreshUI();
+            }
+            else
+            {
+                GameSoundManager.Instance?.PlayError();
+                ShowToast(msg);
+            }
+        }
+
+        private void OnDepositClicked()
+        {
+            if (EmpireBuilder.Economy.BankService.Instance == null) return;
+            if (bankDepositInputField == null) return;
+
+            string input = bankDepositInputField.text.Trim();
+            if (!double.TryParse(input, out double amount) || amount <= 0)
+            {
+                ShowToast("Please enter a valid deposit amount greater than 0!");
+                GameSoundManager.Instance?.PlayError();
+                return;
+            }
+
+            if (EmpireBuilder.Economy.BankService.Instance.TryDeposit(amount, out string msg))
+            {
+                GameSoundManager.Instance?.PlayCollect();
+                bankDepositInputField.text = "";
+                ShowToast(msg);
+                GamePlayHeaderUI.Instance?.UpdateMoneyDisplay();
+                RefreshUI();
+            }
+            else
+            {
+                GameSoundManager.Instance?.PlayError();
+                ShowToast(msg);
+            }
+        }
+
+        private void OnWithdrawClicked()
+        {
+            if (EmpireBuilder.Economy.BankService.Instance == null) return;
+            if (bankDepositInputField == null) return;
+
+            string input = bankDepositInputField.text.Trim();
+            if (!double.TryParse(input, out double amount) || amount <= 0)
+            {
+                ShowToast("Please enter a valid amount to withdraw!");
+                GameSoundManager.Instance?.PlayError();
+                return;
+            }
+
+            if (EmpireBuilder.Economy.BankService.Instance.TryWithdraw(amount, out string msg))
+            {
+                GameSoundManager.Instance?.PlayCollect();
+                bankDepositInputField.text = "";
+                ShowToast(msg);
+                GamePlayHeaderUI.Instance?.UpdateMoneyDisplay();
+                RefreshUI();
+            }
+            else
+            {
+                GameSoundManager.Instance?.PlayError();
+                ShowToast(msg);
+            }
+        }
+
+        private void OnWithdrawAllClicked()
+        {
+            if (EmpireBuilder.Economy.BankService.Instance == null) return;
+            double all = EmpireBuilder.Economy.BankService.Instance.BankBalance;
+            if (all <= 0.01)
+            {
+                ShowToast("Your bank balance is currently empty!");
+                return;
+            }
+
+            if (EmpireBuilder.Economy.BankService.Instance.TryWithdraw(all, out string msg))
+            {
+                GameSoundManager.Instance?.PlayCollect();
+                if (bankDepositInputField != null) bankDepositInputField.text = "";
+                ShowToast(msg);
+                GamePlayHeaderUI.Instance?.UpdateMoneyDisplay();
+                RefreshUI();
+            }
+            else
+            {
+                GameSoundManager.Instance?.PlayError();
+                ShowToast(msg);
+            }
+        }
+
+        private void OnQuickDepositClicked(double amt)
+        {
+            if (bankDepositInputField != null)
+            {
+                bankDepositInputField.text = ((int)amt).ToString();
+            }
+        }
+
+        private void OnQuickDepositMaxCash()
+        {
+            if (bankDepositInputField != null)
+            {
+                double cash = GetPlayerCash();
+                bankDepositInputField.text = ((int)cash).ToString();
+            }
         }
         #endregion
     }

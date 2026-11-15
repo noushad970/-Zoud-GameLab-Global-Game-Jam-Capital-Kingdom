@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using EmpireBuilder.UI;
 using UnityEngine;
@@ -287,7 +288,109 @@ namespace EmpireBuilder.World
                 }
             }
 
+            // Ensure BankService exists
+            if (EmpireBuilder.Economy.BankService.Instance == null)
+            {
+                var bs = UnityEngine.Object.FindAnyObjectByType<EmpireBuilder.Economy.BankService>();
+                if (bs == null)
+                {
+                    gameObject.AddComponent<EmpireBuilder.Economy.BankService>();
+                }
+            }
+
+            // Optimize scene colliders: remove redundant colliders from decorative objects and props
+            OptimizeSceneColliders();
+
             Debug.Log($"[BuildingInteractionManager] Initialized {registeredCount} interactive buildings across the city.");
+        }
+
+        /// <summary>
+        /// Removes unnecessary colliders on decorative objects (props, vegetation, lamps, street furniture)
+        /// while preserving essential colliders for interactive buildings, terrain, vehicles, and pedestrians.
+        /// Dramatically improves physics performance, raycasting accuracy, and mobile/WebGL frame rates.
+        /// </summary>
+        [ContextMenu("Optimize Scene Colliders")]
+        public void OptimizeSceneColliders()
+        {
+            Collider[] colliders = UnityEngine.Object.FindObjectsByType<Collider>(FindObjectsInactive.Include);
+            int removedCount = 0;
+
+            foreach (var col in colliders)
+            {
+                if (col == null) continue;
+
+                // 1. Keep Terrain colliders
+                if (col is TerrainCollider) continue;
+                if (col.gameObject.name.ToLowerInvariant() == "terrain") continue;
+
+                // 2. Keep Vehicle and Character colliders
+                if (col.GetComponentInParent<EmpireBuilder.Traffic.AICarController>() != null ||
+                    col.GetComponentInParent<EmpireBuilder.Traffic.ActiveRentedTaxi>() != null ||
+                    col.GetComponentInParent<EmpireBuilder.Traffic.AIPedestrianController>() != null ||
+                    col.GetComponentInParent<EmpireBuilder.Traffic.ParkPedestrianController>() != null ||
+                    col.GetComponentInParent<CharacterController>() != null)
+                {
+                    continue;
+                }
+
+                // 3. Keep interactive buildings' main colliders
+                PropertyBuilding pb = col.GetComponent<PropertyBuilding>();
+                if (pb != null)
+                {
+                    continue;
+                }
+
+                // If this collider is a child inside a PropertyBuilding, check if it's the main building collider
+                PropertyBuilding parentPb = col.GetComponentInParent<PropertyBuilding>();
+                if (parentPb != null)
+                {
+                    var rootCol = parentPb.GetComponent<Collider>();
+                    if (rootCol != null && rootCol != col)
+                    {
+                        if (Application.isPlaying) Destroy(col);
+                        else DestroyImmediate(col);
+                        removedCount++;
+                        continue;
+                    }
+                    continue;
+                }
+
+                // 4. Keep Bank, Park, and other tagged interaction targets
+                string tag = col.tag;
+                if (tag == "Bank" || tag == "Park" || tag == "Hospital" || tag == "Rental Building" ||
+                    tag == "Small Rental Building" || tag == "Restaurant" || tag == "Cafe" ||
+                    tag == "Taxi Station" || tag == "Stadium" || tag == "Factory" || tag == "Oil Station" ||
+                    tag == "School" || tag == "Police Station" || tag == "Tennis Court")
+                {
+                    continue;
+                }
+
+                // 5. Remove colliders on decorative objects (props, trees, lamps, fences, bushes, grass, rocks, cemetery props)
+                string nameLower = col.gameObject.name.ToLowerInvariant();
+                Transform parentTr = col.transform.parent;
+                string parentNameLower = parentTr != null ? parentTr.name.ToLowerInvariant() : "";
+
+                bool isDecorative = nameLower.Contains("tree") || nameLower.Contains("bush") || nameLower.Contains("grass") ||
+                                    nameLower.Contains("palm") || nameLower.Contains("mushroom") || nameLower.Contains("rock") ||
+                                    nameLower.Contains("fence") || nameLower.Contains("lamp") || nameLower.Contains("spotlight") ||
+                                    nameLower.Contains("trash") || nameLower.Contains("bench") || nameLower.Contains("signboard") ||
+                                    nameLower.Contains("billboard") || nameLower.Contains("fountain") || nameLower.Contains("prop") ||
+                                    nameLower.Contains("grave") || nameLower.Contains("tomb") || nameLower.Contains("cross") ||
+                                    nameLower.Contains("hydrant") || nameLower.Contains("traffic_light") ||
+                                    nameLower.Contains("barrier") || nameLower.Contains("flower") ||
+                                    parentNameLower.Contains("props") || parentNameLower.Contains("vegetation") ||
+                                    parentNameLower.Contains("roadnetwork") || parentNameLower.Contains("demonstration") ||
+                                    parentNameLower.Contains("parkwaypoints") || IsSectorOrContainer(col.gameObject.name);
+
+                if (isDecorative)
+                {
+                    if (Application.isPlaying) Destroy(col);
+                    else DestroyImmediate(col);
+                    removedCount++;
+                }
+            }
+
+            Debug.Log($"[BuildingInteractionManager] Collider optimization complete: stripped {removedCount} unnecessary colliders.");
         }
 
         public static bool IsBuildingObject(Transform t, out string friendlyName, out PropertyType pType, out double price, out double dailyRent, out double taxiFee, out double taxiFare, out string desc)
@@ -481,9 +584,28 @@ namespace EmpireBuilder.World
                     desc = "Expansive scenic public park with walking trails and garden attractions. Buy this prestigious park to earn visitor entry fees from citizens walking through!";
                     return true;
                 }
+                if (objectTag == "Bank")
+                {
+                    friendlyName = "Capital National Bank";
+                    pType = PropertyType.Bank;
+                    price = 0;
+                    dailyRent = 0;
+                    desc = "Capital National Bank. Open a secure savings account with a 100 coin fee, store your money safely, and earn daily interest of (10/30)% compounded daily!";
+                    return true;
+                }
             }
 
             // 5. Fallback Name-Based Matching (For any untagged structures)
+            // 5.0 Bank
+            if (n.IndexOf("Bank", StringComparison.OrdinalIgnoreCase) >= 0 || n.IndexOf("government-building-bank", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                friendlyName = "Capital National Bank";
+                pType = PropertyType.Bank;
+                price = 0;
+                dailyRent = 0;
+                desc = "Capital National Bank. Open a secure savings account with a 100 coin fee, store your money safely, and earn daily interest of (10/30)% compounded daily!";
+                return true;
+            }
             // 5.1 Tennis Court
             if (n.Contains("Tennis Court") || n.Contains("Tennis"))
             {

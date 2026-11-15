@@ -198,9 +198,6 @@ namespace EmpireBuilder.World
                 {
                     // Ensure spotlight properties
                     lightComp.type = LightType.Spot;
-#if UNITY_EDITOR
-                    lightComp.lightmapBakeType = LightmapBakeType.Realtime;
-#endif
                     lightComp.renderMode = LightRenderMode.Auto;
                     lightComp.color = streetlightColor;
                     lightComp.intensity = streetlightIntensity;
@@ -218,9 +215,6 @@ namespace EmpireBuilder.World
                 if (lightComp != null)
                 {
                     lightComp.type = LightType.Point;
-#if UNITY_EDITOR
-                    lightComp.lightmapBakeType = LightmapBakeType.Realtime;
-#endif
                     lightComp.renderMode = LightRenderMode.Auto;
                     lightComp.color = streetlightColor;
                     lightComp.intensity = streetlightIntensity * 0.75f;
@@ -242,21 +236,12 @@ namespace EmpireBuilder.World
 
                     lightComp = lightGo.AddComponent<Light>();
                     lightComp.type = LightType.Spot;
-#if UNITY_EDITOR
-                    lightComp.lightmapBakeType = LightmapBakeType.Realtime;
-#endif
                     lightComp.color = streetlightColor;
                     lightComp.intensity = streetlightIntensity * 0.8f;
                     lightComp.range = streetlightRange * 0.75f;
                     lightComp.spotAngle = spotAngle;
                     lightComp.innerSpotAngle = spotAngle * 0.65f;
                     lightComp.shadows = LightShadows.None;
-                }
-                else
-                {
-#if UNITY_EDITOR
-                    lightComp.lightmapBakeType = LightmapBakeType.Realtime;
-#endif
                 }
             }
 

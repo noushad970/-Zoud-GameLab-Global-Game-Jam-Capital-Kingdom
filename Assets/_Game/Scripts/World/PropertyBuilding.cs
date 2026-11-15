@@ -23,6 +23,7 @@ namespace EmpireBuilder.World
         PoliceStation,
         TennisCourt,
         Park,
+        Bank,
         // Legacy aliases for backward compatibility with serialized scenes
         House = SmallRentalBuilding,
         Apartment = RentalBuilding,

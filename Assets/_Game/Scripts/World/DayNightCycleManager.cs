@@ -1,4 +1,5 @@
 using System;
+using EmpireBuilder.Core;
 using UnityEngine;
 
 namespace EmpireBuilder.World
@@ -113,7 +114,15 @@ namespace EmpireBuilder.World
             if (Application.isPlaying && autoAdvance)
             {
                 float delta = (Time.deltaTime / Mathf.Max(fullDayDurationSeconds, 1f)) * timeScale;
-                currentTimeOfDay = (currentTimeOfDay + delta) % 1f;
+                currentTimeOfDay += delta;
+                if (currentTimeOfDay >= 1f)
+                {
+                    currentTimeOfDay %= 1f;
+                    if (GameManager.Instance != null && GameManager.Instance.Simulation != null)
+                    {
+                        GameManager.Instance.Simulation.AdvanceDay();
+                    }
+                }
             }
 
             ApplyLighting(currentTimeOfDay);

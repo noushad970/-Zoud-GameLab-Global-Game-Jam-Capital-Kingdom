@@ -15,6 +15,10 @@ namespace EmpireBuilder.UI
         [SerializeField] private Button backToMenuButton;
         [SerializeField] private Button guideButton;
 
+        [Header("In-Game Day, Date & Clock Header")]
+        [SerializeField] private GameObject dateTimeBadgeRoot;
+        [SerializeField] private TextMeshProUGUI dateTimeText;
+
         [Header("Scene Config")]
         [SerializeField] private string mainMenuSceneName = "MainMenu";
 
@@ -33,16 +37,116 @@ namespace EmpireBuilder.UI
             }
 
             EnsureGuideButton();
+            EnsureDateTimeBadge();
             EnsureWebGLSaveManager();
             EnsureCityNoticeBar();
             EnsureGameTutorialModal();
 
             UpdateMoneyDisplay();
+            UpdateDateTimeDisplay();
 
             if (GameManager.Instance != null && GameManager.Instance.Economy != null)
             {
                 GameManager.Instance.Economy.OnCashChanged += val => UpdateMoneyDisplay();
             }
+        }
+
+        private void Update()
+        {
+            UpdateDateTimeDisplay();
+        }
+
+        private void EnsureDateTimeBadge()
+        {
+            if (dateTimeBadgeRoot == null)
+            {
+                var tr = transform.Find("DateTimeBadge");
+                if (tr != null)
+                {
+                    dateTimeBadgeRoot = tr.gameObject;
+                    dateTimeText = dateTimeBadgeRoot.GetComponentInChildren<TextMeshProUGUI>();
+                }
+            }
+
+            if (dateTimeBadgeRoot == null)
+            {
+                dateTimeBadgeRoot = new GameObject("DateTimeBadge", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+                dateTimeBadgeRoot.transform.SetParent(transform, false);
+
+                var rt = dateTimeBadgeRoot.GetComponent<RectTransform>();
+                rt.anchorMin = new Vector2(0.5f, 0.5f);
+                rt.anchorMax = new Vector2(0.5f, 0.5f);
+                rt.pivot = new Vector2(0.5f, 0.5f);
+                rt.anchoredPosition = new Vector2(20f, 0f);
+                rt.sizeDelta = new Vector2(380f, 44f);
+
+                var img = dateTimeBadgeRoot.GetComponent<Image>();
+                img.color = new Color(0.08f, 0.12f, 0.18f, 0.90f);
+
+                if (backToMenuButton != null)
+                {
+                    var btnImg = backToMenuButton.GetComponent<Image>();
+                    if (btnImg != null && btnImg.sprite != null)
+                    {
+                        img.sprite = btnImg.sprite;
+                        img.type = Image.Type.Sliced;
+                    }
+                }
+
+                var textObj = new GameObject("DateTimeText", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
+                textObj.transform.SetParent(dateTimeBadgeRoot.transform, false);
+
+                dateTimeText = textObj.GetComponent<TextMeshProUGUI>();
+                dateTimeText.fontSize = 12f;
+                dateTimeText.fontStyle = FontStyles.Bold;
+                dateTimeText.alignment = TextAlignmentOptions.Center;
+                dateTimeText.raycastTarget = false;
+
+                var textRt = dateTimeText.rectTransform;
+                textRt.anchorMin = Vector2.zero;
+                textRt.anchorMax = Vector2.one;
+                textRt.sizeDelta = Vector2.zero;
+            }
+        }
+
+        private float nextClockUpdate = 0f;
+        public void UpdateDateTimeDisplay()
+        {
+            if (dateTimeText == null) return;
+            if (Time.time < nextClockUpdate) return;
+            nextClockUpdate = Time.time + 0.15f;
+
+            int currentDay = 1;
+            if (GameManager.Instance != null && GameManager.Instance.Simulation != null)
+            {
+                currentDay = GameManager.Instance.Simulation.CurrentDay;
+            }
+            else
+            {
+                currentDay = PlayerPrefs.GetInt("CurrentDay", 1);
+            }
+
+            float timeOfDay = 0.20f;
+            if (EmpireBuilder.World.DayNightCycleManager.Instance != null)
+            {
+                timeOfDay = EmpireBuilder.World.DayNightCycleManager.Instance.CurrentTimeOfDay;
+            }
+
+            // Game Logic Time: 0.0 = 06:00 AM, 0.25 = 12:00 PM, 0.5 = 06:00 PM, 0.75 = 12:00 AM
+            float totalHours = (timeOfDay * 24f + 6f) % 24f;
+            int hour = Mathf.FloorToInt(totalHours);
+            int minute = Mathf.FloorToInt((totalHours - hour) * 60f);
+            string period = hour >= 12 ? "PM" : "AM";
+            int displayHour = hour % 12;
+            if (displayHour == 0) displayHour = 12;
+            string timeStr = $"{displayHour:00}:{minute:00} {period}";
+
+            // Game Logic Date: Oct 1, 2026 + (currentDay - 1) days
+            System.DateTime baseDate = new System.DateTime(2026, 10, 1);
+            System.DateTime gameDate = baseDate.AddDays(Mathf.Max(0, currentDay - 1));
+            string dateStr = gameDate.ToString("MMM dd, yyyy");
+
+            dateTimeText.text = $"<color=#FFD700>DAY {currentDay} IN CITY</color>  <color=#556677>•</color>  <color=#FFFFFF>{timeStr}</color>  <color=#556677>•</color>  <color=#70C5FF>{dateStr}</color>";
         }
 
         private void EnsureGuideButton()

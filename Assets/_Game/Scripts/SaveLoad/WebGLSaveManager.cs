@@ -46,6 +46,9 @@ namespace EmpireBuilder.SaveLoad
         public bool isIll = false;
         public string illnessReason = "";
         public bool tutorialCompleted = false;
+        public bool hasBankAccount = false;
+        public double bankBalance = 0.0;
+        public double totalBankInterestEarned = 0.0;
         public string timestamp;
         public List<PropertySaveEntry> properties = new List<PropertySaveEntry>();
 
@@ -148,6 +151,13 @@ namespace EmpireBuilder.SaveLoad
             PlayerPrefs.DeleteKey("SavedPlayerHealth");
             PlayerPrefs.DeleteKey("SavedPlayerIsIll");
             PlayerPrefs.DeleteKey("SavedPlayerIllnessReason");
+            PlayerPrefs.DeleteKey("Bank_HasAccount");
+            PlayerPrefs.DeleteKey("Bank_Balance");
+            PlayerPrefs.DeleteKey("Bank_TotalInterest");
+            if (EmpireBuilder.Economy.BankService.Instance != null)
+            {
+                EmpireBuilder.Economy.BankService.Instance.ResetBankData();
+            }
             PlayerPrefs.SetInt("LoadOnStart", 0);
             PlayerPrefs.SetFloat("SavedPlayerCash", 5000f);
             PlayerPrefs.Save();
@@ -240,6 +250,20 @@ namespace EmpireBuilder.SaveLoad
 
                 // 4. Tutorial
                 data.tutorialCompleted = PlayerPrefs.GetInt("TutorialCompleted", 0) == 1;
+
+                // 4.5 Bank System
+                if (EmpireBuilder.Economy.BankService.Instance != null)
+                {
+                    data.hasBankAccount = EmpireBuilder.Economy.BankService.Instance.HasBankAccount;
+                    data.bankBalance = EmpireBuilder.Economy.BankService.Instance.BankBalance;
+                    data.totalBankInterestEarned = EmpireBuilder.Economy.BankService.Instance.TotalInterestEarned;
+                }
+                else
+                {
+                    data.hasBankAccount = PlayerPrefs.GetInt("Bank_HasAccount", 0) == 1;
+                    if (double.TryParse(PlayerPrefs.GetString("Bank_Balance", "0"), out double b)) data.bankBalance = b;
+                    if (double.TryParse(PlayerPrefs.GetString("Bank_TotalInterest", "0"), out double ti)) data.totalBankInterestEarned = ti;
+                }
 
                 // 5. Real Estate Properties
                 PropertyBuilding[] allBuildings = FindObjectsByType<PropertyBuilding>(FindObjectsInactive.Include, FindObjectsSortMode.None);
@@ -343,6 +367,12 @@ namespace EmpireBuilder.SaveLoad
                 PlayerPrefs.SetFloat("SavedPlayerHealth", data.health);
                 PlayerPrefs.SetInt("SavedPlayerIsIll", data.isIll ? 1 : 0);
                 PlayerPrefs.SetString("SavedPlayerIllnessReason", data.illnessReason ?? "");
+
+                // 3.5 Bank System
+                if (EmpireBuilder.Economy.BankService.Instance != null)
+                {
+                    EmpireBuilder.Economy.BankService.Instance.SetState(data.hasBankAccount, data.bankBalance, data.totalBankInterestEarned);
+                }
 
                 // 4. Properties
                 if (data.properties != null && data.properties.Count > 0)

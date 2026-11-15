@@ -12,6 +12,9 @@ namespace EmpireBuilder.SaveLoad
     {
         public int currentDay = 1;
         public double cash = 5000.0;
+        public bool hasBankAccount = false;
+        public double bankBalance = 0.0;
+        public double totalBankInterestEarned = 0.0;
         public List<OwnedAsset> ownedAssets = new List<OwnedAsset>();
         public List<Transaction> transactions = new List<Transaction>();
         public string savedTimestamp;
@@ -41,6 +44,9 @@ namespace EmpireBuilder.SaveLoad
             WebGLSaveManager.ClearSaveData();
             PlayerPrefs.DeleteKey("EmpireBuilder_SaveService_Json");
             PlayerPrefs.DeleteKey("CurrentDay");
+            PlayerPrefs.DeleteKey("Bank_HasAccount");
+            PlayerPrefs.DeleteKey("Bank_Balance");
+            PlayerPrefs.DeleteKey("Bank_TotalInterest");
             PlayerPrefs.SetFloat("SavedPlayerCash", 5000f);
             PlayerPrefs.Save();
 
@@ -68,6 +74,19 @@ namespace EmpireBuilder.SaveLoad
                     cash = cash,
                     savedTimestamp = DateTime.UtcNow.ToString("O")
                 };
+
+                if (EmpireBuilder.Economy.BankService.Instance != null)
+                {
+                    data.hasBankAccount = EmpireBuilder.Economy.BankService.Instance.HasBankAccount;
+                    data.bankBalance = EmpireBuilder.Economy.BankService.Instance.BankBalance;
+                    data.totalBankInterestEarned = EmpireBuilder.Economy.BankService.Instance.TotalInterestEarned;
+                }
+                else
+                {
+                    data.hasBankAccount = PlayerPrefs.GetInt("Bank_HasAccount", 0) == 1;
+                    if (double.TryParse(PlayerPrefs.GetString("Bank_Balance", "0"), out double b)) data.bankBalance = b;
+                    if (double.TryParse(PlayerPrefs.GetString("Bank_TotalInterest", "0"), out double ti)) data.totalBankInterestEarned = ti;
+                }
 
                 if (assets != null) data.ownedAssets.AddRange(assets);
                 if (txs != null) data.transactions.AddRange(txs);
@@ -142,6 +161,10 @@ namespace EmpireBuilder.SaveLoad
                 }
 
                 var loadedData = JsonUtility.FromJson<SaveData>(json);
+                if (loadedData != null && EmpireBuilder.Economy.BankService.Instance != null)
+                {
+                    EmpireBuilder.Economy.BankService.Instance.SetState(loadedData.hasBankAccount, loadedData.bankBalance, loadedData.totalBankInterestEarned);
+                }
                 Debug.Log($"[SaveService] Game loaded successfully (Day {loadedData.currentDay}, Cash ${loadedData.cash:N0})");
                 return loadedData;
             }

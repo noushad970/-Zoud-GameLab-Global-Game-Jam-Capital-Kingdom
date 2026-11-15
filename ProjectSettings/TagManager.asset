@@ -18,6 +18,7 @@ TagManager:
   - Tennis Court
   - Park
   - ParkWaypoints
+  - Bank
   layers:
   - Default
   - TransparentFX
