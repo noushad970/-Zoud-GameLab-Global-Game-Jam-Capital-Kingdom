@@ -94,7 +94,7 @@ namespace EmpireBuilder.UI
             int completed = PlayerPrefs.GetInt("TutorialCompleted", 0);
             if (autoShowOnFirstRun && completed == 0)
             {
-                StartCoroutine(ShowTutorialDelayed(autoShowDelay));
+                ShowTutorial(0);
             }
             else
             {
@@ -194,22 +194,49 @@ namespace EmpireBuilder.UI
                 accentColor = new Color(0.15f, 0.70f, 0.95f)
             });
 
-            // Step 6: Health, Hunger & Hospital Care
+            // Step 6: Industrial Plants & Oil Refineries
             steps.Add(new TutorialStepData
             {
-                iconEmoji = "❤️",
+                iconEmoji = "🏭",
+                title = LocalizationManager.Get("tut_industry_title"),
+                description = LocalizationManager.Get("tut_industry_desc"),
+                accentColor = new Color(0.92f, 0.45f, 0.15f)
+            });
+
+            // Step 7: City Taxi Fleet & Logistics
+            steps.Add(new TutorialStepData
+            {
+                iconEmoji = "🚕",
+                title = LocalizationManager.Get("tut_taxi_title"),
+                description = LocalizationManager.Get("tut_taxi_desc"),
+                accentColor = new Color(0.95f, 0.75f, 0.10f)
+            });
+
+            // Step 8: Health, Hunger & Hospital Care
+            steps.Add(new TutorialStepData
+            {
+                iconEmoji = "🏥",
                 title = LocalizationManager.Get("tut_health_title"),
                 description = LocalizationManager.Get("tut_health_desc"),
                 accentColor = new Color(0.92f, 0.25f, 0.35f)
             });
 
-            // Step 7: Notice Bar & Maintenance
+            // Step 9: Notice Bar & Maintenance
             steps.Add(new TutorialStepData
             {
                 iconEmoji = "🔧",
                 title = LocalizationManager.Get("tut_alerts_title"),
                 description = LocalizationManager.Get("tut_alerts_desc"),
                 accentColor = new Color(0.85f, 0.35f, 0.15f)
+            });
+
+            // Step 10: Arena Tournaments & Matches
+            steps.Add(new TutorialStepData
+            {
+                iconEmoji = "🏆",
+                title = LocalizationManager.Get("tut_stadium_title"),
+                description = LocalizationManager.Get("tut_stadium_desc"),
+                accentColor = new Color(0.18f, 0.80f, 0.44f)
             });
         }
 
@@ -302,14 +329,18 @@ namespace EmpireBuilder.UI
                 stepCountText.text = LocalizationManager.Get("tut_step_count", currentStepIndex + 1, steps.Count);
             }
 
+            bool isArabic = LocalizationManager.CurrentLanguage == GameLanguage.Arabic;
+
             if (titleText != null)
             {
                 titleText.text = step.title;
+                titleText.alignment = isArabic ? TextAlignmentOptions.Right : TextAlignmentOptions.Left;
             }
 
             if (bodyText != null)
             {
                 bodyText.text = step.description;
+                bodyText.alignment = isArabic ? TextAlignmentOptions.TopRight : TextAlignmentOptions.TopLeft;
             }
 
             if (iconEmojiText != null)

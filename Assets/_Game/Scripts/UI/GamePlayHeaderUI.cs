@@ -431,8 +431,8 @@ namespace EmpireBuilder.UI
             cRt.anchorMin = new Vector2(0.5f, 0.5f);
             cRt.anchorMax = new Vector2(0.5f, 0.5f);
             cRt.pivot = new Vector2(0.5f, 0.5f);
-            cRt.sizeDelta = new Vector2(620, 480);
-            tutCard.GetComponent<Image>().color = new Color(0.11f, 0.15f, 0.22f, 0.98f);
+            cRt.sizeDelta = new Vector2(660, 520);
+            tutCard.GetComponent<Image>().color = new Color(0.10f, 0.14f, 0.22f, 0.98f);
 
             // Close X
             if (backToMenuButton != null)
@@ -580,8 +580,17 @@ namespace EmpireBuilder.UI
                 if (nxtImg != null) nxtImg.color = new Color(0.18f, 0.80f, 0.44f);
             }
 
-            tutModalRoot.AddComponent<GameTutorialManager>();
-            tutModalRoot.SetActive(false);
+            var tutComp = tutModalRoot.AddComponent<GameTutorialManager>();
+            int completed = PlayerPrefs.GetInt("TutorialCompleted", 0);
+            if (completed == 0)
+            {
+                tutModalRoot.SetActive(true);
+                tutComp.ShowTutorial(0);
+            }
+            else
+            {
+                tutModalRoot.SetActive(false);
+            }
         }
 
         private void OnDestroy()

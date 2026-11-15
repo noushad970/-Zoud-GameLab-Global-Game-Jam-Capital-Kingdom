@@ -325,13 +325,25 @@ namespace EmpireBuilder.Localization
             Add("tut_flats_desc", "Expand residential buildings by adding individual luxury apartments.\n\nEach apartment you construct attracts new tenants, dramatically boosting your daily rent yields. Watch your profits soar as your residential towers reach full occupancy!",
                                    "وسّع المباني السكنية بإضافة شقق فاخرة جديدة.\n\nكل شقة تبنيها تجذب مستأجرين جدداً، مما يضاعف عائدات الإيجار اليومية. شاهد أرباحك تنمو كلما امتلأت الأبراج بالسكان!");
 
-            Add("tut_health_title", "HEALTH & ENERGY MANAGEMENT", "إدارة الصحة والطاقة");
-            Add("tut_health_desc", "Managing an empire is demanding! Watch your Health meter on the top bar.\n\nIf your health drops too low, rush to Capital Hospital for immediate medical care, or dine at the city Restaurant to rejuvenate your vitality before fainting!",
-                                   "إدارة الإمبراطورية تتطلب جهداً كبيراً! راقب مقياس صحتك في الشريط العلوي.\n\nإذا انخفضت صحتك، توجه فوراً إلى مستشفى العاصمة لتلقي العلاج أو تناول وجبة في المطعم لاستعادة نشاطك وحيويتك!");
+            Add("tut_health_title", "HEALTH, VITALITY & EMERGENCY CARE", "الصحة والطاقة والرعاية الطبية الطارئة");
+            Add("tut_health_desc", "Managing an empire is demanding! Watch your Health and energy meter on the top bar as hunger and stamina drain.\n\nDine at local Restaurants and Cafes for hearty meals to restore HP. If your health drops critically or you faint, Capital Hospital will admit you for emergency stabilization—always keep cash reserves for healthcare!",
+                                   "إدارة الإمبراطورية تتطلب جهداً كبيراً! راقب مقياس صحتك وطاقتك في الشريط العلوي.\n\nتناول الطعام والشراب في المطاعم والمقاهي لاستعادة طاقتك. إذا تدهورت صحتك أو أغمي عليك، سيتم نقلك لمستشفى العاصمة لتلقي العلاج الطارئ، فاحرص دائماً على الاحتفاظ باحتياطي مالي للطوارئ الطبية!");
 
-            Add("tut_alerts_title", "CITY NOTICES & DISPATCHES", "إشعارات المدينة وأخبارها");
-            Add("tut_alerts_desc", "Keep a sharp eye on the City Occurrences bar in the top-right corner.\n\nIt alerts you to urgent maintenance requirements, tenant requests, rent collections, and market shifts so you can react swiftly and keep your city running at peak efficiency!",
-                                   "ابقَ متيقظاً لملاحظات شريط أحداث المدينة في الزاوية العلوية اليمنى.\n\nينبهك إلى أعمال الصيانة العاجلة وطلبات السكان ومواعيد الإيجار وتغيرات السوق لتتصرف بسرعة وتحافظ على كفاءة مدينتك!");
+            Add("tut_industry_title", "INDUSTRIAL PLANTS & OIL REFINERIES", "المصانع ومنشآت النفط");
+            Add("tut_industry_desc", "Diversify beyond real estate into industrial manufacturing and energy production!\n\nHeavy Industrial Plants fabricate commercial goods batches, while Offshore Oil Rigs extract crude petroleum barrels. Collect both regularly to generate substantial production revenues to accelerate your capital expansion.",
+                                     "نوّع استثماراتك إلى ما هو أبعد من العقارات عبر التصنيع الصناعي وإنتاج الطاقة!\n\nتنتج المصانع الصناعية دفعات من البضائع التجارية، بينما تستخرج منصات النفط براميل النفط الخام. حصّل عوائدها بانتظام لتوليد أرباح إنتاجية ضخمة تسهم في تسريع نمو ثروتك.");
+
+            Add("tut_taxi_title", "CITY TAXI FLEET & LOGISTICS", "أسطول سيارات الأجرة والخدمات اللوجستية");
+            Add("tut_taxi_desc", "Step into urban transit! Visit the Taxi Station headquarters to pay a daily fleet rental fee and dispatch city cabs.\n\nYour taxis patrol city avenues picking up waiting passengers, earning steady fare revenue throughout the day. Balance operating rental costs against gross fare revenues to maximize net logistics profit!",
+                                 "ادخل عالم النقل الحضري! زر مقر محطة سيارات الأجرة لدفع رسوم تأجير الأسطول وإطلاق سيارات الأجرة.\n\nتجوب سياراتك شوارع المدينة لنقل الركاب وتحصيل الأجور على مدار اليوم. وازن بين تكاليف التشغيل وإجمالي الإيرادات لتحقيق أعلى أرباح لوجستية صافية!");
+
+            Add("tut_stadium_title", "SPORTS ARENAS & EXHIBITION MATCHES", "الملاعب واستضافة البطولات الرياضية");
+            Add("tut_stadium_desc", "Unlock high-yield event hosting! The Grand Stadium and Tennis Courts receive lucrative match and tournament booking invitations.\n\nWhen a match notice appears, inspect the arena and accept the exhibition hosting contract to earn a massive lump-sum venue rent payout and boost civic excitement!",
+                                    "استفد من استضافة الفعاليات الرياضية الكبرى! يتلقى الاستاد الكبير وملاعب التنس دعوات مدفوعة لاستضافة المباريات والبطولات.\n\nعند ظهور إشعار المباراة، عاين الملعب واقبل عقد الاستضافة لتحصيل دفعات مالية ضخمة فورية وإنعاش النشاط في المدينة!");
+
+            Add("tut_alerts_title", "MAINTENANCE, SINKING FUNDS & ALERTS", "الصيانة وصناديق الطوارئ والتنبيهات");
+            Add("tut_alerts_desc", "Real estate structures suffer natural wear and tear! The City Notice Bar in the top-right corner will flag buildings requiring urgent structural repairs.\n\nPay maintenance orders promptly to protect building integrity and keep daily cashflows flowing. Smart investors always maintain an emergency reserve fund for unforeseen repair expenses.",
+                                   "تتعرض المباني العقارية للاستهلاك الطبيعي بمرور الوقت! سينبهك شريط أحداث المدينة في الزاوية العلوية اليمنى بالمباني التي تحتاج لصيانة عاجلة.\n\nادفع تكاليف الصيانة فوراً للحفاظ على كفاءة المبنى واستمرار تدفق الإيجارات. المستثمر الذكي يحتفظ دائماً بصندوق طوارئ لتغطية نفقات الصيانة غير المتوقعة.");
 
             Add("tut_btn_next", "NEXT ➔", "التالي ➔");
             Add("tut_btn_back", "◀ BACK", "◀ السابق");

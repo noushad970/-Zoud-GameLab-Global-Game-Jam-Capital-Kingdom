@@ -154,6 +154,7 @@ namespace EmpireBuilder.SaveLoad
             PlayerPrefs.DeleteKey("Bank_HasAccount");
             PlayerPrefs.DeleteKey("Bank_Balance");
             PlayerPrefs.DeleteKey("Bank_TotalInterest");
+            PlayerPrefs.DeleteKey("TutorialCompleted");
             if (EmpireBuilder.Economy.BankService.Instance != null)
             {
                 EmpireBuilder.Economy.BankService.Instance.ResetBankData();
@@ -373,6 +374,9 @@ namespace EmpireBuilder.SaveLoad
                 {
                     EmpireBuilder.Economy.BankService.Instance.SetState(data.hasBankAccount, data.bankBalance, data.totalBankInterestEarned);
                 }
+
+                // 3.8 Tutorial State
+                PlayerPrefs.SetInt("TutorialCompleted", data.tutorialCompleted ? 1 : 0);
 
                 // 4. Properties
                 if (data.properties != null && data.properties.Count > 0)
