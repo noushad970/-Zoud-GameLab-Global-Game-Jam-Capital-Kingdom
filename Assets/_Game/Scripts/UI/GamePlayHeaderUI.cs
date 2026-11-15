@@ -163,11 +163,13 @@ namespace EmpireBuilder.UI
             System.DateTime gameDate = baseDate.AddDays(Mathf.Max(0, currentDay - 1));
             string dateStr = gameDate.ToString("MMM dd, yyyy");
 
-            dateTimeText.text = LocalizationManager.Get("header_day_badge", currentDay, timeStr, dateStr);
+            string badgeText = LocalizationManager.Get("header_day_badge", currentDay, timeStr, dateStr);
+            LocalizationManager.ApplyTo(dateTimeText, badgeText);
         }
 
         private void HandleLanguageChanged()
         {
+            UpdateMoneyDisplay();
             UpdateHeaderTexts();
             UpdateDateTimeDisplay();
         }
@@ -177,23 +179,24 @@ namespace EmpireBuilder.UI
             if (guideButton != null)
             {
                 var txt = guideButton.GetComponentInChildren<TextMeshProUGUI>();
-                if (txt != null) txt.text = LocalizationManager.Get("header_guide_btn");
+                if (txt != null) LocalizationManager.ApplyLocalized(txt, "header_guide_btn");
             }
 
             if (backToMenuButton != null)
             {
                 var txt = backToMenuButton.GetComponentInChildren<TextMeshProUGUI>();
-                if (txt != null) txt.text = LocalizationManager.Get("header_menu_btn");
+                if (txt != null) LocalizationManager.ApplyLocalized(txt, "header_menu_btn");
             }
 
+            string langLabel = LocalizationManager.CurrentLanguage == GameLanguage.Arabic ? "English" : "عربي";
             if (languageButtonText != null)
             {
-                languageButtonText.text = LocalizationManager.CurrentLanguage == GameLanguage.Arabic ? "English" : "عربي";
+                LocalizationManager.ApplyTo(languageButtonText, langLabel);
             }
             else if (languageButton != null)
             {
                 var txt = languageButton.GetComponentInChildren<TextMeshProUGUI>();
-                if (txt != null) txt.text = LocalizationManager.CurrentLanguage == GameLanguage.Arabic ? "English" : "عربي";
+                if (txt != null) LocalizationManager.ApplyTo(txt, langLabel);
             }
         }
 
@@ -616,7 +619,10 @@ namespace EmpireBuilder.UI
                 if (save != null) cash = save.cash;
             }
 
-            moneyText.text = $"${cash:N0}";
+            string formattedCash = LocalizationManager.CurrentLanguage == GameLanguage.Arabic
+                ? $"{cash:N0}$"
+                : $"${cash:N0}";
+            LocalizationManager.ApplyTo(moneyText, formattedCash);
         }
 
         private void OnBackToMenuClicked()

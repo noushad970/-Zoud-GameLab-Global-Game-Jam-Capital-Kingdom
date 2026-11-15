@@ -10,6 +10,7 @@ namespace EmpireBuilder.Editor
 {
     /// <summary>
     /// Editor utility that automatically creates and configures the Arabic TMP_FontAsset (Tahoma SDF),
+    /// pre-bakes all Arabic characters, numbers, symbols, and connected presentation forms,
     /// and binds it as a fallback font across TMP_Settings and all project font assets.
     /// This permanently resolves missing glyph square/box (tofu) errors when displaying Arabic text.
     /// </summary>
@@ -45,9 +46,17 @@ namespace EmpireBuilder.Editor
 
             if (arabicAsset != null)
             {
+                EnsureAllArabicGlyphs(arabicAsset);
                 AssignFallbacksToProject(arabicAsset);
-                Debug.Log("<color=#00FF88>[ArabicFontAssetGenerator] Arabic TMP_FontAsset successfully verified and assigned as fallback across all project fonts!</color>");
+                Debug.Log("<color=#00FF88>[ArabicFontAssetGenerator] Arabic TMP_FontAsset successfully verified, glyphs baked, and assigned as fallback across all project fonts!</color>");
             }
+        }
+
+        public static void EnsureArabicFontSetupBatch()
+        {
+            Debug.Log("[ArabicFontAssetGenerator] Running batch Arabic font setup...");
+            EnsureArabicFontSetup();
+            Debug.Log("[ArabicFontAssetGenerator] Batch Arabic font setup complete!");
         }
 
         public static TMP_FontAsset GenerateDynamicSDF(string sourceTtfPath, string targetAssetPath)
@@ -122,6 +131,49 @@ namespace EmpireBuilder.Editor
             }
         }
 
+        public static void EnsureAllArabicGlyphs(TMP_FontAsset arabicAsset)
+        {
+            if (arabicAsset == null) return;
+
+            var unicodeList = new HashSet<uint>();
+
+            // Basic ASCII: 32 - 126
+            for (uint u = 32; u <= 126; u++) unicodeList.Add(u);
+
+            // Arabic Unicode Block: 0x0600 - 0x06FF (all letters, harakat, digits ٠-٩, punctuation)
+            for (uint u = 0x0600; u <= 0x06FF; u++) unicodeList.Add(u);
+
+            // Arabic Presentation Forms-A: 0xFB50 - 0xFDFF (common ligatures and contextual forms)
+            for (uint u = 0xFB50; u <= 0xFDFF; u++) unicodeList.Add(u);
+
+            // Arabic Presentation Forms-B: 0xFE70 - 0xFEFC (isolated, initial, medial, final connected forms & Lam-Alef)
+            for (uint u = 0xFE70; u <= 0xFEFC; u++) unicodeList.Add(u);
+
+            // Latin-1 Supplement: 0x00A0 - 0x00FF (symbols, accents)
+            for (uint u = 0x00A0; u <= 0x00FF; u++) unicodeList.Add(u);
+
+            uint[] unicodes = new uint[unicodeList.Count];
+            unicodeList.CopyTo(unicodes);
+
+            uint[] missing;
+            arabicAsset.TryAddCharacters(unicodes, out missing, true);
+
+            EditorUtility.SetDirty(arabicAsset);
+            AssetDatabase.SaveAssets();
+
+            // Sync to backup file
+            if (File.Exists(BackupSdfPath) && TargetSdfPath != BackupSdfPath)
+            {
+                TMP_FontAsset backupAsset = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(BackupSdfPath);
+                if (backupAsset != null)
+                {
+                    backupAsset.TryAddCharacters(unicodes, out missing, true);
+                    EditorUtility.SetDirty(backupAsset);
+                    AssetDatabase.SaveAssets();
+                }
+            }
+        }
+
         public static void AssignFallbacksToProject(TMP_FontAsset arabicAsset)
         {
             if (arabicAsset == null) return;
@@ -149,6 +201,7 @@ namespace EmpireBuilder.Editor
             if (lilita != null)
             {
                 AddFallbackToFont(lilita, arabicAsset);
+                AddFallbackToFont(arabicAsset, lilita);
             }
 
             // 3. Assign to BPreplay font asset
@@ -156,6 +209,7 @@ namespace EmpireBuilder.Editor
             if (bpreplay != null)
             {
                 AddFallbackToFont(bpreplay, arabicAsset);
+                AddFallbackToFont(arabicAsset, bpreplay);
             }
 
             // 4. Assign to LiberationSans font asset
@@ -163,6 +217,7 @@ namespace EmpireBuilder.Editor
             if (liberation != null)
             {
                 AddFallbackToFont(liberation, arabicAsset);
+                AddFallbackToFont(arabicAsset, liberation);
             }
 
             AssetDatabase.SaveAssets();

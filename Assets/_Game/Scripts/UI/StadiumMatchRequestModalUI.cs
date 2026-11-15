@@ -1,4 +1,5 @@
 using System;
+using EmpireBuilder.Localization;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -111,29 +112,38 @@ namespace EmpireBuilder.UI
             onAcceptedCallback = onAccepted;
             onDeclinedCallback = onDeclined;
 
-            if (headerTitleText != null && !string.IsNullOrEmpty(headerTitle))
+            if (headerTitleText != null)
             {
-                headerTitleText.text = headerTitle;
+                string title = LocalizationManager.Get("stadium_modal_title");
+                LocalizationManager.ApplyTo(headerTitleText, title);
             }
 
             if (matchNameText != null)
             {
-                matchNameText.text = matchName;
+                LocalizationManager.ApplyTo(matchNameText, matchName);
             }
 
             if (rentOfferAmountText != null)
             {
-                rentOfferAmountText.text = $"+${rentOffer:N0}";
+                string offer = LocalizationManager.Get("stadium_modal_offer_label", rentOffer);
+                LocalizationManager.ApplyTo(rentOfferAmountText, offer);
             }
 
             if (acceptButtonText != null)
             {
-                acceptButtonText.text = $"ACCEPT & EARN +${rentOffer:N0}";
+                string accept = LocalizationManager.Get("stadium_modal_accept_btn", rentOffer);
+                LocalizationManager.ApplyTo(acceptButtonText, accept);
+            }
+
+            if (declineButtonText != null)
+            {
+                LocalizationManager.ApplyLocalized(declineButtonText, "stadium_modal_decline_btn");
             }
 
             if (descriptionText != null)
             {
-                descriptionText.text = description;
+                string desc = LocalizationManager.Get("stadium_modal_desc", matchName);
+                LocalizationManager.ApplyTo(descriptionText, desc);
             }
 
             if (panelRoot != null)

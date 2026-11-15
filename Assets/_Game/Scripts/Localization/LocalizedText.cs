@@ -60,19 +60,8 @@ namespace EmpireBuilder.Localization
             if (textComponent == null || string.IsNullOrEmpty(localizationKey)) return;
 
             string localized = LocalizationManager.Get(localizationKey);
-            textComponent.text = $"{prefix}{localized}{suffix}";
-
-            if (LocalizationManager.CurrentLanguage == GameLanguage.Arabic)
-            {
-                var arFont = LocalizationManager.ArabicFont;
-                if (arFont != null && textComponent.font != null)
-                {
-                    if (textComponent.font.fallbackFontAssetTable == null)
-                        textComponent.font.fallbackFontAssetTable = new System.Collections.Generic.List<TMP_FontAsset>();
-                    if (!textComponent.font.fallbackFontAssetTable.Contains(arFont))
-                        textComponent.font.fallbackFontAssetTable.Add(arFont);
-                }
-            }
+            string full = $"{prefix}{localized}{suffix}";
+            LocalizationManager.ApplyTo(textComponent, full);
 
             if (adjustAlignmentForRTL)
             {

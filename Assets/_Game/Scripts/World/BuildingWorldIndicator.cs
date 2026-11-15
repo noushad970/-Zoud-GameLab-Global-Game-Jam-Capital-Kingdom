@@ -1,4 +1,5 @@
 using System.Collections;
+using EmpireBuilder.Localization;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -85,6 +86,7 @@ namespace EmpireBuilder.World
 
             StadiumMatchManager.OnMatchRequestStateChanged += HandleMatchRequestChanged;
             TennisMatchManager.OnMatchRequestStateChanged += HandleMatchRequestChanged;
+            LocalizationManager.OnLanguageChanged += RefreshVisuals;
 
             RefreshVisuals();
         }
@@ -98,6 +100,7 @@ namespace EmpireBuilder.World
 
             StadiumMatchManager.OnMatchRequestStateChanged -= HandleMatchRequestChanged;
             TennisMatchManager.OnMatchRequestStateChanged -= HandleMatchRequestChanged;
+            LocalizationManager.OnLanguageChanged -= RefreshVisuals;
         }
 
         private void LateUpdate()
@@ -210,7 +213,7 @@ namespace EmpireBuilder.World
                 isCollectibleReady = true; // Trigger energetic pulsing bounce
                 SetVisuals(
                     starSprite ?? keySprite,
-                    $"MAINTENANCE: -${targetBuilding.PendingMaintenanceCost:N0}",
+                    LocalizationManager.Get("ind_maint", targetBuilding.PendingMaintenanceCost),
                     new Color(0.92f, 0.22f, 0.18f, 0.98f), // Urgent Crimson Red
                     Color.white
                 );
@@ -225,7 +228,7 @@ namespace EmpireBuilder.World
             {
                 isCollectibleReady = true;
                 double offer = StadiumMatchManager.Instance.CurrentPendingRentOffer;
-                string text = offer > 0 ? $"MATCH +${offer:N0}!" : "MATCH READY!";
+                string text = offer > 0 ? LocalizationManager.Get("ind_match_offer", offer) : LocalizationManager.Get("ind_match_ready");
                 SetVisuals(trophySprite ?? crownSprite ?? coinSprite, text, new Color(0.02f, 0.52f, 0.78f, 0.98f), Color.white);
                 return;
             }
@@ -238,7 +241,7 @@ namespace EmpireBuilder.World
             {
                 isCollectibleReady = true;
                 double offer = TennisMatchManager.Instance.CurrentPendingRentOffer;
-                string text = offer > 0 ? $"MATCH +${offer:N0}!" : "MATCH READY!";
+                string text = offer > 0 ? LocalizationManager.Get("ind_match_offer", offer) : LocalizationManager.Get("ind_match_ready");
                 SetVisuals(trophySprite ?? crownSprite ?? coinSprite, text, new Color(0.12f, 0.65f, 0.25f, 0.98f), Color.white);
                 return;
             }
@@ -249,7 +252,7 @@ namespace EmpireBuilder.World
                 isCollectibleReady = true;
                 SetVisuals(
                     coinSprite ?? starSprite,
-                    $"PROD +${targetBuilding.PendingProductionEarnings:N0}",
+                    LocalizationManager.Get("ind_prod", targetBuilding.PendingProductionEarnings),
                     new Color(0.15f, 0.55f, 0.90f, 0.98f), // Industrial Blue
                     Color.white
                 );
@@ -262,7 +265,7 @@ namespace EmpireBuilder.World
                 isCollectibleReady = true;
                 SetVisuals(
                     coinSprite ?? starSprite,
-                    $"OIL +${targetBuilding.PendingOilRevenue:N0}",
+                    LocalizationManager.Get("ind_oil", targetBuilding.PendingOilRevenue),
                     new Color(0.85f, 0.65f, 0.08f, 0.98f), // Petroleum Gold
                     Color.white
                 );
@@ -275,7 +278,7 @@ namespace EmpireBuilder.World
                 isCollectibleReady = true;
                 SetVisuals(
                     coinSprite ?? starSprite,
-                    $"PARK +${targetBuilding.PendingParkRevenue:N0}",
+                    LocalizationManager.Get("ind_park", targetBuilding.PendingParkRevenue),
                     new Color(0.12f, 0.68f, 0.38f, 0.98f), // Park Emerald
                     Color.white
                 );
@@ -290,7 +293,7 @@ namespace EmpireBuilder.World
             if (targetBuilding.RentAvailableToCollect && totalDue > 0)
             {
                 isCollectibleReady = true;
-                SetVisuals(coinSprite, $"COLLECT ${totalDue:N0}", new Color(0.85f, 0.65f, 0.08f, 0.98f), Color.white);
+                SetVisuals(coinSprite, LocalizationManager.Get("ind_collect", totalDue), new Color(0.85f, 0.65f, 0.08f, 0.98f), Color.white);
                 return;
             }
 
@@ -321,7 +324,7 @@ namespace EmpireBuilder.World
             {
                 isCollectibleReady = false;
                 Color civicBg = new Color(0.20f, 0.28f, 0.38f, 0.92f);
-                string cTxt = targetBuilding.PropertyType == PropertyType.School ? "CIVIC: SCHOOL" : "CIVIC: POLICE HQ";
+                string cTxt = targetBuilding.PropertyType == PropertyType.School ? LocalizationManager.Get("ind_civic_school") : LocalizationManager.Get("ind_civic_police");
                 SetVisuals(starSprite, cTxt, civicBg, Color.white);
                 return;
             }
@@ -333,36 +336,36 @@ namespace EmpireBuilder.World
                 switch (targetBuilding.PropertyType)
                 {
                     case PropertyType.Restaurant:
-                        SetVisuals(shopSprite, "MY RESTAURANT", new Color(0.82f, 0.35f, 0.12f, 0.95f), Color.white);
+                        SetVisuals(shopSprite, LocalizationManager.Get("ind_my_restaurant"), new Color(0.82f, 0.35f, 0.12f, 0.95f), Color.white);
                         break;
                     case PropertyType.Cafe:
-                        SetVisuals(shopSprite, "MY CAFE", new Color(0.78f, 0.48f, 0.15f, 0.95f), Color.white);
+                        SetVisuals(shopSprite, LocalizationManager.Get("ind_my_cafe"), new Color(0.78f, 0.48f, 0.15f, 0.95f), Color.white);
                         break;
                     case PropertyType.Stadium:
-                        SetVisuals(crownSprite ?? trophySprite, "MY STADIUM", new Color(0.40f, 0.28f, 0.85f, 0.95f), Color.white);
+                        SetVisuals(crownSprite ?? trophySprite, LocalizationManager.Get("ind_my_stadium"), new Color(0.40f, 0.28f, 0.85f, 0.95f), Color.white);
                         break;
                     case PropertyType.Factory:
-                        SetVisuals(starSprite, "MY FACTORY", new Color(0.28f, 0.45f, 0.60f, 0.95f), Color.white);
+                        SetVisuals(starSprite, LocalizationManager.Get("ind_my_factory"), new Color(0.28f, 0.45f, 0.60f, 0.95f), Color.white);
                         break;
                     case PropertyType.OilStation:
-                        SetVisuals(coinSprite, "MY OIL STATION", new Color(0.68f, 0.52f, 0.12f, 0.95f), Color.white);
+                        SetVisuals(coinSprite, LocalizationManager.Get("ind_my_station"), new Color(0.68f, 0.52f, 0.12f, 0.95f), Color.white);
                         break;
                     case PropertyType.Hospital:
-                        SetVisuals(checkmarkSprite, "MY HOSPITAL", new Color(0.15f, 0.65f, 0.45f, 0.95f), Color.white);
+                        SetVisuals(checkmarkSprite, LocalizationManager.Get("ind_my_clinic"), new Color(0.15f, 0.65f, 0.45f, 0.95f), Color.white);
                         break;
                     case PropertyType.TaxiStation:
                         int taxis = targetBuilding.CurrentlyRentedTaxis;
-                        string taxiTxt = taxis > 0 ? $"TAXIS: {taxis}/8 ACTIVE" : "MY TAXI STATION";
+                        string taxiTxt = taxis > 0 ? $"TAXIS: {taxis}/8 ACTIVE" : LocalizationManager.Get("ind_my_station");
                         SetVisuals(starSprite ?? coinSprite, taxiTxt, new Color(0.78f, 0.52f, 0.08f, 0.95f), Color.white);
                         break;
                     case PropertyType.TennisCourt:
-                        SetVisuals(trophySprite ?? starSprite, "MY TENNIS COURT", new Color(0.18f, 0.65f, 0.28f, 0.95f), Color.white);
+                        SetVisuals(trophySprite ?? starSprite, LocalizationManager.Get("ind_my_stadium"), new Color(0.18f, 0.65f, 0.28f, 0.95f), Color.white);
                         break;
                     case PropertyType.Park:
-                        SetVisuals(starSprite ?? shopSprite, "MY GRAND PARK", new Color(0.12f, 0.62f, 0.32f, 0.95f), Color.white);
+                        SetVisuals(starSprite ?? shopSprite, LocalizationManager.Get("ind_my_park"), new Color(0.12f, 0.62f, 0.32f, 0.95f), Color.white);
                         break;
                     default:
-                        string ownedTxt = targetBuilding.HasFlats ? $"ALL {targetBuilding.TotalFlats} FLATS OWNED" : "OWNED PROPERTY";
+                        string ownedTxt = targetBuilding.HasFlats ? LocalizationManager.Get("ind_flats_count", targetBuilding.TotalFlats, targetBuilding.TotalFlats) : LocalizationManager.Get("ind_owned");
                         SetVisuals(checkmarkSprite ?? starSprite, ownedTxt, new Color(0.10f, 0.65f, 0.35f, 0.95f), Color.white);
                         break;
                 }
@@ -373,9 +376,7 @@ namespace EmpireBuilder.World
             if (targetBuilding.HasFlats && targetBuilding.FlatsOwned > 0)
             {
                 isCollectibleReady = false;
-                string flatTxt = targetBuilding.FlatsRentedOut > 0
-                    ? $"FLATS: {targetBuilding.FlatsOwned}/{targetBuilding.TotalFlats} ({targetBuilding.FlatsRentedOut} RENTED)"
-                    : $"FLATS: {targetBuilding.FlatsOwned}/{targetBuilding.TotalFlats} OWNED";
+                string flatTxt = LocalizationManager.Get("ind_flats_count", targetBuilding.FlatsOwned, targetBuilding.TotalFlats);
                 SetVisuals(keySprite, flatTxt, new Color(0.15f, 0.45f, 0.85f, 0.95f), Color.white);
                 return;
             }
@@ -395,47 +396,12 @@ namespace EmpireBuilder.World
 
             if (targetBuilding.HasFlats)
             {
-                SetVisuals(keySprite, $"{targetBuilding.TotalFlats} FLATS FOR SALE", unownedBg, unownedText);
-            }
-            else if (targetBuilding.PropertyType == PropertyType.Restaurant)
-            {
-                SetVisuals(shopSprite, $"RESTAURANT (${targetBuilding.PurchasePrice:N0})", unownedBg, unownedText);
-            }
-            else if (targetBuilding.PropertyType == PropertyType.Cafe)
-            {
-                SetVisuals(shopSprite, $"CAFE (${targetBuilding.PurchasePrice:N0})", unownedBg, unownedText);
-            }
-            else if (targetBuilding.PropertyType == PropertyType.Stadium)
-            {
-                SetVisuals(trophySprite ?? crownSprite, $"STADIUM (${targetBuilding.PurchasePrice:N0})", unownedBg, unownedText);
-            }
-            else if (targetBuilding.PropertyType == PropertyType.Factory)
-            {
-                SetVisuals(starSprite, $"FACTORY (${targetBuilding.PurchasePrice:N0})", unownedBg, unownedText);
-            }
-            else if (targetBuilding.PropertyType == PropertyType.OilStation)
-            {
-                SetVisuals(coinSprite, $"OIL STATION (${targetBuilding.PurchasePrice:N0})", unownedBg, unownedText);
-            }
-            else if (targetBuilding.PropertyType == PropertyType.Hospital)
-            {
-                SetVisuals(checkmarkSprite, $"HOSPITAL (${targetBuilding.PurchasePrice:N0})", unownedBg, unownedText);
-            }
-            else if (targetBuilding.PropertyType == PropertyType.TaxiStation)
-            {
-                SetVisuals(coinSprite, $"TAXI FLEET (${targetBuilding.PurchasePrice:N0})", unownedBg, unownedText);
-            }
-            else if (targetBuilding.PropertyType == PropertyType.TennisCourt)
-            {
-                SetVisuals(trophySprite ?? starSprite, $"TENNIS COURT (${targetBuilding.PurchasePrice:N0})", unownedBg, unownedText);
-            }
-            else if (targetBuilding.PropertyType == PropertyType.Park)
-            {
-                SetVisuals(starSprite ?? shopSprite, $"GRAND PARK (${targetBuilding.PurchasePrice:N0})", unownedBg, unownedText);
+                SetVisuals(keySprite, LocalizationManager.Get("ind_flats_count", targetBuilding.TotalFlats, targetBuilding.TotalFlats), unownedBg, unownedText);
             }
             else
             {
-                SetVisuals(coinSprite, $"FOR SALE (${targetBuilding.PurchasePrice:N0})", unownedBg, unownedText);
+                string bName = LocalizationManager.GetBuildingName(targetBuilding.PropertyName, targetBuilding.PropertyType);
+                SetVisuals(coinSprite, bName, unownedBg, unownedText);
             }
         }
 
@@ -451,7 +417,7 @@ namespace EmpireBuilder.World
 
             if (statusText != null)
             {
-                statusText.text = message;
+                LocalizationManager.ApplyTo(statusText, message);
                 statusText.color = textColor;
             }
 

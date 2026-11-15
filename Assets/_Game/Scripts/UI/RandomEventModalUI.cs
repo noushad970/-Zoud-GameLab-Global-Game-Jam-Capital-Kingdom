@@ -1,5 +1,6 @@
 using EmpireBuilder.Core;
 using EmpireBuilder.Events;
+using EmpireBuilder.Localization;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -54,11 +55,19 @@ namespace EmpireBuilder.UI
             if (ev == null) return;
             activeEvent = ev;
 
-            if (titleText != null) titleText.text = ev.title;
-            if (descriptionText != null) descriptionText.text = ev.description;
+            if (titleText != null) LocalizationManager.ApplyTo(titleText, ev.title);
+            if (descriptionText != null) LocalizationManager.ApplyTo(descriptionText, ev.description);
 
-            if (choiceAText != null) choiceAText.text = ev.choiceA != null ? ev.choiceA.choiceText : "Accept";
-            if (choiceBText != null) choiceBText.text = ev.choiceB != null ? ev.choiceB.choiceText : "Decline";
+            if (choiceAText != null)
+            {
+                string textA = ev.choiceA != null ? ev.choiceA.choiceText : LocalizationManager.Get("menu_confirm");
+                LocalizationManager.ApplyTo(choiceAText, textA);
+            }
+            if (choiceBText != null)
+            {
+                string textB = ev.choiceB != null ? ev.choiceB.choiceText : LocalizationManager.Get("menu_cancel");
+                LocalizationManager.ApplyTo(choiceBText, textB);
+            }
 
             if (modalRoot != null) modalRoot.SetActive(true);
         }

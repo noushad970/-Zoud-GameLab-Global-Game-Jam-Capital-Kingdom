@@ -335,26 +335,26 @@ namespace EmpireBuilder.UI
 
             if (stepCountText != null)
             {
-                stepCountText.text = LocalizationManager.Get("tut_step_count", currentStepIndex + 1, steps.Count);
+                LocalizationManager.ApplyLocalized(stepCountText, "tut_step_count", currentStepIndex + 1, steps.Count);
             }
 
             bool isArabic = LocalizationManager.CurrentLanguage == GameLanguage.Arabic;
 
             if (titleText != null)
             {
-                titleText.text = step.title;
                 titleText.alignment = isArabic ? TextAlignmentOptions.Right : TextAlignmentOptions.Left;
+                LocalizationManager.ApplyTo(titleText, step.title);
             }
 
             if (bodyText != null)
             {
-                bodyText.text = step.description;
                 bodyText.alignment = isArabic ? TextAlignmentOptions.TopRight : TextAlignmentOptions.TopLeft;
+                LocalizationManager.ApplyTo(bodyText, step.description);
             }
 
             if (iconEmojiText != null)
             {
-                iconEmojiText.text = step.iconEmoji;
+                LocalizationManager.ApplyTo(iconEmojiText, step.iconEmoji);
             }
 
             if (iconBadgeImage != null)
@@ -369,19 +369,18 @@ namespace EmpireBuilder.UI
 
             if (backButtonText != null)
             {
-                backButtonText.text = LocalizationManager.Get("tut_btn_back");
+                LocalizationManager.ApplyLocalized(backButtonText, "tut_btn_back");
             }
 
             if (skipButtonText != null)
             {
-                skipButtonText.text = LocalizationManager.Get("tut_btn_skip");
+                LocalizationManager.ApplyLocalized(skipButtonText, "tut_btn_skip");
             }
 
             if (nextButtonText != null)
             {
-                nextButtonText.text = (currentStepIndex == steps.Count - 1)
-                    ? LocalizationManager.Get("tut_btn_finish")
-                    : LocalizationManager.Get("tut_btn_next");
+                string nextKey = (currentStepIndex == steps.Count - 1) ? "tut_btn_finish" : "tut_btn_next";
+                LocalizationManager.ApplyLocalized(nextButtonText, nextKey);
             }
         }
 

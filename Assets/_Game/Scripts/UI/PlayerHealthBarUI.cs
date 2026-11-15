@@ -1,5 +1,6 @@
 using System.Collections;
 using EmpireBuilder.Core;
+using EmpireBuilder.Localization;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -106,7 +107,8 @@ namespace EmpireBuilder.UI
                     }
                     if (warningBadgeText != null && shouldShowBadge)
                     {
-                        warningBadgeText.text = isIll ? "SICK!" : (isCriticalHealth ? "CRITICAL" : "HUNGRY");
+                        string badgeKey = isIll ? "hp_sick" : (isCriticalHealth ? "hp_critical" : "hp_hungry");
+                        LocalizationManager.ApplyLocalized(warningBadgeText, badgeKey);
                     }
                 }
             }
@@ -180,7 +182,8 @@ namespace EmpireBuilder.UI
                 int hpDisplay = Mathf.RoundToInt(currentDisplayHealth);
                 int hpMax = Mathf.RoundToInt(maxHealth);
                 bool isIll = PlayerHealthManager.Instance != null && PlayerHealthManager.Instance.IsIll;
-                healthText.text = isIll ? $"ILL: {hpDisplay}/{hpMax} HP" : $"{hpDisplay}/{hpMax} HP";
+                string hpKey = isIll ? "hp_ill_display" : "hp_normal_display";
+                LocalizationManager.ApplyLocalized(healthText, hpKey, hpDisplay, hpMax);
             }
         }
 

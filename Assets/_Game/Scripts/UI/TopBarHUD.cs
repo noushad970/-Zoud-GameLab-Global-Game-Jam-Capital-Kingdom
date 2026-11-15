@@ -1,5 +1,6 @@
 using EmpireBuilder.Core;
 using EmpireBuilder.Economy;
+using EmpireBuilder.Localization;
 using EmpireBuilder.Simulation;
 using TMPro;
 using UnityEngine;
@@ -75,7 +76,8 @@ namespace EmpireBuilder.UI
         {
             if (cashText != null)
             {
-                cashText.text = $"${cash:N0}";
+                string formatted = LocalizationManager.CurrentLanguage == GameLanguage.Arabic ? $"{cash:N0}$" : $"${cash:N0}";
+                LocalizationManager.ApplyTo(cashText, formatted);
             }
         }
 
@@ -83,7 +85,7 @@ namespace EmpireBuilder.UI
         {
             if (netWorthText != null)
             {
-                netWorthText.text = $"Net Worth: ${netWorth:N0}";
+                LocalizationManager.ApplyLocalized(netWorthText, "report_networth", netWorth);
             }
         }
 
@@ -91,7 +93,7 @@ namespace EmpireBuilder.UI
         {
             if (dayText != null)
             {
-                dayText.text = $"Day {day}";
+                LocalizationManager.ApplyLocalized(dayText, "header_day_badge", day, "", "");
             }
         }
 
@@ -113,7 +115,7 @@ namespace EmpireBuilder.UI
             }
 
             string sign = projectedNet >= 0 ? "+" : "-";
-            dailyCashFlowText.text = $"{sign}${System.Math.Abs(projectedNet):N0}/day";
+            LocalizationManager.ApplyLocalized(dailyCashFlowText, "report_net", sign, System.Math.Abs(projectedNet));
             dailyCashFlowText.color = projectedNet >= 0 ? new Color(0.2f, 0.8f, 0.2f) : new Color(0.9f, 0.25f, 0.25f);
         }
 

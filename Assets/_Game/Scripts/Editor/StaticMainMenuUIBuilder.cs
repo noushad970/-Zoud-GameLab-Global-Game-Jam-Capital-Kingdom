@@ -143,7 +143,8 @@ namespace EmpireBuilder.Editor
                 tRt.sizeDelta = Vector2.zero;
 
                 quickTextComp = txtObj.GetComponent<TextMeshProUGUI>();
-                if (defaultFont != null) quickTextComp.font = defaultFont;
+                if (fontTahoma != null) quickTextComp.font = fontTahoma;
+                else if (defaultFont != null) quickTextComp.font = defaultFont;
                 quickTextComp.text = "العربية";
                 quickTextComp.fontSize = 16;
                 quickTextComp.fontStyle = FontStyles.Bold;
@@ -228,7 +229,8 @@ namespace EmpireBuilder.Editor
                     lblRt.sizeDelta = new Vector2(440, 30);
 
                     var lblTmp = lblObj.GetComponent<TextMeshProUGUI>();
-                    if (defaultFont != null) lblTmp.font = defaultFont;
+                    if (fontTahoma != null) lblTmp.font = fontTahoma;
+                    else if (defaultFont != null) lblTmp.font = defaultFont;
                     lblTmp.text = "LANGUAGE / اللغة";
                     lblTmp.fontSize = 15;
                     lblTmp.fontStyle = FontStyles.Bold;
@@ -297,7 +299,8 @@ namespace EmpireBuilder.Editor
                     arTxtRt.anchorMax = Vector2.one;
                     arTxtRt.sizeDelta = Vector2.zero;
                     arabicTxtComp = arTxtObj.GetComponent<TextMeshProUGUI>();
-                    if (defaultFont != null) arabicTxtComp.font = defaultFont;
+                    if (fontTahoma != null) arabicTxtComp.font = fontTahoma;
+                    else if (defaultFont != null) arabicTxtComp.font = defaultFont;
                     arabicTxtComp.text = "العربية";
                     arabicTxtComp.fontSize = 15;
                     arabicTxtComp.fontStyle = FontStyles.Bold;

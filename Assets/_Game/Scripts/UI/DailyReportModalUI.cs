@@ -1,4 +1,5 @@
 using EmpireBuilder.Core;
+using EmpireBuilder.Localization;
 using EmpireBuilder.Simulation;
 using TMPro;
 using UnityEngine;
@@ -59,21 +60,50 @@ namespace EmpireBuilder.UI
         {
             if (report == null) return;
 
-            if (headerTitleText != null) headerTitleText.text = $"Day {report.dayNumber} Financial Summary";
-            if (grossRevenueText != null) grossRevenueText.text = $"+${report.grossRevenue:N0}";
-            if (operatingCostsText != null) operatingCostsText.text = $"-${report.operatingExpenses:N0}";
-            if (repairCostsText != null) repairCostsText.text = $"-${report.maintenanceCosts:N0}";
+            if (headerTitleText != null)
+            {
+                LocalizationManager.ApplyLocalized(headerTitleText, "report_title", report.dayNumber);
+            }
+            if (grossRevenueText != null)
+            {
+                LocalizationManager.ApplyLocalized(grossRevenueText, "report_gross", report.grossRevenue);
+            }
+            if (operatingCostsText != null)
+            {
+                LocalizationManager.ApplyLocalized(operatingCostsText, "report_operating", report.operatingExpenses);
+            }
+            if (repairCostsText != null)
+            {
+                LocalizationManager.ApplyLocalized(repairCostsText, "report_repair", report.maintenanceCosts);
+            }
 
             if (netCashChangeText != null)
             {
                 string sign = report.netCashChange >= 0 ? "+" : "-";
-                netCashChangeText.text = $"{sign}${System.Math.Abs(report.netCashChange):N0}";
+                LocalizationManager.ApplyLocalized(netCashChangeText, "report_net", sign, System.Math.Abs(report.netCashChange));
                 netCashChangeText.color = report.netCashChange >= 0 ? new Color(0.2f, 0.8f, 0.2f) : new Color(0.9f, 0.25f, 0.25f);
             }
 
-            if (endingCashText != null) endingCashText.text = $"Cash on Hand: ${report.endingCash:N0}";
-            if (netWorthText != null) netWorthText.text = $"Total Net Worth: ${report.endingNetWorth:N0}";
-            if (financialLessonText != null) financialLessonText.text = $"Lesson: {report.financialLesson}";
+            if (endingCashText != null)
+            {
+                LocalizationManager.ApplyLocalized(endingCashText, "report_cash", report.endingCash);
+            }
+            if (netWorthText != null)
+            {
+                LocalizationManager.ApplyLocalized(netWorthText, "report_networth", report.endingNetWorth);
+            }
+            if (financialLessonText != null)
+            {
+                LocalizationManager.ApplyLocalized(financialLessonText, "report_lesson", report.financialLesson);
+            }
+            if (continueButton != null)
+            {
+                var btnText = continueButton.GetComponentInChildren<TextMeshProUGUI>();
+                if (btnText != null)
+                {
+                    LocalizationManager.ApplyLocalized(btnText, "report_continue_btn");
+                }
+            }
 
             if (modalRoot != null)
             {

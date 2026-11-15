@@ -620,18 +620,21 @@ namespace EmpireBuilder.UI
             // 1. Title & Description
             if (propertyTitleText != null)
             {
-                propertyTitleText.text = currentBuilding.PropertyName;
+                string bName = LocalizationManager.GetBuildingName(currentBuilding.PropertyName, currentBuilding.PropertyType);
+                LocalizationManager.ApplyTo(propertyTitleText, bName);
             }
 
             if (descriptionText != null)
             {
-                descriptionText.text = currentBuilding.Description;
+                string bDesc = LocalizationManager.GetBuildingDescription(currentBuilding.Description, currentBuilding.PropertyType);
+                LocalizationManager.ApplyTo(descriptionText, bDesc);
             }
 
             // 2. Category Badge
             if (categoryBadgeText != null)
             {
-                categoryBadgeText.text = currentBuilding.PropertyType.ToString().ToUpper();
+                string catName = LocalizationManager.GetPropertyTypeName(currentBuilding.PropertyType);
+                LocalizationManager.ApplyTo(categoryBadgeText, catName);
             }
 
             if (categoryBadgeBg != null)
@@ -642,22 +645,24 @@ namespace EmpireBuilder.UI
             // 3. Status Badge (Owned vs For Sale vs Flats Owned vs Civic)
             if (statusBadgeText != null)
             {
+                string sText;
                 if (currentBuilding.IsCivic)
                 {
-                    statusBadgeText.text = LocalizationManager.Get("prop_civic_status");
+                    sText = LocalizationManager.Get("prop_civic_status");
                 }
                 else if (currentBuilding.IsOwned)
                 {
-                    statusBadgeText.text = LocalizationManager.Get("prop_owned_by_you");
+                    sText = LocalizationManager.Get("prop_owned_by_you");
                 }
                 else if (currentBuilding.FlatsOwned > 0)
                 {
-                    statusBadgeText.text = LocalizationManager.Get("prop_flats_owned_status", currentBuilding.FlatsOwned, currentBuilding.TotalFlats);
+                    sText = LocalizationManager.Get("prop_flats_owned_status", currentBuilding.FlatsOwned, currentBuilding.TotalFlats);
                 }
                 else
                 {
-                    statusBadgeText.text = LocalizationManager.Get("prop_available_sale");
+                    sText = LocalizationManager.Get("prop_available_sale");
                 }
+                LocalizationManager.ApplyTo(statusBadgeText, sText);
             }
 
             if (statusBadgeBg != null)
@@ -683,12 +688,18 @@ namespace EmpireBuilder.UI
             // 4. Financial Stats
             if (priceValueText != null)
             {
-                priceValueText.text = currentBuilding.IsCivic ? "N/A (CIVIC)" : $"${currentBuilding.PurchasePrice:N0}";
+                string pText = currentBuilding.IsCivic
+                    ? LocalizationManager.Get("prop_civic_price")
+                    : (LocalizationManager.CurrentLanguage == GameLanguage.Arabic ? $"{currentBuilding.PurchasePrice:N0}$" : $"${currentBuilding.PurchasePrice:N0}");
+                LocalizationManager.ApplyTo(priceValueText, pText);
             }
 
             if (dailyIncomeValueText != null)
             {
-                dailyIncomeValueText.text = currentBuilding.IsCivic ? "PUBLIC UTILITY" : $"+${currentBuilding.DailyRentIncome:N0} / day";
+                string incText = currentBuilding.IsCivic
+                    ? LocalizationManager.Get("prop_civic_income")
+                    : LocalizationManager.Get("prop_daily_rent_per_day", currentBuilding.DailyRentIncome);
+                LocalizationManager.ApplyTo(dailyIncomeValueText, incText);
             }
 
             // 5. Buy Property Button State
@@ -705,13 +716,13 @@ namespace EmpireBuilder.UI
                 if (currentBuilding.IsCivic)
                 {
                     buyPropertyButton.interactable = false;
-                    if (buyButtonText != null) buyButtonText.text = LocalizationManager.Get("prop_not_for_sale");
+                    if (buyButtonText != null) LocalizationManager.ApplyLocalized(buyButtonText, "prop_not_for_sale");
                     if (buyButtonBg != null) buyButtonBg.color = new Color(0.25f, 0.30f, 0.40f, 0.7f);
                 }
                 else if (currentBuilding.IsOwned)
                 {
                     buyPropertyButton.interactable = false;
-                    if (buyButtonText != null) buyButtonText.text = LocalizationManager.Get("prop_already_owned");
+                    if (buyButtonText != null) LocalizationManager.ApplyLocalized(buyButtonText, "prop_already_owned");
                     if (buyButtonBg != null) buyButtonBg.color = new Color(0.3f, 0.35f, 0.45f, 0.7f);
                 }
                 else
@@ -722,7 +733,8 @@ namespace EmpireBuilder.UI
                         string label = currentBuilding.FlatsOwned > 0
                             ? LocalizationManager.Get("prop_buy_rest_button", effectiveBuildingPrice)
                             : LocalizationManager.Get("prop_buy_button_cash", effectiveBuildingPrice);
-                        buyButtonText.text = canAfford ? label : LocalizationManager.Get("prop_insufficient_funds_btn", effectiveBuildingPrice);
+                        string finalBtn = canAfford ? label : LocalizationManager.Get("prop_insufficient_funds_btn", effectiveBuildingPrice);
+                        LocalizationManager.ApplyTo(buyButtonText, finalBtn);
                     }
                     if (buyButtonBg != null)
                     {
@@ -748,9 +760,10 @@ namespace EmpireBuilder.UI
                     collectRentButton.interactable = canCollect;
                     if (collectRentButtonText != null)
                     {
-                        collectRentButtonText.text = canCollect
+                        string cText = canCollect
                             ? LocalizationManager.Get("prop_collect_rent_amount", totalDue)
                             : (totalDue > 0 ? LocalizationManager.Get("prop_rent_collected_today") : LocalizationManager.Get("prop_no_rent_due"));
+                        LocalizationManager.ApplyTo(collectRentButtonText, cText);
                     }
                 }
             }
@@ -765,11 +778,13 @@ namespace EmpireBuilder.UI
             {
                 if (flatsCountText != null)
                 {
-                    flatsCountText.text = $"Flats Owned: {currentBuilding.FlatsOwned}/{currentBuilding.TotalFlats}  |  Leased: {currentBuilding.FlatsRentedOut}/{currentBuilding.FlatsOwned}";
+                    string fStats = LocalizationManager.Get("flat_stats_label", currentBuilding.FlatsOwned, currentBuilding.TotalFlats, currentBuilding.FlatsRentedOut);
+                    LocalizationManager.ApplyTo(flatsCountText, fStats);
                 }
                 if (flatIncomeText != null)
                 {
-                    flatIncomeText.text = $"+${currentBuilding.TotalDailyFlatRentIncome:N0} / day from leased flats";
+                    string fInc = LocalizationManager.Get("flat_income_label", currentBuilding.TotalDailyFlatRentIncome);
+                    LocalizationManager.ApplyTo(flatIncomeText, fInc);
                 }
                 if (buyFlatButton != null)
                 {
@@ -778,9 +793,10 @@ namespace EmpireBuilder.UI
                     buyFlatButton.interactable = hasUnbought && canAffordFlat;
                     if (buyFlatButtonText != null)
                     {
-                        buyFlatButtonText.text = hasUnbought
-                            ? $"BUY FLAT #{currentBuilding.FlatsOwned + 1} (${currentBuilding.FlatPurchasePrice:N0})"
+                        string bfLabel = hasUnbought
+                            ? LocalizationManager.Get("flat_buy_unit_btn", currentBuilding.FlatsOwned + 1, currentBuilding.FlatPurchasePrice)
                             : LocalizationManager.Get("flat_all_owned");
+                        LocalizationManager.ApplyTo(buyFlatButtonText, bfLabel);
                     }
                 }
                 if (giveRentButton != null)
@@ -789,9 +805,10 @@ namespace EmpireBuilder.UI
                     giveRentButton.interactable = canGiveRent;
                     if (giveRentButtonText != null)
                     {
-                        giveRentButtonText.text = canGiveRent
-                            ? LocalizationManager.Get("flat_rent_out_btn", currentBuilding.FlatDailyRent)
+                        string grLabel = canGiveRent
+                            ? LocalizationManager.Get("flat_lease_unit_btn", currentBuilding.FlatsRentedOut + 1, currentBuilding.FlatDailyRent)
                             : (currentBuilding.FlatsOwned == 0 ? LocalizationManager.Get("flat_buy_first") : LocalizationManager.Get("flat_all_leased"));
+                        LocalizationManager.ApplyTo(giveRentButtonText, grLabel);
                     }
                 }
             }
@@ -809,26 +826,29 @@ namespace EmpireBuilder.UI
 
                 if (diningStatusText != null)
                 {
-                    diningStatusText.text = currentBuilding.IsOwned
-                        ? $"VIP Owner: Food (+{foodRestore:0} HP) & Drinks (+{drinkRestore:0} HP) are FREE! Replenish your health anytime."
-                        : $"Replenish Health! Food restores +{foodRestore:0} HP, Drinks restore +{drinkRestore:0} HP.";
+                    string dStatus = currentBuilding.IsOwned
+                        ? LocalizationManager.Get("dining_vip_status", foodRestore, drinkRestore)
+                        : LocalizationManager.Get("dining_regular_status", foodRestore, drinkRestore);
+                    LocalizationManager.ApplyTo(diningStatusText, dStatus);
                 }
                 if (drinkButton != null)
                 {
                     if (drinkButtonText != null)
                     {
-                        drinkButtonText.text = currentBuilding.IsOwned
-                            ? $"DRINK (+{drinkRestore:0} HP, FREE)"
-                            : $"DRINK (+{drinkRestore:0} HP, ${currentBuilding.DrinkPrice:N0})";
+                        string drkLabel = currentBuilding.IsOwned
+                            ? LocalizationManager.Get("dining_drink_free", drinkRestore)
+                            : LocalizationManager.Get("dining_drink_paid", drinkRestore, currentBuilding.DrinkPrice);
+                        LocalizationManager.ApplyTo(drinkButtonText, drkLabel);
                     }
                 }
                 if (eatButton != null)
                 {
                     if (eatButtonText != null)
                     {
-                        eatButtonText.text = currentBuilding.IsOwned
-                            ? $"EAT (+{foodRestore:0} HP, FREE)"
-                            : $"EAT (+{foodRestore:0} HP, ${currentBuilding.FoodPrice:N0})";
+                        string eatLabel = currentBuilding.IsOwned
+                            ? LocalizationManager.Get("dining_eat_free", foodRestore)
+                            : LocalizationManager.Get("dining_eat_paid", foodRestore, currentBuilding.FoodPrice);
+                        LocalizationManager.ApplyTo(eatButtonText, eatLabel);
                     }
                 }
             }
@@ -844,22 +864,26 @@ namespace EmpireBuilder.UI
             {
                 if (taxiRentalFeeText != null)
                 {
-                    taxiRentalFeeText.text = $"Rental Fee: -${currentBuilding.TaxiRentalFee:N0} / taxi";
+                    string feeLabel = LocalizationManager.Get("taxi_fee_label", currentBuilding.TaxiRentalFee);
+                    LocalizationManager.ApplyTo(taxiRentalFeeText, feeLabel);
                 }
 
                 if (taxiFareRevenueText != null)
                 {
-                    taxiFareRevenueText.text = $"Random Fares: ~$35 - $110 per trip";
+                    string faresRange = LocalizationManager.Get("taxi_fares_range");
+                    LocalizationManager.ApplyTo(taxiFareRevenueText, faresRange);
                 }
 
                 if (taxiNetProfitText != null)
                 {
-                    taxiNetProfitText.text = $"Active Fleet: {currentBuilding.CurrentlyRentedTaxis} / {currentBuilding.MaxRentableTaxis} Taxis on Road";
+                    string actFleet = LocalizationManager.Get("taxi_active_fleet", currentBuilding.CurrentlyRentedTaxis, currentBuilding.MaxRentableTaxis);
+                    LocalizationManager.ApplyTo(taxiNetProfitText, actFleet);
                 }
 
                 if (taxiFleetStatusText != null)
                 {
-                    taxiFleetStatusText.text = $"Rented Taxis: {currentBuilding.CurrentlyRentedTaxis} / {currentBuilding.MaxRentableTaxis} operating on city roads";
+                    string rentStatus = LocalizationManager.Get("taxi_rented_status", currentBuilding.CurrentlyRentedTaxis, currentBuilding.MaxRentableTaxis);
+                    LocalizationManager.ApplyTo(taxiFleetStatusText, rentStatus);
                 }
 
                 if (rentTaxiButton != null)
@@ -870,16 +894,18 @@ namespace EmpireBuilder.UI
                     rentTaxiButton.interactable = !maxReached && canAffordTaxi;
                     if (rentTaxiButtonText != null)
                     {
+                        string rtText;
                         if (maxReached)
                         {
-                            rentTaxiButtonText.text = $"MAX {currentBuilding.MaxRentableTaxis} TAXIS ACTIVE TODAY";
+                            rtText = LocalizationManager.Get("taxi_max_active", currentBuilding.MaxRentableTaxis);
                         }
                         else
                         {
-                            rentTaxiButtonText.text = canAffordTaxi
-                                ? $"RENT TAXI #{currentBuilding.CurrentlyRentedTaxis + 1} (${currentBuilding.TaxiRentalFee:N0}) -> Dispatches to Road"
-                                : $"NEED ${currentBuilding.TaxiRentalFee:N0} TO RENT TAXI";
+                            rtText = canAffordTaxi
+                                ? LocalizationManager.Get("taxi_rent_btn", currentBuilding.CurrentlyRentedTaxis + 1, currentBuilding.TaxiRentalFee)
+                                : LocalizationManager.Get("taxi_need_cash", currentBuilding.TaxiRentalFee);
                         }
+                        LocalizationManager.ApplyTo(rentTaxiButtonText, rtText);
                     }
                     if (rentTaxiButtonBg != null)
                     {
@@ -901,18 +927,20 @@ namespace EmpireBuilder.UI
                 bool isTennis = currentBuilding.PropertyType == PropertyType.TennisCourt;
                 if (stadiumStatsText != null)
                 {
-                    string matchTerm = isTennis ? "Tournaments Hosted" : "Matches Hosted";
-                    stadiumStatsText.text = $"{matchTerm}: {currentBuilding.MatchesHosted}  |  Total Match Rent: ${currentBuilding.TotalMatchRevenue:N0}";
+                    string matchTerm = isTennis ? LocalizationManager.Get("tennis_match_term") : LocalizationManager.Get("stadium_match_term");
+                    string sStats = LocalizationManager.Get("stadium_stats_label", matchTerm, currentBuilding.MatchesHosted, currentBuilding.TotalMatchRevenue);
+                    LocalizationManager.ApplyTo(stadiumStatsText, sStats);
                 }
                 if (requestMatchButton != null)
                 {
                     requestMatchButton.interactable = currentBuilding.IsOwned;
                     if (requestMatchButtonText != null)
                     {
-                        string venueTerm = isTennis ? "TENNIS COURT" : "STADIUM";
-                        requestMatchButtonText.text = currentBuilding.IsOwned
-                            ? "REQUEST MATCH RENT OFFER NOW"
-                            : $"BUY {venueTerm} TO HOST MATCHES";
+                        string venueTerm = isTennis ? LocalizationManager.Get("tennis_venue_term") : LocalizationManager.Get("stadium_venue_term");
+                        string reqLabel = currentBuilding.IsOwned
+                            ? LocalizationManager.Get("stadium_request_offer_btn")
+                            : LocalizationManager.Get("stadium_buy_to_host_btn", venueTerm);
+                        LocalizationManager.ApplyTo(requestMatchButtonText, reqLabel);
                     }
                 }
             }
@@ -936,22 +964,20 @@ namespace EmpireBuilder.UI
 
                 if (hospitalStatusText != null)
                 {
+                    string hStatus;
                     if (!needsHeal)
                     {
-                        hospitalStatusText.text = "<color=#44FF88>HEALTHY & FIT (100% HP)</color>\nVital signs optimal. Hospital emergency facilities standing by (No treatment needed).";
+                        hStatus = LocalizationManager.Get("hosp_healthy_status");
                     }
                     else if (currentBuilding.IsOwned)
                     {
-                        hospitalStatusText.text = $"<color={diag.hexColor}>CONDITION: {diag.severityBadge}</color>\n{diag.conditionName} (Health: {curHp:0}/{maxHp:0} HP).\n<color=#44FF88>As Hospital Owner, VIP emergency medical care is COMPLIMENTARY (FREE)!</color>";
+                        hStatus = LocalizationManager.Get("hosp_owner_status", diag.hexColor, diag.severityBadge, diag.conditionName, curHp, maxHp);
                     }
                     else
                     {
-                        string severityNote = (diag.severityBadge.Contains("CRITICAL") || diag.severityBadge.Contains("SERIOUS"))
-                            ? "<color=#FF6666>Condition is serious! Requires intensive emergency medical care & IV medication.</color>"
-                            : "<color=#88DDFF>Condition is moderate/mild. Outpatient treatment & nutritional recovery available.</color>";
-
-                        hospitalStatusText.text = $"<color={diag.hexColor}>CONDITION: {diag.severityBadge}</color>\n{diag.conditionName} (Health: {curHp:0}/{maxHp:0} HP).\nTreatment Fee: <color=#FFDD44>${treatmentCost:N0}</color> | {severityNote}";
+                        hStatus = LocalizationManager.Get("hosp_treatment_cost_status", diag.hexColor, diag.severityBadge, diag.conditionName, curHp, maxHp, treatmentCost);
                     }
+                    LocalizationManager.ApplyTo(hospitalStatusText, hStatus);
                 }
 
                 if (treatmentButton != null)
@@ -959,29 +985,22 @@ namespace EmpireBuilder.UI
                     treatmentButton.interactable = needsHeal && canAffordTreatment;
                     if (treatmentButtonText != null)
                     {
+                        string tbLabel;
                         if (!needsHeal)
                         {
-                            treatmentButtonText.text = "HEALTH AT 100% (NO TREATMENT NEEDED)";
+                            tbLabel = LocalizationManager.Get("hosp_healthy_btn");
                         }
                         else if (currentBuilding.IsOwned)
                         {
-                            treatmentButtonText.text = isIll
-                                ? "CURE ILLNESS & RESTORE 100 HP (FREE - OWNER)"
-                                : "RESTORE 100 HP (FREE - OWNER)";
+                            tbLabel = LocalizationManager.Get("hosp_vip_treat_btn");
                         }
                         else
                         {
-                            if (canAffordTreatment)
-                            {
-                                treatmentButtonText.text = isIll
-                                    ? $"CURE {diag.severityBadge} & RESTORE 100 HP (${treatmentCost:N0})"
-                                    : $"RECEIVE TREATMENT (RESTORE 100 HP, ${treatmentCost:N0})";
-                            }
-                            else
-                            {
-                                treatmentButtonText.text = $"INSUFFICIENT FUNDS (${treatmentCost:N0} REQUIRED)";
-                            }
+                            tbLabel = canAffordTreatment
+                                ? LocalizationManager.Get("hosp_pay_treat_btn", treatmentCost)
+                                : LocalizationManager.Get("hosp_need_cash_treat", treatmentCost);
                         }
+                        LocalizationManager.ApplyTo(treatmentButtonText, tbLabel);
                     }
 
                     if (treatmentButtonBg != null)
@@ -1012,7 +1031,8 @@ namespace EmpireBuilder.UI
             {
                 if (factoryStatusText != null)
                 {
-                    factoryStatusText.text = $"Batches: {currentBuilding.ProductionBatchesCompleted} | Revenue: ${currentBuilding.TotalProductionRevenueCollected:N0}\nReady: +${currentBuilding.PendingProductionEarnings:N0}";
+                    string fStatus = LocalizationManager.Get("fact_stats_label", currentBuilding.ProductionBatchesCompleted, currentBuilding.TotalProductionRevenueCollected, currentBuilding.PendingProductionEarnings);
+                    LocalizationManager.ApplyTo(factoryStatusText, fStatus);
                 }
                 if (collectProductionButton != null)
                 {
@@ -1020,9 +1040,10 @@ namespace EmpireBuilder.UI
                     collectProductionButton.interactable = hasEarnings;
                     if (collectProductionButtonText != null)
                     {
-                        collectProductionButtonText.text = hasEarnings
-                            ? $"COLLECT PRODUCTION REVENUE (+${currentBuilding.PendingProductionEarnings:N0})"
-                            : (currentBuilding.IsOwned ? "MANUFACTURING IN PROGRESS..." : "BUY FACTORY TO PRODUCE GOODS");
+                        string cpLabel = hasEarnings
+                            ? LocalizationManager.Get("fact_collect_btn", currentBuilding.PendingProductionEarnings)
+                            : (currentBuilding.IsOwned ? LocalizationManager.Get("fact_none_ready") : LocalizationManager.Get("fact_buy_to_earn"));
+                        LocalizationManager.ApplyTo(collectProductionButtonText, cpLabel);
                     }
                     if (collectProductionButtonBg != null)
                     {
@@ -1043,7 +1064,8 @@ namespace EmpireBuilder.UI
             {
                 if (oilStatusText != null)
                 {
-                    oilStatusText.text = $"Total Fuel Sales: ${currentBuilding.TotalOilRevenueCollected:N0}\nReady: +${currentBuilding.PendingOilRevenue:N0}";
+                    string oStatus = LocalizationManager.Get("oil_stats_label", currentBuilding.PendingOilRevenue);
+                    LocalizationManager.ApplyTo(oilStatusText, oStatus);
                 }
                 if (collectOilButton != null)
                 {
@@ -1051,9 +1073,10 @@ namespace EmpireBuilder.UI
                     collectOilButton.interactable = hasOilRev;
                     if (collectOilButtonText != null)
                     {
-                        collectOilButtonText.text = hasOilRev
-                            ? $"COLLECT OIL REVENUE (+${currentBuilding.PendingOilRevenue:N0})"
-                            : (currentBuilding.IsOwned ? "FUEL SALES IN PROGRESS..." : "BUY OIL STATION TO EARN FUEL SALES");
+                        string coLabel = hasOilRev
+                            ? LocalizationManager.Get("oil_collect_btn", currentBuilding.PendingOilRevenue)
+                            : (currentBuilding.IsOwned ? LocalizationManager.Get("oil_none_ready") : LocalizationManager.Get("oil_buy_to_earn"));
+                        LocalizationManager.ApplyTo(collectOilButtonText, coLabel);
                     }
                     if (collectOilButtonBg != null)
                     {
@@ -1074,7 +1097,8 @@ namespace EmpireBuilder.UI
             {
                 if (parkStatusText != null)
                 {
-                    parkStatusText.text = $"Total Visitor Revenue: ${currentBuilding.TotalParkRevenueCollected:N0}  (Visitors: {currentBuilding.ParkVisitorsServed})\nReady to Collect: +${currentBuilding.PendingParkRevenue:N0}";
+                    string pkStatus = LocalizationManager.Get("park_stats_label", currentBuilding.ParkVisitorsServed, currentBuilding.TotalParkRevenueCollected, currentBuilding.PendingParkRevenue);
+                    LocalizationManager.ApplyTo(parkStatusText, pkStatus);
                 }
                 if (collectParkButton != null)
                 {
@@ -1082,9 +1106,10 @@ namespace EmpireBuilder.UI
                     collectParkButton.interactable = hasParkRev;
                     if (collectParkButtonText != null)
                     {
-                        collectParkButtonText.text = hasParkRev
-                            ? $"COLLECT ENTRY FEES (+${currentBuilding.PendingParkRevenue:N0})"
-                            : (currentBuilding.IsOwned ? "VISITORS STROLLING IN PARK..." : "BUY PARK TO EARN ENTRY FEES");
+                        string cpkLabel = hasParkRev
+                            ? LocalizationManager.Get("park_collect_btn", currentBuilding.PendingParkRevenue)
+                            : (currentBuilding.IsOwned ? LocalizationManager.Get("park_none_ready") : LocalizationManager.Get("park_buy_to_earn"));
+                        LocalizationManager.ApplyTo(collectParkButtonText, cpkLabel);
                     }
                     if (collectParkButtonBg != null)
                     {
@@ -1118,14 +1143,10 @@ namespace EmpireBuilder.UI
 
                 if (bankStatusText != null)
                 {
-                    if (!hasAccount)
-                    {
-                        bankStatusText.text = LocalizationManager.Get("bank_status_closed");
-                    }
-                    else
-                    {
-                        bankStatusText.text = LocalizationManager.Get("bank_status_active", bankBal, totalInt);
-                    }
+                    string bStatus = !hasAccount
+                        ? LocalizationManager.Get("bank_status_closed")
+                        : LocalizationManager.Get("bank_status_active", bankBal, totalInt);
+                    LocalizationManager.ApplyTo(bankStatusText, bStatus);
                 }
 
                 if (openBankButton != null)
@@ -1134,9 +1155,10 @@ namespace EmpireBuilder.UI
                     openBankButton.interactable = canAffordOpen;
                     if (openBankButtonText != null)
                     {
-                        openBankButtonText.text = canAffordOpen
+                        string opLabel = canAffordOpen
                             ? LocalizationManager.Get("bank_open_account_btn")
                             : LocalizationManager.Get("bank_need_coins_open");
+                        LocalizationManager.ApplyTo(openBankButtonText, opLabel);
                     }
                     if (openBankButtonBg != null)
                     {
@@ -1149,14 +1171,20 @@ namespace EmpireBuilder.UI
                 if (depositButton != null)
                 {
                     depositButton.interactable = currentCash >= 1.0;
+                    var dTxt = depositButton.GetComponentInChildren<TextMeshProUGUI>();
+                    if (dTxt != null) LocalizationManager.ApplyLocalized(dTxt, "bank_deposit_btn");
                 }
                 if (withdrawButton != null)
                 {
                     withdrawButton.interactable = bankBal >= 1.0;
+                    var wTxt = withdrawButton.GetComponentInChildren<TextMeshProUGUI>();
+                    if (wTxt != null) LocalizationManager.ApplyLocalized(wTxt, "bank_withdraw_btn");
                 }
                 if (withdrawAllButton != null)
                 {
                     withdrawAllButton.interactable = bankBal >= 0.01;
+                    var waTxt = withdrawAllButton.GetComponentInChildren<TextMeshProUGUI>();
+                    if (waTxt != null) LocalizationManager.ApplyLocalized(waTxt, "bank_withdraw_all_btn");
                 }
             }
 
@@ -1170,7 +1198,8 @@ namespace EmpireBuilder.UI
             {
                 if (maintenanceReasonText != null)
                 {
-                    maintenanceReasonText.text = LocalizationManager.Get("maint_required_title", currentBuilding.PendingMaintenanceCost) + $"\n{LocalizationManager.FormatRaw(currentBuilding.MaintenanceReason)}";
+                    string mText = LocalizationManager.Get("maint_required_title", currentBuilding.PendingMaintenanceCost) + $"\n{LocalizationManager.FormatRaw(currentBuilding.MaintenanceReason)}";
+                    LocalizationManager.ApplyTo(maintenanceReasonText, mText);
                 }
                 if (payMaintenanceButton != null)
                 {
@@ -1178,9 +1207,10 @@ namespace EmpireBuilder.UI
                     payMaintenanceButton.interactable = canAffordMaint;
                     if (payMaintenanceButtonText != null)
                     {
-                        payMaintenanceButtonText.text = canAffordMaint
+                        string pmLabel = canAffordMaint
                             ? LocalizationManager.Get("maint_pay_button", currentBuilding.PendingMaintenanceCost)
                             : LocalizationManager.Get("maint_insufficient_funds", currentBuilding.PendingMaintenanceCost);
+                        LocalizationManager.ApplyTo(payMaintenanceButtonText, pmLabel);
                     }
                     if (payMaintenanceButtonBg != null)
                     {
@@ -1405,7 +1435,7 @@ namespace EmpireBuilder.UI
                 return;
             }
 
-            toastMessageText.text = LocalizationManager.FormatRaw(message);
+            LocalizationManager.ApplyTo(toastMessageText, message);
             toastRoot.SetActive(true);
 
             if (toastCoroutine != null)

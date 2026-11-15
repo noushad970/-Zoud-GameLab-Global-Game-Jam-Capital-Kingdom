@@ -1,5 +1,6 @@
 using EmpireBuilder.Assets;
 using EmpireBuilder.Core;
+using EmpireBuilder.Localization;
 using EmpireBuilder.World;
 using TMPro;
 using UnityEngine;
@@ -79,33 +80,34 @@ namespace EmpireBuilder.UI
 
             if (assetTitleText != null)
             {
-                assetTitleText.text = currentAsset != null ? currentAsset.customName : currentDef.displayName;
+                string title = currentAsset != null ? currentAsset.customName : currentDef.displayName;
+                LocalizationManager.ApplyTo(assetTitleText, title);
             }
 
             if (assetTypeText != null)
             {
-                assetTypeText.text = $"Category: {currentDef.assetType}";
+                LocalizationManager.ApplyLocalized(assetTypeText, "asset_category", currentDef.assetType);
             }
 
             // Condition
             float cond = currentAsset != null ? currentAsset.condition : currentDef.startingCondition;
-            if (conditionText != null) conditionText.text = $"Condition: {cond:F0}%";
+            if (conditionText != null) LocalizationManager.ApplyLocalized(conditionText, "asset_condition", cond);
             if (conditionSlider != null) conditionSlider.value = cond / 100f;
 
             // Financial Metrics
-            if (grossIncomeText != null) grossIncomeText.text = $"Gross Revenue: ${currentDef.grossIncomePerDay:N0}/day";
-            if (operatingCostText != null) operatingCostText.text = $"Operating Costs: ${currentDef.operatingCostPerDay:N0}/day";
+            if (grossIncomeText != null) LocalizationManager.ApplyLocalized(grossIncomeText, "asset_gross_rev", currentDef.grossIncomePerDay);
+            if (operatingCostText != null) LocalizationManager.ApplyLocalized(operatingCostText, "asset_op_cost", currentDef.operatingCostPerDay);
             if (netDailyText != null)
             {
                 double net = currentDef.ExpectedNetDailyIncome;
                 string sign = net >= 0 ? "+" : "-";
-                netDailyText.text = $"Net Cash Flow: {sign}${System.Math.Abs(net):N0}/day";
+                LocalizationManager.ApplyLocalized(netDailyText, "asset_net_flow", sign, System.Math.Abs(net));
                 netDailyText.color = net >= 0 ? new Color(0.2f, 0.8f, 0.2f) : new Color(0.9f, 0.25f, 0.25f);
             }
 
             if (paybackPeriodText != null)
             {
-                paybackPeriodText.text = $"Estimated Payback: {currentDef.GetPaybackString()}";
+                LocalizationManager.ApplyLocalized(paybackPeriodText, "asset_payback", currentDef.GetPaybackString());
             }
 
             // Buttons state
@@ -127,7 +129,7 @@ namespace EmpireBuilder.UI
                     double price = currentDef.purchasePrice;
                     bool canAfford = GameManager.Instance.Economy.CanAfford(price);
                     buyButton.interactable = canAfford;
-                    if (buyButtonText != null) buyButtonText.text = $"Buy (${price:N0})";
+                    if (buyButtonText != null) LocalizationManager.ApplyLocalized(buyButtonText, "asset_buy_btn", price);
                 }
             }
 
@@ -142,7 +144,8 @@ namespace EmpireBuilder.UI
                     repairButton.interactable = needsRepair && GameManager.Instance.Economy.CanAfford(repairCost);
                     if (repairButtonText != null)
                     {
-                        repairButtonText.text = needsRepair ? $"Repair (${repairCost:N0})" : "Repaired (100%)";
+                        if (needsRepair) LocalizationManager.ApplyLocalized(repairButtonText, "asset_repair_btn", repairCost);
+                        else LocalizationManager.ApplyLocalized(repairButtonText, "asset_repaired");
                     }
                 }
             }
@@ -154,7 +157,7 @@ namespace EmpireBuilder.UI
                 if (isOwned)
                 {
                     double saleVal = (currentAsset.currentMarketValue * (currentAsset.condition / 100.0)) * 0.7;
-                    if (sellButtonText != null) sellButtonText.text = $"Sell (${saleVal:N0})";
+                    if (sellButtonText != null) LocalizationManager.ApplyLocalized(sellButtonText, "asset_sell_btn", saleVal);
                 }
             }
         }

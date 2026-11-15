@@ -254,11 +254,11 @@ namespace EmpireBuilder.UI
             var titleObj = new GameObject("TitleText", typeof(RectTransform), typeof(TextMeshProUGUI));
             titleObj.transform.SetParent(card.transform, false);
             var titleTmp = titleObj.GetComponent<TextMeshProUGUI>();
-            titleTmp.text = LocalizationManager.FormatRaw(item.title);
             titleTmp.fontSize = 13;
             titleTmp.fontStyle = FontStyles.Bold;
             titleTmp.color = Color.white;
             titleTmp.alignment = isArabic ? TextAlignmentOptions.Right : TextAlignmentOptions.Left;
+            LocalizationManager.ApplyTo(titleTmp, item.title);
             var titleRt = titleTmp.rectTransform;
             titleRt.anchorMin = new Vector2(0, 1);
             titleRt.anchorMax = new Vector2(1, 1);
@@ -270,11 +270,11 @@ namespace EmpireBuilder.UI
             var descObj = new GameObject("DescText", typeof(RectTransform), typeof(TextMeshProUGUI));
             descObj.transform.SetParent(card.transform, false);
             var descTmp = descObj.GetComponent<TextMeshProUGUI>();
-            descTmp.text = LocalizationManager.FormatRaw(item.description);
             descTmp.fontSize = 11;
             descTmp.color = new Color(0.95f, 0.95f, 0.95f, 0.95f);
             descTmp.alignment = isArabic ? TextAlignmentOptions.Right : TextAlignmentOptions.Left;
             descTmp.overflowMode = TextOverflowModes.Ellipsis;
+            LocalizationManager.ApplyTo(descTmp, item.description);
             var descRt = descTmp.rectTransform;
             descRt.anchorMin = new Vector2(0, 0);
             descRt.anchorMax = new Vector2(1, 1);

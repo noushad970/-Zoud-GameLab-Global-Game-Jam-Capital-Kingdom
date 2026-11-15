@@ -183,51 +183,57 @@ namespace EmpireBuilder.UI
                 PlayerPrefs.SetFloat("SavedPlayerCash", 5000f);
             }
 
-            moneyText.text = $"${displayCash:N0}";
+            string formattedCash = LocalizationManager.CurrentLanguage == GameLanguage.Arabic
+                ? $"{displayCash:N0}$"
+                : $"${displayCash:N0}";
+            LocalizationManager.ApplyTo(moneyText, formattedCash);
         }
 
         private void UpdateLocalizedTexts()
         {
+            UpdateMoneyHeader();
+
             if (startGameButton != null)
             {
                 var t = startGameButton.GetComponentInChildren<TextMeshProUGUI>();
-                if (t != null) t.text = LocalizationManager.Get("menu_start_game");
+                if (t != null) LocalizationManager.ApplyLocalized(t, "menu_start_game");
             }
 
             if (resumeButton != null)
             {
                 var t = resumeButton.GetComponentInChildren<TextMeshProUGUI>();
-                if (t != null) t.text = LocalizationManager.Get("menu_resume_game");
+                if (t != null) LocalizationManager.ApplyLocalized(t, "menu_resume_game");
             }
 
             if (optionButton != null)
             {
                 var t = optionButton.GetComponentInChildren<TextMeshProUGUI>();
-                if (t != null) t.text = LocalizationManager.Get("menu_options");
+                if (t != null) LocalizationManager.ApplyLocalized(t, "menu_options");
             }
 
             if (aboutButton != null)
             {
                 var t = aboutButton.GetComponentInChildren<TextMeshProUGUI>();
-                if (t != null) t.text = LocalizationManager.Get("menu_about");
+                if (t != null) LocalizationManager.ApplyLocalized(t, "menu_about");
             }
 
             if (exitButton != null)
             {
                 var t = exitButton.GetComponentInChildren<TextMeshProUGUI>();
-                if (t != null) t.text = LocalizationManager.Get("menu_exit");
+                if (t != null) LocalizationManager.ApplyLocalized(t, "menu_exit");
             }
 
             // Warning dialog texts
-            if (warningTitleText != null) warningTitleText.text = LocalizationManager.Get("modal_reset_title");
-            if (warningBodyText != null) warningBodyText.text = LocalizationManager.Get("modal_reset_message");
-            if (warningConfirmText != null) warningConfirmText.text = LocalizationManager.Get("modal_reset_confirm");
-            if (warningCancelText != null) warningCancelText.text = LocalizationManager.Get("modal_reset_cancel");
+            if (warningTitleText != null) LocalizationManager.ApplyLocalized(warningTitleText, "modal_reset_title");
+            if (warningBodyText != null) LocalizationManager.ApplyLocalized(warningBodyText, "modal_reset_message");
+            if (warningConfirmText != null) LocalizationManager.ApplyLocalized(warningConfirmText, "modal_reset_confirm");
+            if (warningCancelText != null) LocalizationManager.ApplyLocalized(warningCancelText, "modal_reset_cancel");
 
             // Update language toggle button
             if (quickLanguageText != null)
             {
-                quickLanguageText.text = LocalizationManager.CurrentLanguage == GameLanguage.Arabic ? "English" : "العربية";
+                string qLabel = LocalizationManager.CurrentLanguage == GameLanguage.Arabic ? "English" : "العربية";
+                LocalizationManager.ApplyTo(quickLanguageText, qLabel);
             }
 
             UpdateLanguageButtonsHighlight();
