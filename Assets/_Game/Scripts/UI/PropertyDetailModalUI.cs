@@ -25,6 +25,9 @@ namespace EmpireBuilder.UI
         [SerializeField] private RectTransform modalCardTransform;
         [SerializeField] private Button overlayButton;
 
+        public RectTransform ModalCardTransform => modalCardTransform;
+        public GameObject PanelRoot => panelRoot;
+
         [Header("Building Header Labels")]
         [SerializeField] private TextMeshProUGUI propertyTitleText;
         [SerializeField] private TextMeshProUGUI categoryBadgeText;
