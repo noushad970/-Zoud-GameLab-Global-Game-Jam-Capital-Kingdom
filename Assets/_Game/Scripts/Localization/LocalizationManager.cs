@@ -30,8 +30,74 @@ namespace EmpireBuilder.Localization
         [SerializeField] private TMP_FontAsset englishFont;
         [SerializeField] private TMP_FontAsset arabicFont;
 
+        private static TMP_FontAsset cachedArabicFontAsset;
+
         public static TMP_FontAsset EnglishFont => Instance != null ? Instance.englishFont : null;
-        public static TMP_FontAsset ArabicFont => Instance != null ? Instance.arabicFont : null;
+        public static TMP_FontAsset ArabicFont
+        {
+            get
+            {
+                if (Instance != null && Instance.arabicFont != null) return Instance.arabicFont;
+                if (cachedArabicFontAsset == null) EnsureRuntimeArabicFont();
+                return cachedArabicFontAsset;
+            }
+        }
+
+        public static void EnsureRuntimeArabicFont()
+        {
+            if (cachedArabicFontAsset != null) return;
+
+            // 1. Try loading pre-built Tahoma SDF from Resources
+            cachedArabicFontAsset = Resources.Load<TMP_FontAsset>("Fonts/Tahoma SDF");
+            if (cachedArabicFontAsset == null)
+            {
+                cachedArabicFontAsset = Resources.Load<TMP_FontAsset>("Tahoma SDF");
+            }
+
+            // 2. If not found in Resources as TMP_FontAsset, dynamically create from Font
+            if (cachedArabicFontAsset == null)
+            {
+                Font font = Resources.Load<Font>("Fonts/Tahoma");
+                if (font != null)
+                {
+                    try
+                    {
+                        cachedArabicFontAsset = TMP_FontAsset.CreateFontAsset(font);
+                        cachedArabicFontAsset.name = "Tahoma Dynamic SDF";
+                        Debug.Log("[LocalizationManager] Dynamically created Arabic TMP_FontAsset from Tahoma.ttf");
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.LogWarning($"[LocalizationManager] Dynamic TMP_FontAsset creation fallback: {ex.Message}");
+                    }
+                }
+            }
+
+            // 3. Inject into TMP_Settings global fallback list so ALL texts render Arabic characters seamlessly!
+            if (cachedArabicFontAsset != null)
+            {
+                if (TMP_Settings.fallbackFontAssets == null)
+                {
+                    TMP_Settings.fallbackFontAssets = new List<TMP_FontAsset>();
+                }
+                if (!TMP_Settings.fallbackFontAssets.Contains(cachedArabicFontAsset))
+                {
+                    TMP_Settings.fallbackFontAssets.Add(cachedArabicFontAsset);
+                }
+
+                if (TMP_Settings.defaultFontAsset != null && TMP_Settings.defaultFontAsset != cachedArabicFontAsset)
+                {
+                    if (TMP_Settings.defaultFontAsset.fallbackFontAssetTable == null)
+                    {
+                        TMP_Settings.defaultFontAsset.fallbackFontAssetTable = new List<TMP_FontAsset>();
+                    }
+                    if (!TMP_Settings.defaultFontAsset.fallbackFontAssetTable.Contains(cachedArabicFontAsset))
+                    {
+                        TMP_Settings.defaultFontAsset.fallbackFontAssetTable.Add(cachedArabicFontAsset);
+                    }
+                }
+            }
+        }
 
         private static readonly Dictionary<string, string> EnglishDict = new Dictionary<string, string>();
         private static readonly Dictionary<string, string> ArabicDict = new Dictionary<string, string>();
@@ -64,6 +130,7 @@ namespace EmpireBuilder.Localization
             if (isInitialized) return;
             isInitialized = true;
 
+            EnsureRuntimeArabicFont();
             PopulateTranslations();
         }
 
