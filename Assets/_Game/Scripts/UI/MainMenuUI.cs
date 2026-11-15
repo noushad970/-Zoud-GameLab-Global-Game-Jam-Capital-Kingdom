@@ -1,3 +1,4 @@
+using EmpireBuilder.Localization;
 using EmpireBuilder.SaveLoad;
 using TMPro;
 using UnityEngine;
@@ -32,9 +33,26 @@ namespace EmpireBuilder.UI
         [SerializeField] private GameObject warningDialogPanel;
         [SerializeField] private Button confirmNewGameButton;
         [SerializeField] private Button cancelNewGameButton;
+        [SerializeField] private TextMeshProUGUI warningTitleText;
+        [SerializeField] private TextMeshProUGUI warningBodyText;
+        [SerializeField] private TextMeshProUGUI warningConfirmText;
+        [SerializeField] private TextMeshProUGUI warningCancelText;
 
         [Header("Navigation Target Scene")]
         [SerializeField] private string gamePlaySceneName = "GamePlay";
+
+        [Header("Language Controls")]
+        [SerializeField] private Button quickLanguageButton;
+        [SerializeField] private TextMeshProUGUI quickLanguageText;
+        [SerializeField] private Button optEnglishButton;
+        [SerializeField] private Button optArabicButton;
+        [SerializeField] private TextMeshProUGUI optEnglishText;
+        [SerializeField] private TextMeshProUGUI optArabicText;
+
+        private void Awake()
+        {
+            LocalizationManager.InitializeIfNeeded();
+        }
 
         private void Start()
         {
@@ -103,12 +121,23 @@ namespace EmpireBuilder.UI
                 volumeSlider.onValueChanged.AddListener(val => AudioListener.volume = val);
             }
 
+            EnsureLanguageSettingsUI();
+            EnsureQuickLanguageButton();
+
             RefreshMenuState();
+            UpdateLocalizedTexts();
         }
 
         private void OnEnable()
         {
+            LocalizationManager.OnLanguageChanged += UpdateLocalizedTexts;
             RefreshMenuState();
+            UpdateLocalizedTexts();
+        }
+
+        private void OnDisable()
+        {
+            LocalizationManager.OnLanguageChanged -= UpdateLocalizedTexts;
         }
 
         public void RefreshMenuState()
@@ -140,12 +169,255 @@ namespace EmpireBuilder.UI
                     displayCash = save.cash;
                 }
             }
+            else if (WebGLSaveManager.HasSaveData())
+            {
+                var save = WebGLSaveManager.PeekSaveData();
+                if (save != null)
+                {
+                    displayCash = save.cash;
+                }
+            }
             else
             {
                 PlayerPrefs.SetFloat("SavedPlayerCash", 5000f);
             }
 
             moneyText.text = $"${displayCash:N0}";
+        }
+
+        private void UpdateLocalizedTexts()
+        {
+            if (startGameButton != null)
+            {
+                var t = startGameButton.GetComponentInChildren<TextMeshProUGUI>();
+                if (t != null) t.text = LocalizationManager.Get("menu_start_game");
+            }
+
+            if (resumeButton != null)
+            {
+                var t = resumeButton.GetComponentInChildren<TextMeshProUGUI>();
+                if (t != null) t.text = LocalizationManager.Get("menu_resume_game");
+            }
+
+            if (optionButton != null)
+            {
+                var t = optionButton.GetComponentInChildren<TextMeshProUGUI>();
+                if (t != null) t.text = LocalizationManager.Get("menu_options");
+            }
+
+            if (aboutButton != null)
+            {
+                var t = aboutButton.GetComponentInChildren<TextMeshProUGUI>();
+                if (t != null) t.text = LocalizationManager.Get("menu_about");
+            }
+
+            if (exitButton != null)
+            {
+                var t = exitButton.GetComponentInChildren<TextMeshProUGUI>();
+                if (t != null) t.text = LocalizationManager.Get("menu_exit");
+            }
+
+            // Warning dialog texts
+            if (warningTitleText != null) warningTitleText.text = LocalizationManager.Get("modal_reset_title");
+            if (warningBodyText != null) warningBodyText.text = LocalizationManager.Get("modal_reset_message");
+            if (warningConfirmText != null) warningConfirmText.text = LocalizationManager.Get("modal_reset_confirm");
+            if (warningCancelText != null) warningCancelText.text = LocalizationManager.Get("modal_reset_cancel");
+
+            // Update language toggle button
+            if (quickLanguageText != null)
+            {
+                quickLanguageText.text = LocalizationManager.CurrentLanguage == GameLanguage.Arabic ? "🌐 English" : "🌐 العربية";
+            }
+
+            UpdateLanguageButtonsHighlight();
+        }
+
+        private void EnsureQuickLanguageButton()
+        {
+            if (quickLanguageButton != null) return;
+
+            Transform existing = transform.Find("QuickLanguageButton");
+            if (existing != null)
+            {
+                quickLanguageButton = existing.GetComponent<Button>();
+                quickLanguageText = existing.GetComponentInChildren<TextMeshProUGUI>();
+                return;
+            }
+
+            Canvas canvas = GetComponentInParent<Canvas>();
+            if (canvas == null) return;
+
+            GameObject btnObj = new GameObject("QuickLanguageButton", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
+            btnObj.transform.SetParent(canvas.transform, false);
+
+            var rt = btnObj.GetComponent<RectTransform>();
+            rt.anchorMin = new Vector2(1, 1);
+            rt.anchorMax = new Vector2(1, 1);
+            rt.pivot = new Vector2(1, 1);
+            rt.anchoredPosition = new Vector2(-20, -20);
+            rt.sizeDelta = new Vector2(150, 44);
+
+            var img = btnObj.GetComponent<Image>();
+            img.color = new Color(0.12f, 0.16f, 0.24f, 0.95f);
+
+            quickLanguageButton = btnObj.GetComponent<Button>();
+            quickLanguageButton.onClick.AddListener(() =>
+            {
+                LocalizationManager.ToggleLanguage();
+            });
+
+            GameObject txtObj = new GameObject("Text", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
+            txtObj.transform.SetParent(btnObj.transform, false);
+            var txtRt = txtObj.GetComponent<RectTransform>();
+            txtRt.anchorMin = Vector2.zero;
+            txtRt.anchorMax = Vector2.one;
+            txtRt.sizeDelta = Vector2.zero;
+
+            quickLanguageText = txtObj.GetComponent<TextMeshProUGUI>();
+            quickLanguageText.text = LocalizationManager.CurrentLanguage == GameLanguage.Arabic ? "🌐 English" : "🌐 العربية";
+            quickLanguageText.fontSize = 14;
+            quickLanguageText.fontStyle = FontStyles.Bold;
+            quickLanguageText.alignment = TextAlignmentOptions.Center;
+            quickLanguageText.color = new Color(1f, 0.85f, 0.3f);
+        }
+
+        private void EnsureLanguageSettingsUI()
+        {
+            if (optionPanel == null) return;
+
+            Transform existing = optionPanel.transform.Find("LanguageSection");
+            if (existing != null)
+            {
+                optEnglishButton = existing.Find("ButtonsRow/EnglishButton")?.GetComponent<Button>();
+                optArabicButton = existing.Find("ButtonsRow/ArabicButton")?.GetComponent<Button>();
+                optEnglishText = optEnglishButton?.GetComponentInChildren<TextMeshProUGUI>();
+                optArabicText = optArabicButton?.GetComponentInChildren<TextMeshProUGUI>();
+                BindLanguageButtons();
+                return;
+            }
+
+            // Create Language Settings Section inside optionPanel
+            GameObject section = new GameObject("LanguageSection", typeof(RectTransform));
+            section.transform.SetParent(optionPanel.transform, false);
+
+            RectTransform secRt = section.GetComponent<RectTransform>();
+            secRt.anchorMin = new Vector2(0.5f, 0.5f);
+            secRt.anchorMax = new Vector2(0.5f, 0.5f);
+            secRt.pivot = new Vector2(0.5f, 0.5f);
+            secRt.anchoredPosition = new Vector2(0, -60);
+            secRt.sizeDelta = new Vector2(440, 100);
+
+            // Label
+            GameObject labelObj = new GameObject("LanguageLabel", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
+            labelObj.transform.SetParent(section.transform, false);
+            var lblRt = labelObj.GetComponent<RectTransform>();
+            lblRt.anchorMin = new Vector2(0, 1);
+            lblRt.anchorMax = new Vector2(1, 1);
+            lblRt.pivot = new Vector2(0.5f, 1);
+            lblRt.anchoredPosition = new Vector2(0, 0);
+            lblRt.sizeDelta = new Vector2(440, 30);
+
+            var lblTmp = labelObj.GetComponent<TextMeshProUGUI>();
+            lblTmp.text = "LANGUAGE / اللغة";
+            lblTmp.fontSize = 15;
+            lblTmp.fontStyle = FontStyles.Bold;
+            lblTmp.alignment = TextAlignmentOptions.Center;
+            lblTmp.color = new Color(0.95f, 0.85f, 0.35f);
+
+            // Row for buttons
+            GameObject row = new GameObject("ButtonsRow", typeof(RectTransform), typeof(HorizontalLayoutGroup));
+            row.transform.SetParent(section.transform, false);
+            var rowRt = row.GetComponent<RectTransform>();
+            rowRt.anchorMin = new Vector2(0, 0);
+            rowRt.anchorMax = new Vector2(1, 0);
+            rowRt.pivot = new Vector2(0.5f, 0);
+            rowRt.anchoredPosition = new Vector2(0, 10);
+            rowRt.sizeDelta = new Vector2(440, 48);
+
+            var hlg = row.GetComponent<HorizontalLayoutGroup>();
+            hlg.spacing = 16;
+            hlg.childControlWidth = true;
+            hlg.childControlHeight = true;
+            hlg.childForceExpandWidth = true;
+            hlg.childForceExpandHeight = true;
+
+            // English Button
+            GameObject enBtnObj = new GameObject("EnglishButton", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
+            enBtnObj.transform.SetParent(row.transform, false);
+            optEnglishButton = enBtnObj.GetComponent<Button>();
+
+            GameObject enTxtObj = new GameObject("Text", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
+            enTxtObj.transform.SetParent(enBtnObj.transform, false);
+            var enTxtRt = enTxtObj.GetComponent<RectTransform>();
+            enTxtRt.anchorMin = Vector2.zero;
+            enTxtRt.anchorMax = Vector2.one;
+            enTxtRt.sizeDelta = Vector2.zero;
+            optEnglishText = enTxtObj.GetComponent<TextMeshProUGUI>();
+            optEnglishText.text = "🇬🇧 English";
+            optEnglishText.fontSize = 14;
+            optEnglishText.fontStyle = FontStyles.Bold;
+            optEnglishText.alignment = TextAlignmentOptions.Center;
+            optEnglishText.color = Color.white;
+
+            // Arabic Button
+            GameObject arBtnObj = new GameObject("ArabicButton", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
+            arBtnObj.transform.SetParent(row.transform, false);
+            optArabicButton = arBtnObj.GetComponent<Button>();
+
+            GameObject arTxtObj = new GameObject("Text", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
+            arTxtObj.transform.SetParent(arBtnObj.transform, false);
+            var arTxtRt = arTxtObj.GetComponent<RectTransform>();
+            arTxtRt.anchorMin = Vector2.zero;
+            arTxtRt.anchorMax = Vector2.one;
+            arTxtRt.sizeDelta = Vector2.zero;
+            optArabicText = arTxtObj.GetComponent<TextMeshProUGUI>();
+            optArabicText.text = ArabicFixer.Fix("🇸🇦 العربية");
+            optArabicText.fontSize = 15;
+            optArabicText.fontStyle = FontStyles.Bold;
+            optArabicText.alignment = TextAlignmentOptions.Center;
+            optArabicText.color = Color.white;
+
+            BindLanguageButtons();
+        }
+
+        private void BindLanguageButtons()
+        {
+            if (optEnglishButton != null)
+            {
+                optEnglishButton.onClick.RemoveAllListeners();
+                optEnglishButton.onClick.AddListener(() =>
+                {
+                    LocalizationManager.SetLanguage(GameLanguage.English);
+                });
+            }
+
+            if (optArabicButton != null)
+            {
+                optArabicButton.onClick.RemoveAllListeners();
+                optArabicButton.onClick.AddListener(() =>
+                {
+                    LocalizationManager.SetLanguage(GameLanguage.Arabic);
+                });
+            }
+
+            UpdateLanguageButtonsHighlight();
+        }
+
+        private void UpdateLanguageButtonsHighlight()
+        {
+            bool isAr = LocalizationManager.CurrentLanguage == GameLanguage.Arabic;
+
+            if (optEnglishButton != null)
+            {
+                var img = optEnglishButton.GetComponent<Image>();
+                if (img != null) img.color = !isAr ? new Color(0.12f, 0.65f, 0.35f, 1f) : new Color(0.20f, 0.24f, 0.32f, 0.9f);
+            }
+
+            if (optArabicButton != null)
+            {
+                var img = optArabicButton.GetComponent<Image>();
+                if (img != null) img.color = isAr ? new Color(0.12f, 0.65f, 0.35f, 1f) : new Color(0.20f, 0.24f, 0.32f, 0.9f);
+            }
         }
 
         private void OnStartGameClicked()
@@ -171,6 +443,7 @@ namespace EmpireBuilder.UI
             if (warningDialogPanel != null)
             {
                 warningDialogPanel.SetActive(true);
+                UpdateLocalizedTexts();
             }
         }
 
@@ -247,12 +520,12 @@ namespace EmpireBuilder.UI
             titleRt.anchoredPosition = new Vector2(0, -20);
             titleRt.sizeDelta = new Vector2(-40, 50);
 
-            TextMeshProUGUI titleTmp = titleObj.AddComponent<TextMeshProUGUI>();
-            titleTmp.text = "⚠️ START NEW GAME?";
-            titleTmp.fontSize = 28;
-            titleTmp.fontStyle = FontStyles.Bold;
-            titleTmp.alignment = TextAlignmentOptions.Center;
-            titleTmp.color = new Color(0.98f, 0.75f, 0.15f, 1f); // Vibrant Warning Gold
+            warningTitleText = titleObj.AddComponent<TextMeshProUGUI>();
+            warningTitleText.text = LocalizationManager.Get("modal_reset_title");
+            warningTitleText.fontSize = 24;
+            warningTitleText.fontStyle = FontStyles.Bold;
+            warningTitleText.alignment = TextAlignmentOptions.Center;
+            warningTitleText.color = new Color(0.98f, 0.75f, 0.15f, 1f); // Vibrant Warning Gold
 
             // Body Message
             GameObject bodyObj = new GameObject("MessageText");
@@ -264,12 +537,12 @@ namespace EmpireBuilder.UI
             bodyRt.anchoredPosition = new Vector2(0, 15);
             bodyRt.sizeDelta = new Vector2(-60, 140);
 
-            TextMeshProUGUI bodyTmp = bodyObj.AddComponent<TextMeshProUGUI>();
-            bodyTmp.text = "<b>Previous saved city progress found!</b>\n\nStarting a new game will <color=#FF4444>permanently erase</color> your existing city data, buildings, and properties, resetting your balance to <b>$10,000 coins</b>.\n\nAre you sure you want to proceed?";
-            bodyTmp.fontSize = 17;
-            bodyTmp.lineSpacing = 18f;
-            bodyTmp.alignment = TextAlignmentOptions.Center;
-            bodyTmp.color = new Color(0.92f, 0.94f, 0.96f, 1f);
+            warningBodyText = bodyObj.AddComponent<TextMeshProUGUI>();
+            warningBodyText.text = LocalizationManager.Get("modal_reset_message");
+            warningBodyText.fontSize = 15;
+            warningBodyText.lineSpacing = 16f;
+            warningBodyText.alignment = TextAlignmentOptions.Center;
+            warningBodyText.color = new Color(0.92f, 0.94f, 0.96f, 1f);
 
             // Button Container
             GameObject btnRow = new GameObject("ButtonsRow");
@@ -303,12 +576,12 @@ namespace EmpireBuilder.UI
             cTxtRt.anchorMax = Vector2.one;
             cTxtRt.offsetMin = Vector2.zero;
             cTxtRt.offsetMax = Vector2.zero;
-            TextMeshProUGUI cancelTmp = cancelTxtObj.AddComponent<TextMeshProUGUI>();
-            cancelTmp.text = "KEEP SAVED GAME";
-            cancelTmp.fontSize = 16;
-            cancelTmp.fontStyle = FontStyles.Bold;
-            cancelTmp.alignment = TextAlignmentOptions.Center;
-            cancelTmp.color = Color.white;
+            warningCancelText = cancelTxtObj.AddComponent<TextMeshProUGUI>();
+            warningCancelText.text = LocalizationManager.Get("modal_reset_cancel");
+            warningCancelText.fontSize = 14;
+            warningCancelText.fontStyle = FontStyles.Bold;
+            warningCancelText.alignment = TextAlignmentOptions.Center;
+            warningCancelText.color = Color.white;
 
             // Confirm Button
             GameObject confirmObj = new GameObject("ConfirmButton");
@@ -325,17 +598,22 @@ namespace EmpireBuilder.UI
             cfTxtRt.anchorMax = Vector2.one;
             cfTxtRt.offsetMin = Vector2.zero;
             cfTxtRt.offsetMax = Vector2.zero;
-            TextMeshProUGUI confirmTmp = confirmTxtObj.AddComponent<TextMeshProUGUI>();
-            confirmTmp.text = "YES, START OVER ($10,000)";
-            confirmTmp.fontSize = 16;
-            confirmTmp.fontStyle = FontStyles.Bold;
-            confirmTmp.alignment = TextAlignmentOptions.Center;
-            confirmTmp.color = Color.white;
+            warningConfirmText = confirmTxtObj.AddComponent<TextMeshProUGUI>();
+            warningConfirmText.text = LocalizationManager.Get("modal_reset_confirm");
+            warningConfirmText.fontSize = 14;
+            warningConfirmText.fontStyle = FontStyles.Bold;
+            warningConfirmText.alignment = TextAlignmentOptions.Center;
+            warningConfirmText.color = Color.white;
         }
 
         private void OnOptionClicked()
         {
-            if (optionPanel != null) optionPanel.SetActive(true);
+            if (optionPanel != null)
+            {
+                optionPanel.SetActive(true);
+                EnsureLanguageSettingsUI();
+                UpdateLanguageButtonsHighlight();
+            }
         }
 
         private void OnCloseOptionClicked()

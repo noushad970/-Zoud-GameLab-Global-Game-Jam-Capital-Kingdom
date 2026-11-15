@@ -3,6 +3,7 @@ using System.Collections;
 using EmpireBuilder.Audio;
 using EmpireBuilder.Core;
 using EmpireBuilder.Economy;
+using EmpireBuilder.Localization;
 using EmpireBuilder.World;
 using TMPro;
 using UnityEngine;
@@ -163,6 +164,7 @@ namespace EmpireBuilder.UI
             }
 
             EnsureBindings();
+            LocalizationManager.OnLanguageChanged += HandleLanguageChanged;
         }
 
         private void Start()
@@ -183,9 +185,18 @@ namespace EmpireBuilder.UI
 
         private void OnDestroy()
         {
+            LocalizationManager.OnLanguageChanged -= HandleLanguageChanged;
             if (currentBuilding != null)
             {
                 currentBuilding.OnStateChanged -= HandleBuildingStateChanged;
+            }
+        }
+
+        private void HandleLanguageChanged()
+        {
+            if (panelRoot != null && panelRoot.activeSelf && currentBuilding != null)
+            {
+                RefreshUI();
             }
         }
 
@@ -633,19 +644,19 @@ namespace EmpireBuilder.UI
             {
                 if (currentBuilding.IsCivic)
                 {
-                    statusBadgeText.text = "CIVIC PUBLIC FACILITY";
+                    statusBadgeText.text = LocalizationManager.Get("prop_civic_status");
                 }
                 else if (currentBuilding.IsOwned)
                 {
-                    statusBadgeText.text = "OWNED BY YOU";
+                    statusBadgeText.text = LocalizationManager.Get("prop_owned_by_you");
                 }
                 else if (currentBuilding.FlatsOwned > 0)
                 {
-                    statusBadgeText.text = $"YOU OWN {currentBuilding.FlatsOwned}/{currentBuilding.TotalFlats} FLATS";
+                    statusBadgeText.text = LocalizationManager.Get("prop_flats_owned_status", currentBuilding.FlatsOwned, currentBuilding.TotalFlats);
                 }
                 else
                 {
-                    statusBadgeText.text = "AVAILABLE FOR SALE";
+                    statusBadgeText.text = LocalizationManager.Get("prop_available_sale");
                 }
             }
 
@@ -694,13 +705,13 @@ namespace EmpireBuilder.UI
                 if (currentBuilding.IsCivic)
                 {
                     buyPropertyButton.interactable = false;
-                    if (buyButtonText != null) buyButtonText.text = "CIVIC FACILITY (NOT FOR SALE)";
+                    if (buyButtonText != null) buyButtonText.text = LocalizationManager.Get("prop_not_for_sale");
                     if (buyButtonBg != null) buyButtonBg.color = new Color(0.25f, 0.30f, 0.40f, 0.7f);
                 }
                 else if (currentBuilding.IsOwned)
                 {
                     buyPropertyButton.interactable = false;
-                    if (buyButtonText != null) buyButtonText.text = "ALREADY OWNED";
+                    if (buyButtonText != null) buyButtonText.text = LocalizationManager.Get("prop_already_owned");
                     if (buyButtonBg != null) buyButtonBg.color = new Color(0.3f, 0.35f, 0.45f, 0.7f);
                 }
                 else
@@ -709,9 +720,9 @@ namespace EmpireBuilder.UI
                     if (buyButtonText != null)
                     {
                         string label = currentBuilding.FlatsOwned > 0
-                            ? $"BUY REST OF BUILDING (${effectiveBuildingPrice:N0})"
-                            : $"BUY PROPERTY (${effectiveBuildingPrice:N0})";
-                        buyButtonText.text = canAfford ? label : $"INSUFFICIENT FUNDS (${effectiveBuildingPrice:N0})";
+                            ? LocalizationManager.Get("prop_buy_rest_button", effectiveBuildingPrice)
+                            : LocalizationManager.Get("prop_buy_button_cash", effectiveBuildingPrice);
+                        buyButtonText.text = canAfford ? label : LocalizationManager.Get("prop_insufficient_funds_btn", effectiveBuildingPrice);
                     }
                     if (buyButtonBg != null)
                     {
@@ -738,8 +749,8 @@ namespace EmpireBuilder.UI
                     if (collectRentButtonText != null)
                     {
                         collectRentButtonText.text = canCollect
-                            ? $"COLLECT RENT (+${totalDue:N0})"
-                            : (totalDue > 0 ? "RENT COLLECTED TODAY" : "NO RENT DUE");
+                            ? LocalizationManager.Get("prop_collect_rent_amount", totalDue)
+                            : (totalDue > 0 ? LocalizationManager.Get("prop_rent_collected_today") : LocalizationManager.Get("prop_no_rent_due"));
                     }
                 }
             }
@@ -769,7 +780,7 @@ namespace EmpireBuilder.UI
                     {
                         buyFlatButtonText.text = hasUnbought
                             ? $"BUY FLAT #{currentBuilding.FlatsOwned + 1} (${currentBuilding.FlatPurchasePrice:N0})"
-                            : "ALL FLATS OWNED";
+                            : LocalizationManager.Get("flat_all_owned");
                     }
                 }
                 if (giveRentButton != null)
@@ -779,8 +790,8 @@ namespace EmpireBuilder.UI
                     if (giveRentButtonText != null)
                     {
                         giveRentButtonText.text = canGiveRent
-                            ? $"RENT OUT FLAT (+${currentBuilding.FlatDailyRent:N0}/day)"
-                            : (currentBuilding.FlatsOwned == 0 ? "BUY A FLAT FIRST" : "ALL FLATS LEASED");
+                            ? LocalizationManager.Get("flat_rent_out_btn", currentBuilding.FlatDailyRent)
+                            : (currentBuilding.FlatsOwned == 0 ? LocalizationManager.Get("flat_buy_first") : LocalizationManager.Get("flat_all_leased"));
                     }
                 }
             }
@@ -1109,14 +1120,11 @@ namespace EmpireBuilder.UI
                 {
                     if (!hasAccount)
                     {
-                        bankStatusText.text = $"<color=#FFCC00>⚠️ NO ACTIVE BANK ACCOUNT</color>\n" +
-                            $"Open an official savings account for a one-time fee of <color=#44FF88>100 Coins</color>.\n" +
-                            $"Once opened, deposit funds anytime and earn <color=#FFDD44>(10/30)% compound interest daily</color>!";
+                        bankStatusText.text = LocalizationManager.Get("bank_status_closed");
                     }
                     else
                     {
-                        bankStatusText.text = $"<color=#44FF88>★ ACTIVE SAVINGS ACCOUNT</color>  |  Balance: <color=#FFDD44>${bankBal:N2}</color>\n" +
-                            $"Daily Interest Rate: <color=#44FF88>(10/30)% (~0.333%)</color>  |  Total Interest Earned: <color=#70C5FF>${totalInt:N2}</color>";
+                        bankStatusText.text = LocalizationManager.Get("bank_status_active", bankBal, totalInt);
                     }
                 }
 
@@ -1127,8 +1135,8 @@ namespace EmpireBuilder.UI
                     if (openBankButtonText != null)
                     {
                         openBankButtonText.text = canAffordOpen
-                            ? "🏦 OPEN BANK ACCOUNT (FEE: 100 COINS)"
-                            : "NEED 100 COINS TO OPEN ACCOUNT";
+                            ? LocalizationManager.Get("bank_open_account_btn")
+                            : LocalizationManager.Get("bank_need_coins_open");
                     }
                     if (openBankButtonBg != null)
                     {
@@ -1162,7 +1170,7 @@ namespace EmpireBuilder.UI
             {
                 if (maintenanceReasonText != null)
                 {
-                    maintenanceReasonText.text = $"⚠️ MAINTENANCE REQUIRED: -${currentBuilding.PendingMaintenanceCost:N0}\n{currentBuilding.MaintenanceReason}";
+                    maintenanceReasonText.text = LocalizationManager.Get("maint_required_title", currentBuilding.PendingMaintenanceCost) + $"\n{LocalizationManager.FormatRaw(currentBuilding.MaintenanceReason)}";
                 }
                 if (payMaintenanceButton != null)
                 {
@@ -1171,8 +1179,8 @@ namespace EmpireBuilder.UI
                     if (payMaintenanceButtonText != null)
                     {
                         payMaintenanceButtonText.text = canAffordMaint
-                            ? $"PAY MAINTENANCE (-${currentBuilding.PendingMaintenanceCost:N0})"
-                            : $"INSUFFICIENT FUNDS (-${currentBuilding.PendingMaintenanceCost:N0})";
+                            ? LocalizationManager.Get("maint_pay_button", currentBuilding.PendingMaintenanceCost)
+                            : LocalizationManager.Get("maint_insufficient_funds", currentBuilding.PendingMaintenanceCost);
                     }
                     if (payMaintenanceButtonBg != null)
                     {
@@ -1267,14 +1275,14 @@ namespace EmpireBuilder.UI
             if (success)
             {
                 GameSoundManager.Instance?.PlayBuy(currentBuilding.transform.position);
-                ShowToast($"Congratulations! You purchased {currentBuilding.PropertyName}!");
+                ShowToast(LocalizationManager.Get("prop_purchased_success", currentBuilding.PropertyName));
                 GamePlayHeaderUI.Instance?.UpdateMoneyDisplay();
                 RefreshUI();
             }
             else
             {
                 GameSoundManager.Instance?.PlayError();
-                ShowToast("Cannot afford to purchase this property!");
+                ShowToast(LocalizationManager.Get("prop_insufficient_funds"));
             }
         }
 
@@ -1303,7 +1311,7 @@ namespace EmpireBuilder.UI
             if (currentBuilding.CollectRent(out double amount))
             {
                 GameSoundManager.Instance?.PlayCollect(currentBuilding.transform.position);
-                ShowToast($"Collected +${amount:N0} in property rent income!");
+                ShowToast(LocalizationManager.Get("prop_rent_collected", amount, currentBuilding.PropertyName));
                 GamePlayHeaderUI.Instance?.UpdateMoneyDisplay();
                 RefreshUI();
             }
@@ -1397,7 +1405,7 @@ namespace EmpireBuilder.UI
                 return;
             }
 
-            toastMessageText.text = message;
+            toastMessageText.text = LocalizationManager.FormatRaw(message);
             toastRoot.SetActive(true);
 
             if (toastCoroutine != null)

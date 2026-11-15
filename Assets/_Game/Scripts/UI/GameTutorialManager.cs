@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using EmpireBuilder.Audio;
+using EmpireBuilder.Localization;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -22,6 +23,7 @@ namespace EmpireBuilder.UI
     /// Interactive guided onboarding tutorial for new players.
     /// Teaches camera controls, building purchases, flat acquisitions, rent collections,
     /// health/hunger restoration, stadium match invitations, and the top-right notice bar.
+    /// Supports dynamic bilingual Arabic and English localization.
     /// Can be re-opened anytime from the HUD guide button.
     /// </summary>
     public class GameTutorialManager : MonoBehaviour
@@ -39,7 +41,9 @@ namespace EmpireBuilder.UI
         [SerializeField] private Button nextButton;
         [SerializeField] private TextMeshProUGUI nextButtonText;
         [SerializeField] private Button backButton;
+        [SerializeField] private TextMeshProUGUI backButtonText;
         [SerializeField] private Button skipButton;
+        [SerializeField] private TextMeshProUGUI skipButtonText;
         [SerializeField] private Button closeXButton;
         [SerializeField] private Transform stepDotsContainer;
 
@@ -61,6 +65,24 @@ namespace EmpireBuilder.UI
 
             EnsureBindings();
             InitializeStepDefinitions();
+        }
+
+        private void OnEnable()
+        {
+            LocalizationManager.OnLanguageChanged += HandleLanguageChanged;
+            InitializeStepDefinitions();
+            UpdateStepUI();
+        }
+
+        private void OnDisable()
+        {
+            LocalizationManager.OnLanguageChanged -= HandleLanguageChanged;
+        }
+
+        private void HandleLanguageChanged()
+        {
+            InitializeStepDefinitions();
+            UpdateStepUI();
         }
 
         private void Start()
@@ -113,6 +135,14 @@ namespace EmpireBuilder.UI
             {
                 nextButtonText = nextButton.GetComponentInChildren<TextMeshProUGUI>();
             }
+            if (backButton != null && backButtonText == null)
+            {
+                backButtonText = backButton.GetComponentInChildren<TextMeshProUGUI>();
+            }
+            if (skipButton != null && skipButtonText == null)
+            {
+                skipButtonText = skipButton.GetComponentInChildren<TextMeshProUGUI>();
+            }
         }
 
         private void InitializeStepDefinitions()
@@ -123,8 +153,8 @@ namespace EmpireBuilder.UI
             steps.Add(new TutorialStepData
             {
                 iconEmoji = "👑",
-                title = "WELCOME TO CAPITAL KINGDOM",
-                description = "Greetings Mayor! You have arrived in Capital Kingdom with $10,000 starting capital.\n\nYour mission is to build a massive financial real estate empire! Acquire properties, purchase residential flats, collect rent, run factories, deploy taxis, and manage your health to conquer the city.",
+                title = LocalizationManager.Get("tut_welcome_title"),
+                description = LocalizationManager.Get("tut_welcome_desc"),
                 accentColor = new Color(0.18f, 0.52f, 0.95f)
             });
 
@@ -132,8 +162,8 @@ namespace EmpireBuilder.UI
             steps.Add(new TutorialStepData
             {
                 iconEmoji = "🎮",
-                title = "CAMERA CONTROLS & NAVIGATION",
-                description = "Explore the metropolitan district effortlessly:\n\n• <b>Pan Camera</b>: Hold Left Mouse Button & drag (or WASD / Arrow keys).\n• <b>Rotate View</b>: Hold Right Mouse Button & drag (or Q / E keys).\n• <b>Zoom</b>: Mouse Scroll Wheel (or pinch).\n• <b>Select Property</b>: Click any building to open its dashboard!",
+                title = LocalizationManager.Get("tut_camera_title"),
+                description = LocalizationManager.Get("tut_camera_desc"),
                 accentColor = new Color(0.20f, 0.75f, 0.55f)
             });
 
@@ -141,26 +171,26 @@ namespace EmpireBuilder.UI
             steps.Add(new TutorialStepData
             {
                 iconEmoji = "🏢",
-                title = "PROPERTIES & RESIDENTIAL FLATS",
-                description = "Buildings in the city have 3D indicators above them:\n\n• <b>Rental Buildings</b>: Buy individual flats ($800/flat) or acquire the entire property!\n• <b>Commercial Buildings</b>: Acquire Factories, Oil Stations, Cafes, and the Grand Stadium.\n• <b>Civic Services</b>: Police Stations and Schools keep the city safe, while Hospitals heal you.",
+                title = LocalizationManager.Get("tut_properties_title"),
+                description = LocalizationManager.Get("tut_properties_desc"),
                 accentColor = new Color(0.92f, 0.65f, 0.15f)
             });
 
-            // Step 4: Collecting Rent & Production Profits
+            // Step 4: National Bank & Compound Savings
             steps.Add(new TutorialStepData
             {
-                iconEmoji = "💰",
-                title = "COLLECTING RENTS & PRODUCTION PROFITS",
-                description = "Your acquired assets generate high passive returns:\n\n• Every tenant in your flats pays daily rent.\n• When an indicator glows <b>GOLD ('COLLECT RENT')</b>, click the building to claim your money!\n• Factories produce manufacturing batches and Oil Stations accumulate fuel distribution revenue.",
+                iconEmoji = "🏛️",
+                title = LocalizationManager.Get("tut_bank_title"),
+                description = LocalizationManager.Get("tut_bank_desc"),
                 accentColor = new Color(0.95f, 0.75f, 0.10f)
             });
 
-            // Step 5: Stadium Match Requests & Taxi Fleet
+            // Step 5: Residential Flats & Upgrades
             steps.Add(new TutorialStepData
             {
-                iconEmoji = "🏆",
-                title = "STADIUM MATCHES & TAXI TRANSPORT",
-                description = "Unlock special high-revenue metropolitan features:\n\n• <b>Olympic Stadium</b>: Major football clubs will periodically invite you to host matches for huge fees ($1,000 - $25,000)!\n• <b>Taxi Station</b>: Rent taxis to drive through the streets, generating steady automated daily fares.",
+                iconEmoji = "🔑",
+                title = LocalizationManager.Get("tut_flats_title"),
+                description = LocalizationManager.Get("tut_flats_desc"),
                 accentColor = new Color(0.15f, 0.70f, 0.95f)
             });
 
@@ -168,8 +198,8 @@ namespace EmpireBuilder.UI
             steps.Add(new TutorialStepData
             {
                 iconEmoji = "❤️",
-                title = "HEALTH, HUNGER & HOSPITAL CARE",
-                description = "Manage your physical condition to keep running your empire:\n\n• Your health ticks down over time from hunger/energy depletion (watch the top-header Health Bar).\n• Visit any <b>Cafe or Restaurant</b> to eat food (+45 HP) or drink coffee (+25 HP).\n• If sick or exhausted (0 HP), visit <b>Capital General Hospital</b> for full medical treatment!",
+                title = LocalizationManager.Get("tut_health_title"),
+                description = LocalizationManager.Get("tut_health_desc"),
                 accentColor = new Color(0.92f, 0.25f, 0.35f)
             });
 
@@ -177,8 +207,8 @@ namespace EmpireBuilder.UI
             steps.Add(new TutorialStepData
             {
                 iconEmoji = "🔧",
-                title = "CITY NOTICES & PROPERTY MAINTENANCE",
-                description = "Stay informed and keep your empire running smoothly:\n\n• <b>Top-Right Notice Bar</b>: Displays instant alerts for stadium match offers, rent ready, repairs & hunger warnings!\n• <b>Maintenance</b>: Owned buildings will occasionally need repairs (plumbing, electrical, HVAC). Fix them promptly to ensure continuous rent flow!",
+                title = LocalizationManager.Get("tut_alerts_title"),
+                description = LocalizationManager.Get("tut_alerts_desc"),
                 accentColor = new Color(0.85f, 0.35f, 0.15f)
             });
         }
@@ -269,7 +299,7 @@ namespace EmpireBuilder.UI
 
             if (stepCountText != null)
             {
-                stepCountText.text = $"STEP {currentStepIndex + 1} OF {steps.Count}";
+                stepCountText.text = LocalizationManager.Get("tut_step_count", currentStepIndex + 1, steps.Count);
             }
 
             if (titleText != null)
@@ -297,9 +327,21 @@ namespace EmpireBuilder.UI
                 backButton.gameObject.SetActive(currentStepIndex > 0);
             }
 
+            if (backButtonText != null)
+            {
+                backButtonText.text = LocalizationManager.Get("tut_btn_back");
+            }
+
+            if (skipButtonText != null)
+            {
+                skipButtonText.text = LocalizationManager.Get("tut_btn_skip");
+            }
+
             if (nextButtonText != null)
             {
-                nextButtonText.text = (currentStepIndex == steps.Count - 1) ? "START PLAYING! 🚀" : "NEXT ➔";
+                nextButtonText.text = (currentStepIndex == steps.Count - 1)
+                    ? LocalizationManager.Get("tut_btn_finish")
+                    : LocalizationManager.Get("tut_btn_next");
             }
         }
 

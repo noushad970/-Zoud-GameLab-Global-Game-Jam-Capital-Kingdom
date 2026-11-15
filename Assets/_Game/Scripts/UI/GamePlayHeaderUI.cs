@@ -1,4 +1,5 @@
 using EmpireBuilder.Core;
+using EmpireBuilder.Localization;
 using EmpireBuilder.SaveLoad;
 using TMPro;
 using UnityEngine;
@@ -14,6 +15,8 @@ namespace EmpireBuilder.UI
         [SerializeField] private TextMeshProUGUI moneyText;
         [SerializeField] private Button backToMenuButton;
         [SerializeField] private Button guideButton;
+        [SerializeField] private Button languageButton;
+        [SerializeField] private TextMeshProUGUI languageButtonText;
 
         [Header("In-Game Day, Date & Clock Header")]
         [SerializeField] private GameObject dateTimeBadgeRoot;
@@ -27,6 +30,18 @@ namespace EmpireBuilder.UI
         private void Awake()
         {
             Instance = this;
+            LocalizationManager.InitializeIfNeeded();
+        }
+
+        private void OnEnable()
+        {
+            LocalizationManager.OnLanguageChanged += HandleLanguageChanged;
+            UpdateHeaderTexts();
+        }
+
+        private void OnDisable()
+        {
+            LocalizationManager.OnLanguageChanged -= HandleLanguageChanged;
         }
 
         private void Start()
@@ -37,6 +52,7 @@ namespace EmpireBuilder.UI
             }
 
             EnsureGuideButton();
+            EnsureLanguageButton();
             EnsureDateTimeBadge();
             EnsureWebGLSaveManager();
             EnsureCityNoticeBar();
@@ -44,6 +60,7 @@ namespace EmpireBuilder.UI
 
             UpdateMoneyDisplay();
             UpdateDateTimeDisplay();
+            UpdateHeaderTexts();
 
             if (GameManager.Instance != null && GameManager.Instance.Economy != null)
             {
@@ -146,7 +163,85 @@ namespace EmpireBuilder.UI
             System.DateTime gameDate = baseDate.AddDays(Mathf.Max(0, currentDay - 1));
             string dateStr = gameDate.ToString("MMM dd, yyyy");
 
-            dateTimeText.text = $"<color=#FFD700>DAY {currentDay} IN CITY</color>  <color=#556677>•</color>  <color=#FFFFFF>{timeStr}</color>  <color=#556677>•</color>  <color=#70C5FF>{dateStr}</color>";
+            dateTimeText.text = LocalizationManager.Get("header_day_badge", currentDay, timeStr, dateStr);
+        }
+
+        private void HandleLanguageChanged()
+        {
+            UpdateHeaderTexts();
+            UpdateDateTimeDisplay();
+        }
+
+        private void UpdateHeaderTexts()
+        {
+            if (guideButton != null)
+            {
+                var txt = guideButton.GetComponentInChildren<TextMeshProUGUI>();
+                if (txt != null) txt.text = LocalizationManager.Get("header_guide_btn");
+            }
+
+            if (backToMenuButton != null)
+            {
+                var txt = backToMenuButton.GetComponentInChildren<TextMeshProUGUI>();
+                if (txt != null) txt.text = LocalizationManager.Get("header_menu_btn");
+            }
+
+            if (languageButtonText != null)
+            {
+                languageButtonText.text = LocalizationManager.CurrentLanguage == GameLanguage.Arabic ? "🌐 English" : "🌐 عربي";
+            }
+            else if (languageButton != null)
+            {
+                var txt = languageButton.GetComponentInChildren<TextMeshProUGUI>();
+                if (txt != null) txt.text = LocalizationManager.CurrentLanguage == GameLanguage.Arabic ? "🌐 English" : "🌐 عربي";
+            }
+        }
+
+        private void EnsureLanguageButton()
+        {
+            if (languageButton == null)
+            {
+                var tr = transform.Find("LanguageButton");
+                if (tr != null)
+                {
+                    languageButton = tr.GetComponent<Button>();
+                    languageButtonText = languageButton.GetComponentInChildren<TextMeshProUGUI>();
+                }
+            }
+
+            if (languageButton == null && backToMenuButton != null)
+            {
+                var langObj = Instantiate(backToMenuButton.gameObject, transform, false);
+                langObj.name = "LanguageButton";
+                var rt = langObj.GetComponent<RectTransform>();
+                rt.anchorMin = new Vector2(1, 0.5f);
+                rt.anchorMax = new Vector2(1, 0.5f);
+                rt.pivot = new Vector2(1, 0.5f);
+                rt.anchoredPosition = new Vector2(-400, 0);
+                rt.sizeDelta = new Vector2(130, 52);
+
+                languageButtonText = langObj.GetComponentInChildren<TextMeshProUGUI>();
+                if (languageButtonText != null)
+                {
+                    languageButtonText.text = LocalizationManager.CurrentLanguage == GameLanguage.Arabic ? "🌐 English" : "🌐 عربي";
+                }
+
+                var img = langObj.GetComponent<Image>();
+                if (img != null) img.color = new Color(0.15f, 0.65f, 0.40f);
+
+                languageButton = langObj.GetComponent<Button>();
+            }
+
+            if (languageButton != null)
+            {
+                languageButton.onClick.RemoveAllListeners();
+                languageButton.onClick.AddListener(() =>
+                {
+                    LocalizationManager.ToggleLanguage();
+                    UpdateHeaderTexts();
+                    UpdateDateTimeDisplay();
+                });
+            }
         }
 
         private void EnsureGuideButton()

@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using EmpireBuilder.Audio;
 using EmpireBuilder.Core;
+using EmpireBuilder.Localization;
 using EmpireBuilder.World;
 using TMPro;
 using UnityEngine;
@@ -116,7 +117,9 @@ namespace EmpireBuilder.UI
 
             if (noticeCountText != null)
             {
-                noticeCountText.text = activeNotices.Count > 0 ? $"{activeNotices.Count} ALERTS" : "CITY IDLE";
+                noticeCountText.text = activeNotices.Count > 0
+                    ? LocalizationManager.Get("header_notice_alerts", activeNotices.Count)
+                    : LocalizationManager.Get("header_notice_clear");
             }
         }
 
@@ -245,15 +248,17 @@ namespace EmpireBuilder.UI
             emojiTmp.rectTransform.anchorMax = Vector2.one;
             emojiTmp.rectTransform.sizeDelta = Vector2.zero;
 
+            bool isArabic = LocalizationManager.CurrentLanguage == GameLanguage.Arabic;
+
             // Title
             var titleObj = new GameObject("TitleText", typeof(RectTransform), typeof(TextMeshProUGUI));
             titleObj.transform.SetParent(card.transform, false);
             var titleTmp = titleObj.GetComponent<TextMeshProUGUI>();
-            titleTmp.text = item.title;
+            titleTmp.text = LocalizationManager.FormatRaw(item.title);
             titleTmp.fontSize = 13;
             titleTmp.fontStyle = FontStyles.Bold;
             titleTmp.color = Color.white;
-            titleTmp.alignment = TextAlignmentOptions.Left;
+            titleTmp.alignment = isArabic ? TextAlignmentOptions.Right : TextAlignmentOptions.Left;
             var titleRt = titleTmp.rectTransform;
             titleRt.anchorMin = new Vector2(0, 1);
             titleRt.anchorMax = new Vector2(1, 1);
@@ -265,10 +270,10 @@ namespace EmpireBuilder.UI
             var descObj = new GameObject("DescText", typeof(RectTransform), typeof(TextMeshProUGUI));
             descObj.transform.SetParent(card.transform, false);
             var descTmp = descObj.GetComponent<TextMeshProUGUI>();
-            descTmp.text = item.description;
+            descTmp.text = LocalizationManager.FormatRaw(item.description);
             descTmp.fontSize = 11;
             descTmp.color = new Color(0.95f, 0.95f, 0.95f, 0.95f);
-            descTmp.alignment = TextAlignmentOptions.Left;
+            descTmp.alignment = isArabic ? TextAlignmentOptions.Right : TextAlignmentOptions.Left;
             descTmp.overflowMode = TextOverflowModes.Ellipsis;
             var descRt = descTmp.rectTransform;
             descRt.anchorMin = new Vector2(0, 0);

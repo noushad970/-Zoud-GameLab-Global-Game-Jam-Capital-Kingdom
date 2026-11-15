@@ -1,5 +1,6 @@
 using System;
 using EmpireBuilder.Core;
+using EmpireBuilder.Localization;
 using EmpireBuilder.SaveLoad;
 using EmpireBuilder.UI;
 using UnityEngine;
@@ -74,14 +75,14 @@ namespace EmpireBuilder.Economy
         {
             if (hasBankAccount)
             {
-                message = "You already have an active bank account with Capital National Bank!";
+                message = LocalizationManager.Get("bank_already_active");
                 return false;
             }
 
             double currentCash = GetPlayerCash();
             if (currentCash < AccountOpeningFee)
             {
-                message = $"Insufficient funds! Opening a bank account requires {AccountOpeningFee:N0} coins. You have ${currentCash:N0}.";
+                message = LocalizationManager.Get("bank_fee_insufficient");
                 return false;
             }
 
@@ -92,7 +93,7 @@ namespace EmpireBuilder.Economy
             SaveState();
             OnBankStateChanged?.Invoke();
 
-            message = "Congratulations! Your bank account has been opened successfully. You can now securely deposit and earn daily interest!";
+            message = LocalizationManager.Get("bank_opened_success");
             Debug.Log("[BankService] Opened new bank account. Fee: 100 coins.");
             return true;
         }
@@ -104,20 +105,20 @@ namespace EmpireBuilder.Economy
         {
             if (!hasBankAccount)
             {
-                message = "You must first open a bank account (100 coin fee) before depositing funds!";
+                message = LocalizationManager.Get("bank_need_account_first");
                 return false;
             }
 
             if (amount <= 0.01)
             {
-                message = "Please enter a valid deposit amount greater than 0!";
+                message = LocalizationManager.Get("bank_invalid_amount");
                 return false;
             }
 
             double currentCash = GetPlayerCash();
             if (amount > currentCash)
             {
-                message = $"Insufficient cash in hand! You attempted to deposit ${amount:N0}, but only have ${currentCash:N0} available.";
+                message = LocalizationManager.Get("bank_deposit_insufficient");
                 return false;
             }
 
@@ -128,7 +129,7 @@ namespace EmpireBuilder.Economy
             SaveState();
             OnBankStateChanged?.Invoke();
 
-            message = $"Successfully deposited ${amount:N0} into your bank account! Current Bank Balance: ${bankBalance:N2}.";
+            message = LocalizationManager.Get("bank_deposit_success", amount);
             Debug.Log($"[BankService] Deposited ${amount:N0}. New Balance: ${bankBalance:N2}");
             return true;
         }
@@ -140,19 +141,19 @@ namespace EmpireBuilder.Economy
         {
             if (!hasBankAccount)
             {
-                message = "You do not have an active bank account.";
+                message = LocalizationManager.Get("bank_need_account_first");
                 return false;
             }
 
             if (amount <= 0.01)
             {
-                message = "Please enter a valid withdrawal amount greater than 0!";
+                message = LocalizationManager.Get("bank_invalid_amount");
                 return false;
             }
 
             if (amount > bankBalance)
             {
-                message = $"Insufficient bank funds! You requested ${amount:N0}, but your balance is ${bankBalance:N2}.";
+                message = LocalizationManager.Get("bank_withdraw_insufficient");
                 return false;
             }
 
@@ -163,7 +164,7 @@ namespace EmpireBuilder.Economy
             SaveState();
             OnBankStateChanged?.Invoke();
 
-            message = $"Successfully withdrew ${amount:N0} from your bank account! Current Bank Balance: ${bankBalance:N2}.";
+            message = LocalizationManager.Get("bank_withdraw_success", amount);
             Debug.Log($"[BankService] Withdrew ${amount:N0}. New Balance: ${bankBalance:N2}");
             return true;
         }
@@ -191,12 +192,12 @@ namespace EmpireBuilder.Economy
             OnInterestEarned?.Invoke(interestEarned);
             OnBankStateChanged?.Invoke();
 
-            string noticeMsg = $"Earned +${interestEarned:F2} daily interest (10/30%) on your deposit balance! New Bank Balance: ${bankBalance:N2}";
+            string noticeMsg = LocalizationManager.Get("bank_interest_credited", interestEarned);
             Debug.Log($"[BankService] Day {dayNumber} - {noticeMsg}");
 
             if (CityNoticeBarUI.Instance != null)
             {
-                CityNoticeBarUI.Instance.PostNotice("🏦 BANK INTEREST", noticeMsg, NoticeType.General, null, 9f);
+                CityNoticeBarUI.Instance.PostNotice(LocalizationManager.Get("bank_notice_title"), noticeMsg, NoticeType.General, null, 9f);
             }
         }
 

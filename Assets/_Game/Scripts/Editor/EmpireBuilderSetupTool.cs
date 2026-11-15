@@ -250,7 +250,7 @@ namespace EmpireBuilder.Editor
             coinRect.sizeDelta = new Vector2(46, 46);
             if (coinSprite != null) coinIconObj.GetComponent<Image>().sprite = coinSprite;
 
-            var moneyText = CreateTMPText("MoneyText", moneyHeaderObj.transform, "$10,000", new Vector2(70, 0), new Vector2(190, 48), 28, fontAsset, TextAlignmentOptions.Left);
+            var moneyText = CreateTMPText("MoneyText", moneyHeaderObj.transform, "$5,000", new Vector2(70, 0), new Vector2(190, 48), 28, fontAsset, TextAlignmentOptions.Left);
 
             // 3. Game Title
             var titleText = CreateTMPText("GameTitle", canvasObj.transform, "EMPIRE BUILDER\n<size=50%>FROM ZERO TO TYCOON</size>", new Vector2(0, 320), new Vector2(900, 160), 64, fontAsset, TextAlignmentOptions.Center);
@@ -425,7 +425,7 @@ namespace EmpireBuilder.Editor
             coinRect.sizeDelta = new Vector2(48, 48);
             if (coinSprite != null) coinIconObj.GetComponent<Image>().sprite = coinSprite;
 
-            var moneyText = CreateTMPText("MoneyText", moneyBoxObj.transform, "$10,000", new Vector2(65, 0), new Vector2(190, 48), 30, fontAsset, TextAlignmentOptions.Left);
+            var moneyText = CreateTMPText("MoneyText", moneyBoxObj.transform, "$5,000", new Vector2(65, 0), new Vector2(190, 48), 30, fontAsset, TextAlignmentOptions.Left);
 
             // Center Title
             CreateTMPText("SceneTitle", headerObj.transform, "CAPITAL KINGDOM DISTRICT", new Vector2(0, 0), new Vector2(450, 48), 28, fontAsset, TextAlignmentOptions.Center);
@@ -737,7 +737,7 @@ namespace EmpireBuilder.Editor
                 coinRect.sizeDelta = new Vector2(48, 48);
                 if (coinSprite != null) coinIconObj.GetComponent<Image>().sprite = coinSprite;
 
-                var moneyText = CreateTMPText("MoneyText", moneyBoxObj.transform, "$10,000", new Vector2(65, 0), new Vector2(190, 48), 30, fontAsset, TextAlignmentOptions.Left);
+                var moneyText = CreateTMPText("MoneyText", moneyBoxObj.transform, "$5,000", new Vector2(65, 0), new Vector2(190, 48), 30, fontAsset, TextAlignmentOptions.Left);
                 CreateTMPText("SceneTitle", headerObj.transform, "CAPITAL KINGDOM DISTRICT", new Vector2(0, 0), new Vector2(450, 48), 28, fontAsset, TextAlignmentOptions.Center);
                 var backBtn = CreateCartoonButton("BackToMenuButton", headerObj.transform, "MENU ↩", new Vector2(-100, 0), new Vector2(150, 52), btnDark, fontAsset);
 
