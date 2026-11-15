@@ -412,6 +412,10 @@ namespace EmpireBuilder.Localization
             Add("tut_alerts_desc", "Real estate structures suffer natural wear and tear! The City Notice Bar in the top-right corner will flag buildings requiring urgent structural repairs.\n\nPay maintenance orders promptly to protect building integrity and keep daily cashflows flowing. Smart investors always maintain an emergency reserve fund for unforeseen repair expenses.",
                                    "تتعرض المباني العقارية للاستهلاك الطبيعي بمرور الوقت! سينبهك شريط أحداث المدينة في الزاوية العلوية اليمنى بالمباني التي تحتاج لصيانة عاجلة.\n\nادفع تكاليف الصيانة فوراً للحفاظ على كفاءة المبنى واستمرار تدفق الإيجارات. المستثمر الذكي يحتفظ دائماً بصندوق طوارئ لتغطية نفقات الصيانة غير المتوقعة.");
 
+            Add("tut_lang_title", "BILINGUAL LOCALIZATION & DUAL LANGUAGE", "الترجمة ثنائية اللغة ودعم اللغات");
+            Add("tut_lang_desc", "Capital Kingdom features full bilingual support for English and Arabic!\n\nSwitch languages instantly at any time using the quick language toggle button on the HUD header or in the Main Menu Settings. All property portfolios, banking ledgers, health alerts, and financial metrics adapt automatically with right-to-left Arabic typography support.",
+                                 "تتميز المملكة الرأسمالية بدعم كامل وثنائي لكل من اللغتين الإنجليزية والعربية!\n\nيمكنك تبديل اللغة فوراً في أي وقت باستخدام زر التبديل السريع في شريط الرأس أو من إعدادات القائمة الرئيسية. تتكيف جميع محافظ العقارات وسجلات البنوك وتنبيهات الصحة والمقاييس المالية تلقائياً مع دعم اتجاه الكتابة من اليمين إلى اليسار.");
+
             Add("tut_btn_next", "NEXT", "التالي");
             Add("tut_btn_back", "BACK", "السابق");
             Add("tut_btn_skip", "SKIP GUIDE", "تخطي الدليل");

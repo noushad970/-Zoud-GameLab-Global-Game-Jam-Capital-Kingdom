@@ -238,6 +238,15 @@ namespace EmpireBuilder.UI
                 description = LocalizationManager.Get("tut_stadium_desc"),
                 accentColor = new Color(0.18f, 0.80f, 0.44f)
             });
+
+            // Step 11: Regional Localization & Language Support
+            steps.Add(new TutorialStepData
+            {
+                iconEmoji = "11",
+                title = LocalizationManager.Get("tut_lang_title"),
+                description = LocalizationManager.Get("tut_lang_desc"),
+                accentColor = new Color(0.25f, 0.65f, 0.95f)
+            });
         }
 
         private IEnumerator ShowTutorialDelayed(float delay)

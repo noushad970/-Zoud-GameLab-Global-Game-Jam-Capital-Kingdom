@@ -44,6 +44,7 @@ namespace EmpireBuilder.UI
         [Header("Language Controls")]
         [SerializeField] private Button quickLanguageButton;
         [SerializeField] private TextMeshProUGUI quickLanguageText;
+        [SerializeField] private GameObject languageSection;
         [SerializeField] private Button optEnglishButton;
         [SerializeField] private Button optArabicButton;
         [SerializeField] private TextMeshProUGUI optEnglishText;
@@ -234,33 +235,58 @@ namespace EmpireBuilder.UI
 
         private void EnsureQuickLanguageButton()
         {
-            if (quickLanguageButton != null) return;
-
-            Transform existing = transform.Find("QuickLanguageButton");
-            if (existing != null)
+            if (quickLanguageButton == null)
             {
-                quickLanguageButton = existing.GetComponent<Button>();
-                quickLanguageText = existing.GetComponentInChildren<TextMeshProUGUI>();
+                Transform existing = transform.Find("QuickLanguageButton");
+                if (existing == null)
+                {
+                    Canvas canvas = GetComponentInParent<Canvas>();
+                    if (canvas != null)
+                    {
+                        existing = canvas.transform.Find("QuickLanguageButton");
+                    }
+                }
+
+                if (existing != null)
+                {
+                    quickLanguageButton = existing.GetComponent<Button>();
+                    quickLanguageText = existing.GetComponentInChildren<TextMeshProUGUI>();
+                }
+            }
+
+            if (quickLanguageButton != null)
+            {
+                if (quickLanguageText == null)
+                {
+                    quickLanguageText = quickLanguageButton.GetComponentInChildren<TextMeshProUGUI>();
+                }
+
+                quickLanguageButton.onClick.RemoveAllListeners();
+                quickLanguageButton.onClick.AddListener(() =>
+                {
+                    LocalizationManager.ToggleLanguage();
+                });
                 return;
             }
 
-            Canvas canvas = GetComponentInParent<Canvas>();
-            if (canvas == null) return;
+            Canvas c = GetComponentInParent<Canvas>();
+            if (c == null) return;
 
             GameObject btnObj = new GameObject("QuickLanguageButton", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
-            btnObj.transform.SetParent(canvas.transform, false);
+            btnObj.transform.SetParent(c.transform, false);
 
             var rt = btnObj.GetComponent<RectTransform>();
-            rt.anchorMin = new Vector2(1, 1);
-            rt.anchorMax = new Vector2(1, 1);
-            rt.pivot = new Vector2(1, 1);
-            rt.anchoredPosition = new Vector2(-20, -20);
-            rt.sizeDelta = new Vector2(150, 44);
+            rt.anchorMin = new Vector2(0, 1);
+            rt.anchorMax = new Vector2(0, 1);
+            rt.pivot = new Vector2(0, 1);
+            rt.anchoredPosition = new Vector2(40, -35);
+            rt.sizeDelta = new Vector2(160, 50);
 
             var img = btnObj.GetComponent<Image>();
             img.color = new Color(0.12f, 0.16f, 0.24f, 0.95f);
 
             quickLanguageButton = btnObj.GetComponent<Button>();
+            quickLanguageButton.onClick.RemoveAllListeners();
             quickLanguageButton.onClick.AddListener(() =>
             {
                 LocalizationManager.ToggleLanguage();
@@ -275,7 +301,7 @@ namespace EmpireBuilder.UI
 
             quickLanguageText = txtObj.GetComponent<TextMeshProUGUI>();
             quickLanguageText.text = LocalizationManager.CurrentLanguage == GameLanguage.Arabic ? "English" : "العربية";
-            quickLanguageText.fontSize = 14;
+            quickLanguageText.fontSize = 15;
             quickLanguageText.fontStyle = FontStyles.Bold;
             quickLanguageText.alignment = TextAlignmentOptions.Center;
             quickLanguageText.color = new Color(1f, 0.85f, 0.3f);
@@ -283,29 +309,39 @@ namespace EmpireBuilder.UI
 
         private void EnsureLanguageSettingsUI()
         {
+            if (optEnglishButton != null && optArabicButton != null)
+            {
+                if (optEnglishText == null) optEnglishText = optEnglishButton.GetComponentInChildren<TextMeshProUGUI>();
+                if (optArabicText == null) optArabicText = optArabicButton.GetComponentInChildren<TextMeshProUGUI>();
+                BindLanguageButtons();
+                return;
+            }
+
             if (optionPanel == null) return;
 
             Transform existing = optionPanel.transform.Find("LanguageSection");
             if (existing != null)
             {
-                optEnglishButton = existing.Find("ButtonsRow/EnglishButton")?.GetComponent<Button>();
-                optArabicButton = existing.Find("ButtonsRow/ArabicButton")?.GetComponent<Button>();
+                languageSection = existing.gameObject;
+                optEnglishButton = existing.Find("ButtonsRow/EnglishButton")?.GetComponent<Button>() ?? existing.Find("EnglishButton")?.GetComponent<Button>();
+                optArabicButton = existing.Find("ButtonsRow/ArabicButton")?.GetComponent<Button>() ?? existing.Find("ArabicButton")?.GetComponent<Button>();
                 optEnglishText = optEnglishButton?.GetComponentInChildren<TextMeshProUGUI>();
                 optArabicText = optArabicButton?.GetComponentInChildren<TextMeshProUGUI>();
                 BindLanguageButtons();
                 return;
             }
 
-            // Create Language Settings Section inside optionPanel
+            // Create Language Settings Section inside optionPanel as a fallback
             GameObject section = new GameObject("LanguageSection", typeof(RectTransform));
             section.transform.SetParent(optionPanel.transform, false);
+            languageSection = section;
 
             RectTransform secRt = section.GetComponent<RectTransform>();
             secRt.anchorMin = new Vector2(0.5f, 0.5f);
             secRt.anchorMax = new Vector2(0.5f, 0.5f);
             secRt.pivot = new Vector2(0.5f, 0.5f);
-            secRt.anchoredPosition = new Vector2(0, -60);
-            secRt.sizeDelta = new Vector2(440, 100);
+            secRt.anchoredPosition = new Vector2(0, -30);
+            secRt.sizeDelta = new Vector2(440, 120);
 
             // Label
             GameObject labelObj = new GameObject("LanguageLabel", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
@@ -332,7 +368,7 @@ namespace EmpireBuilder.UI
             rowRt.anchorMax = new Vector2(1, 0);
             rowRt.pivot = new Vector2(0.5f, 0);
             rowRt.anchoredPosition = new Vector2(0, 10);
-            rowRt.sizeDelta = new Vector2(440, 48);
+            rowRt.sizeDelta = new Vector2(440, 50);
 
             var hlg = row.GetComponent<HorizontalLayoutGroup>();
             hlg.spacing = 16;
